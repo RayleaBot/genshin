@@ -1369,14 +1369,5 @@
         "label": "公开统计与配队"
       }
     ]
-  },
-  "services": [
-    {
-      "name": "interaction",
-      "version": 1,
-      "methods": [
-        "eligible"
-      ]
-    }
-  ]
+  }
 }
