@@ -1,0 +1,1400 @@
+{
+  "id": "raylea.genshin",
+  "name": "原神",
+  "version": "0.1.0",
+  "manifest_version": "4",
+  "min_core_version": "0.7.1",
+  "license": "AGPL-3.0-only",
+  "metadata": {
+    "description": "原神独立查询、离线图鉴、公开展柜与抽卡档案",
+    "author": "raylea"
+  },
+  "concurrency": 4,
+  "events": [
+    "message.private",
+    "message.group",
+    "config.changed",
+    "scheduler.trigger",
+    "notice.poke"
+  ],
+  "default_config": {
+    "account_provider": "raylea.mihoyo-accounts",
+    "image_replies": true,
+    "custom_aliases": {},
+    "alias_policy": "prefer_custom"
+  },
+  "commands": [
+    {
+      "id": "profile",
+      "name": "原神信息",
+      "description": "原神信息",
+      "usage": "#原神信息 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神信息"
+        ]
+      }
+    },
+    {
+      "id": "note",
+      "name": "原神体力",
+      "description": "原神实时便笺",
+      "usage": "#原神体力 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神体力"
+        ]
+      }
+    },
+    {
+      "id": "characters",
+      "name": "原神角色",
+      "description": "原神角色列表",
+      "usage": "#原神角色 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神角色"
+        ]
+      }
+    },
+    {
+      "id": "character",
+      "name": "原神面板",
+      "description": "原神角色详情",
+      "usage": "#原神面板 <角色> [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神面板"
+        ]
+      }
+    },
+    {
+      "id": "abyss",
+      "name": "原神深渊",
+      "description": "深境螺旋",
+      "usage": "#原神深渊 [期数] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神深渊"
+        ]
+      }
+    },
+    {
+      "id": "accounts",
+      "name": "原神账号",
+      "description": "查看已授权角色与默认 UID",
+      "usage": "#原神账号",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神账号"
+        ]
+      }
+    },
+    {
+      "id": "select",
+      "name": "原神绑定",
+      "description": "选择已验证的默认游戏角色",
+      "usage": "#原神绑定 <UID>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神绑定"
+        ]
+      }
+    },
+    {
+      "id": "catalog",
+      "name": "原神图鉴",
+      "description": "查询离线角色和装备资料",
+      "usage": "#原神图鉴 <名称或ID>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神图鉴"
+        ]
+      }
+    },
+    {
+      "id": "showcase",
+      "name": "原神展柜",
+      "description": "查询已开放的公开展柜",
+      "usage": "#原神展柜 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神展柜"
+        ]
+      }
+    },
+    {
+      "id": "gacha",
+      "name": "原神抽卡",
+      "description": "分析已导入的抽卡记录",
+      "usage": "#原神抽卡 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神抽卡"
+        ]
+      }
+    },
+    {
+      "id": "theater",
+      "name": "原神剧诗",
+      "description": "幻想真境剧诗",
+      "usage": "#原神剧诗 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神剧诗"
+        ]
+      }
+    },
+    {
+      "id": "hard_challenge",
+      "name": "原神幽境",
+      "description": "幽境危战",
+      "usage": "#原神幽境 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神幽境"
+        ]
+      }
+    },
+    {
+      "id": "monthly",
+      "name": "原神札记",
+      "description": "旅行札记",
+      "usage": "#原神札记 [月份] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神札记"
+        ]
+      }
+    },
+    {
+      "id": "tcg",
+      "name": "原神七圣",
+      "description": "七圣召唤",
+      "usage": "#原神七圣 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神七圣"
+        ]
+      }
+    },
+    {
+      "id": "tcg_cards",
+      "name": "原神牌库",
+      "description": "七圣牌库",
+      "usage": "#原神牌库 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神牌库"
+        ]
+      }
+    },
+    {
+      "id": "tcg_decks",
+      "name": "原神牌组",
+      "description": "七圣牌组",
+      "usage": "#原神牌组 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神牌组"
+        ]
+      }
+    },
+    {
+      "id": "score",
+      "name": "原神评分",
+      "description": "按指定规则计算装备评分",
+      "usage": "#原神评分 <角色> <规则编号> [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神评分"
+        ]
+      }
+    },
+    {
+      "id": "score-rules",
+      "name": "原神评分规则",
+      "description": "查看装备评分规则",
+      "usage": "#原神评分规则",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神评分规则"
+        ]
+      }
+    },
+    {
+      "id": "damage",
+      "name": "原神伤害",
+      "description": "以明确攻击倍率进行单次伤害试算",
+      "usage": "#原神伤害 <角色> <攻击倍率> [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神伤害"
+        ]
+      }
+    },
+    {
+      "id": "build",
+      "name": "原神计算",
+      "description": "自动应用固定参考情境计算角色伤害",
+      "usage": "#原神计算 <角色> [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神计算"
+        ]
+      }
+    },
+    {
+      "id": "reminder",
+      "name": "原神体力提醒",
+      "description": "原神体力提醒",
+      "usage": "#原神体力提醒 百分数 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神体力提醒"
+        ]
+      }
+    },
+    {
+      "id": "reminder-stop",
+      "name": "原神关闭提醒",
+      "description": "原神关闭提醒",
+      "usage": "#原神关闭提醒 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神关闭提醒"
+        ]
+      }
+    },
+    {
+      "id": "growth",
+      "name": "原神养成",
+      "description": "计算升至上限的材料需求",
+      "usage": "#原神养成 角色 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神养成"
+        ]
+      }
+    },
+    {
+      "id": "materials",
+      "name": "原神材料",
+      "description": "查询固定参考资料",
+      "usage": "#原神材料 名称",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神材料"
+        ]
+      }
+    },
+    {
+      "id": "calendar",
+      "name": "原神卡池",
+      "description": "查询固定参考资料",
+      "usage": "#原神卡池 版本 [YYYY-MM-DD]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神卡池"
+        ]
+      }
+    },
+    {
+      "id": "group-settings",
+      "name": "原神群设置",
+      "description": "调整当前群的游戏设置",
+      "usage": "#原神群设置 [开启|关闭|图片|文本|默认|别名|删除别名]",
+      "permission": "group_admin",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神群设置"
+        ]
+      }
+    },
+    {
+      "id": "rank-submit",
+      "name": "原神提交排行",
+      "description": "主动向当前群公开自己的UID和装备评分",
+      "usage": "#原神提交排行 角色 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神提交排行"
+        ]
+      }
+    },
+    {
+      "id": "rank-withdraw",
+      "name": "原神退出排行",
+      "description": "移除自己在当前群的参评记录",
+      "usage": "#原神退出排行 [角色]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神退出排行"
+        ]
+      }
+    },
+    {
+      "id": "rank",
+      "name": "原神排行",
+      "description": "查看本群主动提交的装备评分排行",
+      "usage": "#原神排行 角色",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神排行"
+        ]
+      }
+    },
+    {
+      "id": "simulation",
+      "name": "原神模拟十连",
+      "description": "独立参考娱乐模拟，不消耗真实货币",
+      "usage": "#原神模拟十连 [角色|武器|光锥|常驻]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神模拟十连"
+        ]
+      }
+    },
+    {
+      "id": "simulation-history",
+      "name": "原神模拟记录",
+      "description": "独立参考娱乐模拟，不消耗真实货币",
+      "usage": "#原神模拟记录 ",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神模拟记录"
+        ]
+      }
+    },
+    {
+      "id": "simulation-reset",
+      "name": "原神重置模拟",
+      "description": "独立参考娱乐模拟，不消耗真实货币",
+      "usage": "#原神重置模拟 确认",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神重置模拟"
+        ]
+      }
+    },
+    {
+      "id": "simulation-fate",
+      "name": "原神模拟定轨",
+      "description": "独立参考娱乐模拟，不消耗真实货币",
+      "usage": "#原神模拟定轨 [武器名称|取消]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神模拟定轨"
+        ]
+      }
+    },
+    {
+      "id": "signin",
+      "name": "原神签到",
+      "description": "官方游戏签到与状态",
+      "usage": "#原神签到 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神签到"
+        ]
+      }
+    },
+    {
+      "id": "signin-status",
+      "name": "原神签到状态",
+      "description": "官方游戏签到与状态",
+      "usage": "#原神签到状态 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神签到状态"
+        ]
+      }
+    },
+    {
+      "id": "signin-task",
+      "name": "原神自动签到",
+      "description": "显式开启或停止每日自动签到",
+      "usage": "#原神自动签到 开启/关闭 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神自动签到"
+        ]
+      }
+    },
+    {
+      "id": "public-profile",
+      "name": "原神公开信息",
+      "description": "使用主动共享的公共池查询官方公开资料",
+      "usage": "#原神公开信息 UID [区服]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神公开信息"
+        ]
+      }
+    },
+    {
+      "id": "cloud-verify",
+      "name": "原神云验证",
+      "description": "本人私聊显式验证 ark 跨机器人 UID 关联",
+      "usage": "#原神云验证 获取/提交/状态 UID 确认 | 进度/取消",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神云验证"
+        ]
+      }
+    },
+    {
+      "id": "gacha-background",
+      "name": "原神同步抽卡",
+      "description": "单次后台读取官方抽卡记录",
+      "usage": "#原神同步抽卡 [增量/全量] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神同步抽卡"
+        ]
+      }
+    },
+    {
+      "id": "gacha-schedule",
+      "name": "原神自动同步",
+      "description": "显式开启或停止每日抽卡同步",
+      "usage": "#原神自动同步 开启/关闭 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神自动同步"
+        ]
+      }
+    },
+    {
+      "id": "gacha-progress",
+      "name": "原神同步进度",
+      "description": "查看本人后台同步任务",
+      "usage": "#原神同步进度 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神同步进度"
+        ]
+      }
+    },
+    {
+      "id": "gacha-stop",
+      "name": "原神停止同步",
+      "description": "停止本人后台抽卡同步",
+      "usage": "#原神停止同步 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神停止同步"
+        ]
+      }
+    },
+    {
+      "id": "team-build",
+      "name": "原神队伍计算",
+      "description": "应用保存的模拟队伍与条件方案",
+      "usage": "#原神队伍计算 方案名 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神队伍计算"
+        ]
+      }
+    },
+    {
+      "id": "banner-history",
+      "name": "原神卡池历史",
+      "description": "卡池历史",
+      "usage": "#原神卡池历史 [角色或装备名]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神卡池历史"
+        ]
+      }
+    },
+    {
+      "id": "gacha-versions",
+      "name": "原神版本抽卡",
+      "description": "版本抽卡",
+      "usage": "#原神版本抽卡 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神版本抽卡"
+        ]
+      }
+    },
+    {
+      "id": "challenge-submit",
+      "name": "原神提交挑战",
+      "description": "主动向当前群公开本人成绩",
+      "usage": "#原神提交挑战 玩法 [本期/上期] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神提交挑战"
+        ]
+      }
+    },
+    {
+      "id": "challenge-rank",
+      "name": "原神挑战排行",
+      "description": "分期查看群挑战榜",
+      "usage": "#原神挑战排行 玩法 [期次] [指标] [页码]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神挑战排行"
+        ]
+      }
+    },
+    {
+      "id": "challenge-withdraw",
+      "name": "原神退出挑战",
+      "description": "移除本人的群榜记录",
+      "usage": "#原神退出挑战 [玩法]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神退出挑战"
+        ]
+      }
+    },
+    {
+      "id": "challenge-clear",
+      "name": "原神清空挑战",
+      "description": "群管理员清空挑战群榜",
+      "usage": "#原神清空挑战 [玩法]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神清空挑战"
+        ]
+      }
+    },
+    {
+      "id": "challenge-remind",
+      "name": "原神挑战提醒",
+      "description": "显式开启本人挑战完成提醒",
+      "usage": "#原神挑战提醒 玩法 指标 阈值 [HH:MM] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神挑战提醒"
+        ]
+      }
+    },
+    {
+      "id": "challenge-stop",
+      "name": "原神关闭挑战提醒",
+      "description": "停止本人的挑战完成提醒",
+      "usage": "#原神关闭挑战提醒 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神关闭挑战提醒"
+        ]
+      }
+    },
+    {
+      "id": "monthly-history",
+      "name": "原神月报统计",
+      "description": "已保存月报的累计收入",
+      "usage": "#原神月报统计 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神月报统计"
+        ]
+      }
+    },
+    {
+      "id": "monthly-save",
+      "name": "原神保存月报",
+      "description": "读取并保存指定月报",
+      "usage": "#原神保存月报 [月份] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神保存月报"
+        ]
+      }
+    },
+    {
+      "id": "cloud-private-panel",
+      "name": "原神云面板",
+      "description": "本人私聊读取并保存已验证的长期云面板",
+      "usage": "#原神云面板 获取 UID 确认 / 进度 / 保存 / 取消",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神云面板"
+        ]
+      }
+    },
+    {
+      "id": "community-status",
+      "name": "原神米游币",
+      "description": "查询社区米游币与任务",
+      "usage": "#原神米游币 [账号序号]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神米游币"
+        ]
+      }
+    },
+    {
+      "id": "community-sign",
+      "name": "原神社区签到",
+      "description": "显式为所选账号在本游戏社区签到",
+      "usage": "#原神社区签到 [账号序号]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神社区签到"
+        ]
+      }
+    },
+    {
+      "id": "cloud-game-status",
+      "name": "原神云游戏状态",
+      "description": "查看最近云钱包快照",
+      "usage": "#原神云游戏状态 [账号序号]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神云游戏状态"
+        ]
+      }
+    },
+    {
+      "id": "cloud-game-sign",
+      "name": "原神云游戏签到",
+      "description": "显式查询钱包并领取可能发放的时长",
+      "usage": "#原神云游戏签到 [账号序号]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神云游戏签到"
+        ]
+      }
+    },
+    {
+      "id": "community-task",
+      "name": "原神社区任务",
+      "description": "社区任务",
+      "usage": "#原神社区任务 一次/每天 签到/全部 [账号序号]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神社区任务"
+        ]
+      }
+    },
+    {
+      "id": "community-stop",
+      "name": "原神关闭社区任务",
+      "description": "关闭社区任务",
+      "usage": "#原神关闭社区任务 ",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神关闭社区任务"
+        ]
+      }
+    },
+    {
+      "id": "cloud-game-task",
+      "name": "原神云游戏任务",
+      "description": "云游戏任务",
+      "usage": "#原神云游戏任务 一次/每天 [账号序号]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神云游戏任务"
+        ]
+      }
+    },
+    {
+      "id": "cloud-game-stop",
+      "name": "原神关闭云游戏任务",
+      "description": "关闭云游戏任务",
+      "usage": "#原神关闭云游戏任务 ",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神关闭云游戏任务"
+        ]
+      }
+    },
+    {
+      "id": "codes",
+      "name": "原神兑换码",
+      "description": "查询官方公开兑换码",
+      "usage": "#原神兑换码",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神兑换码"
+        ]
+      }
+    },
+    {
+      "id": "redeem",
+      "name": "原神兑换",
+      "description": "明确为本人海外角色兑换代码",
+      "usage": "#原神兑换 代码 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神兑换"
+        ]
+      }
+    },
+    {
+      "id": "billing",
+      "name": "原神资产记录",
+      "description": "查询官方可用资产变动明细",
+      "usage": "#原神资产记录 类别 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神资产记录"
+        ]
+      }
+    },
+    {
+      "id": "news",
+      "name": "原神公告",
+      "description": "官方公开内容公告",
+      "usage": "#原神公告",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神公告"
+        ]
+      }
+    },
+    {
+      "id": "info",
+      "name": "原神资讯",
+      "description": "官方公开内容资讯",
+      "usage": "#原神资讯",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神资讯"
+        ]
+      }
+    },
+    {
+      "id": "events",
+      "name": "原神活动",
+      "description": "官方公开内容活动",
+      "usage": "#原神活动",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神活动"
+        ]
+      }
+    },
+    {
+      "id": "live-calendar",
+      "name": "原神活动日历",
+      "description": "官方公开内容活动日历",
+      "usage": "#原神活动日历",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神活动日历"
+        ]
+      }
+    },
+    {
+      "id": "search",
+      "name": "原神搜索",
+      "description": "官方公开内容搜索",
+      "usage": "#原神搜索 关键词",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神搜索"
+        ]
+      }
+    },
+    {
+      "id": "post",
+      "name": "原神帖子",
+      "description": "官方公开内容帖子",
+      "usage": "#原神帖子 编号或官方链接",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神帖子"
+        ]
+      }
+    },
+    {
+      "id": "content-progress",
+      "name": "原神资料进度",
+      "description": "官方公开内容资料进度",
+      "usage": "#原神资料进度 任务编号",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神资料进度"
+        ]
+      }
+    },
+    {
+      "id": "subscribe",
+      "name": "原神订阅",
+      "description": "官方公开内容订阅",
+      "usage": "#原神订阅 公告/资讯/活动/到期 [天数]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神订阅"
+        ]
+      }
+    },
+    {
+      "id": "unsubscribe",
+      "name": "原神退订",
+      "description": "官方公开内容退订",
+      "usage": "#原神退订 [类型]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神退订"
+        ]
+      }
+    },
+    {
+      "id": "guides",
+      "name": "原神攻略",
+      "description": "攻略查询",
+      "usage": "#原神攻略 [角色名]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神攻略"
+        ]
+      }
+    },
+    {
+      "id": "map",
+      "name": "原神地图",
+      "description": "地图查询",
+      "usage": "#原神地图 资源 [地图]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神地图"
+        ]
+      }
+    },
+    {
+      "id": "enemy",
+      "name": "原神原魔",
+      "description": "原魔查询",
+      "usage": "#原神原魔 名称 属性 [等级]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神原魔"
+        ]
+      }
+    },
+    {
+      "id": "blueprint",
+      "name": "原神摹本",
+      "description": "摹本查询",
+      "usage": "#原神摹本 分享码 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神摹本"
+        ]
+      }
+    },
+    {
+      "id": "photo",
+      "name": "原神照片",
+      "description": "本地图库与角色照片",
+      "usage": "#原神照片 角色名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神照片"
+        ]
+      }
+    },
+    {
+      "id": "image-library",
+      "name": "原神图鉴图",
+      "description": "本地图库与角色图鉴图",
+      "usage": "#原神图鉴图 分类 [关键词]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神图鉴图"
+        ]
+      }
+    },
+    {
+      "id": "original-image",
+      "name": "原神原图",
+      "description": "本地图库与角色原图",
+      "usage": "#原神原图",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神原图"
+        ]
+      }
+    },
+    {
+      "id": "interaction",
+      "name": "原神互动",
+      "description": "本地图库与角色互动",
+      "usage": "#原神互动 关系 操作 [角色名]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神互动"
+        ]
+      }
+    },
+    {
+      "id": "poke",
+      "name": "原神戳一戳",
+      "description": "本地图库与角色戳一戳",
+      "usage": "#原神戳一戳 开启/关闭",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神戳一戳"
+        ]
+      }
+    },
+    {
+      "id": "help",
+      "name": "原神帮助",
+      "description": "查看本版本插件帮助",
+      "usage": "#原神帮助 [关键词]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神帮助"
+        ]
+      }
+    },
+    {
+      "id": "version",
+      "name": "原神版本",
+      "description": "查看本版本插件版本",
+      "usage": "#原神版本",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神版本"
+        ]
+      }
+    },
+    {
+      "id": "role-cards",
+      "name": "原神圣牌",
+      "description": "查询本人月谕圣牌收藏",
+      "usage": "#原神圣牌 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神圣牌"
+        ]
+      }
+    },
+    {
+      "id": "role-cards-submit",
+      "name": "原神圣牌提交",
+      "description": "主动加入本群圣牌交换",
+      "usage": "#原神圣牌提交 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神圣牌提交"
+        ]
+      }
+    },
+    {
+      "id": "role-cards-exchange",
+      "name": "原神圣牌交换",
+      "description": "查询本群双向交换匹配",
+      "usage": "#原神圣牌交换 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神圣牌交换"
+        ]
+      }
+    },
+    {
+      "id": "role-cards-withdraw",
+      "name": "原神圣牌退出",
+      "description": "退出本群圣牌交换",
+      "usage": "#原神圣牌退出 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神圣牌退出"
+        ]
+      }
+    },
+    {
+      "id": "birthday",
+      "name": "原神生日留影",
+      "description": "查询留影叙佳期活动",
+      "usage": "#原神生日留影 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "原神生日留影"
+        ]
+      }
+    }
+  ],
+  "command_groups": [
+    {
+      "id": "genshin",
+      "title": "原神",
+      "commands": [
+        "profile",
+        "note",
+        "characters",
+        "character",
+        "abyss",
+        "accounts",
+        "select",
+        "catalog",
+        "showcase",
+        "gacha",
+        "theater",
+        "hard_challenge",
+        "monthly",
+        "tcg",
+        "tcg_cards",
+        "tcg_decks",
+        "score",
+        "score-rules",
+        "damage",
+        "build",
+        "reminder",
+        "reminder-stop",
+        "growth",
+        "materials",
+        "calendar",
+        "group-settings",
+        "rank-submit",
+        "rank-withdraw",
+        "rank",
+        "simulation",
+        "simulation-history",
+        "simulation-reset",
+        "simulation-fate",
+        "signin",
+        "signin-status",
+        "signin-task",
+        "public-profile",
+        "cloud-verify",
+        "gacha-background",
+        "gacha-schedule",
+        "gacha-progress",
+        "gacha-stop",
+        "team-build",
+        "banner-history",
+        "gacha-versions",
+        "cloud-private-panel",
+        "community-status",
+        "community-sign",
+        "cloud-game-status",
+        "cloud-game-sign",
+        "community-task",
+        "community-stop",
+        "cloud-game-task",
+        "cloud-game-stop",
+        "codes",
+        "redeem",
+        "billing",
+        "news",
+        "info",
+        "events",
+        "live-calendar",
+        "search",
+        "post",
+        "content-progress",
+        "subscribe",
+        "unsubscribe",
+        "guides",
+        "map",
+        "enemy",
+        "blueprint",
+        "photo",
+        "image-library",
+        "original-image",
+        "interaction",
+        "poke",
+        "help",
+        "version",
+        "role-cards",
+        "role-cards-submit",
+        "role-cards-exchange",
+        "role-cards-withdraw",
+        "birthday"
+      ]
+    },
+    {
+      "id": "challenges-and-history",
+      "title": "挑战与月报历史",
+      "commands": [
+        "challenge-submit",
+        "challenge-rank",
+        "challenge-withdraw",
+        "challenge-clear",
+        "challenge-remind",
+        "challenge-stop",
+        "monthly-history",
+        "monthly-save"
+      ]
+    }
+  ],
+  "help": {
+    "title": "原神",
+    "summary": "米游社账号统一扫码授权；公开资料和导入档案可独立使用。"
+  },
+  "management_ui": {
+    "entry": "ui/index.html",
+    "pages": [
+      {
+        "id": "overview",
+        "label": "游戏查询"
+      },
+      {
+        "id": "catalog",
+        "label": "资料图鉴"
+      },
+      {
+        "id": "gacha",
+        "label": "抽卡档案"
+      },
+      {
+        "id": "reminders",
+        "label": "提醒与收集"
+      },
+      {
+        "id": "history",
+        "label": "面板历史"
+      },
+      {
+        "id": "growth",
+        "label": "养成计算"
+      },
+      {
+        "id": "resources",
+        "label": "材料与卡池"
+      },
+      {
+        "id": "groups",
+        "label": "群设置与排行"
+      },
+      {
+        "id": "simulation",
+        "label": "模拟抽卡"
+      },
+      {
+        "id": "signin",
+        "label": "游戏签到"
+      },
+      {
+        "id": "cloud",
+        "label": "云排名与面板"
+      },
+      {
+        "id": "community",
+        "label": "社区与云游戏"
+      },
+      {
+        "id": "assets",
+        "label": "兑换码与资产"
+      },
+      {
+        "id": "content",
+        "label": "公告与活动"
+      },
+      {
+        "id": "guides",
+        "label": "攻略与工具"
+      },
+      {
+        "id": "media",
+        "label": "图库与互动"
+      },
+      {
+        "id": "help",
+        "label": "帮助与版本"
+      },
+      {
+        "id": "backup",
+        "label": "业务备份与清理"
+      },
+      {
+        "id": "collections",
+        "label": "活动与收藏"
+      },
+      {
+        "id": "statistics",
+        "label": "公开统计与配队"
+      }
+    ]
+  },
+  "services": [
+    {
+      "name": "interaction",
+      "version": 1,
+      "methods": [
+        "eligible"
+      ]
+    }
+  ]
+}
