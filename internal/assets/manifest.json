@@ -1375,10 +1375,6 @@
         "label": "帮助与版本"
       },
       {
-        "id": "backup",
-        "label": "业务备份与清理"
-      },
-      {
         "id": "collections",
         "label": "活动与收藏"
       },
