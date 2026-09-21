@@ -36,12 +36,7 @@ var combatArtwork = [][2]string{
 // officialImage caches an image from an official URL on demand, the way
 // upstream's page loads it, and returns its resource ID.
 func officialImage(context gamekit.ImageContext, add func(rayleabot.RenderImageResource), id, url string) string {
-	name, found := strings.CutPrefix(url, "https://")
-	if !found {
-		return ""
-	}
-	name, _, _ = strings.Cut(name, "?")
-	resource, ok := context.FetchArtworkResource(id, "mihoyo", name)
+	resource, ok := context.FetchURLResource(id, "mihoyo", url)
 	if !ok {
 		return ""
 	}
