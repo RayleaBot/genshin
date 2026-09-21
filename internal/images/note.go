@@ -13,7 +13,7 @@ import (
 
 // Builders lists the image builders by the operation they draw.
 func Builders() map[string]gamekit.ImageBuilder {
-	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor}
+	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters}
 }
 
 var weekdays = [...]string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}

@@ -1,0 +1,11 @@
+{
+  "id": "characters",
+  "name": "原神角色列表",
+  "description": "角色命令的图片，布局参照 miao-plugin character/avatar-list",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1036,
+  "height": 3000
+}

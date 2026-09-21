@@ -29,9 +29,10 @@ func newAvatarCards(context gamekit.ImageContext, resources *gamekit.ImageResour
 			cards.weapons[weapon.ID] = weapon
 		}
 	}
-	if context.Query != nil && len(ids) > 0 {
+	// The detail query takes at most 50 characters at a time.
+	for start := 0; context.Query != nil && start < len(ids); start += 50 {
 		list := []any{}
-		for _, id := range ids {
+		for _, id := range ids[start:min(start+50, len(ids))] {
 			list = append(list, id)
 		}
 		if result, err := context.Query("genshin.character", map[string]any{"character_ids": list}); err == nil {
@@ -86,7 +87,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 			badge++
 		}
 		card["weapon"] = map[string]any{"icon": c.miao("resources/meta-gs/weapon/" + entry.Type + "/" + entry.Name + "/icon.webp"),
-			"star": gamekit.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge}
+			"star": gamekit.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge, "level": weapon.Level}
 	}
 	// miao shows each set worn as two or four pieces, by its flower (or its
 	// circlet when the set has no flower).
