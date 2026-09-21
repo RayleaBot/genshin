@@ -1,0 +1,11 @@
+{
+  "id": "gacha",
+  "name": "原神抽卡记录",
+  "description": "抽卡记录命令的单池分析图片，布局参照 Yunzai 原神插件 gacha-log",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 765,
+  "height": 1200
+}

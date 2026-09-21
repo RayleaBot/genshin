@@ -42,5 +42,5 @@ func Kit() gamekit.Assets {
 	if err != nil {
 		panic(err) // the embedded directory name is fixed at build time
 	}
-	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json"), Images: images.Builders(), Panel: images.Panel}
+	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json"), Images: images.Builders(), Panel: images.Panel, Gacha: images.Gacha}
 }

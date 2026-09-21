@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "all", "pool", "pool_name", "lines", "cards", "first_time", "last_time"],
+  "properties": {
+    "uid": { "type": "string" },
+    "all": { "type": "integer" },
+    "pool": { "type": "string" },
+    "pool_name": { "type": "string" },
+    "lines": { "type": "array" },
+    "cards": { "type": "array" },
+    "first_time": { "type": "string" },
+    "last_time": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
