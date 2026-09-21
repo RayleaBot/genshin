@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "count", "rows", "updated"],
+  "properties": {
+    "uid": { "type": "string" },
+    "count": { "type": "integer" },
+    "rows": { "type": "array" },
+    "updated": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

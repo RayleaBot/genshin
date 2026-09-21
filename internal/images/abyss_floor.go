@@ -100,9 +100,3 @@ func AbyssFloor(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 		"uid": result.Role.UID, "floor": number, "star": gamekit.Text(floor["star"]), "max_star": gamekit.Text(floor["max_star"]), "rooms": rooms,
 	}, Resources: resources.List}, true
 }
-
-// Queries lists the commands that run another operation's query: a single
-// abyss floor draws on the abyss record.
-func Queries() map[string]func(time.Time) string {
-	return map[string]func(time.Time) string{"genshin.abyss_floor": func(time.Time) string { return "genshin.abyss" }}
-}

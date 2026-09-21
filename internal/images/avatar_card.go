@@ -74,7 +74,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 	talents := []any{}
 	for _, key := range []string{"a", "e", "q"} {
 		level := levels[key]
-		talents = append(talents, map[string]any{"key": key, "level": level.Level, "crown": level.Original == 10, "plus": level.Level > level.Original})
+		talents = append(talents, map[string]any{"key": key, "level": level.Level, "original": level.Original, "crown": level.Original == 10, "plus": level.Level > level.Original})
 	}
 	if levels["a"].Level > 0 {
 		card["talents"] = talents

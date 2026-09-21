@@ -58,66 +58,22 @@ func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 	for _, item := range rosterArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	ids := []string{}
-	for _, raw := range list {
-		avatar, _ := raw.(map[string]any)
-		ids = append(ids, gamekit.Text(avatar["id"]))
-	}
-	cards := newAvatarCards(context, resources, ids)
-
-	type entry struct {
-		id                           string
-		card                         map[string]any
-		level, star, aeq, cons       int
-		weaponLevel, weaponStar, fix int
-		fetter                       int
-	}
-	entries := []entry{}
+	entries, cards := buildRoster(context, resources, list)
 	five, gold := 0, 0
-	for _, raw := range list {
-		avatar, _ := raw.(map[string]any)
-		id := gamekit.Text(avatar["id"])
-		card, ok := cards.own(id)
-		if !ok {
-			card = cards.guest(id, gamekit.Int(avatar["level"]), gamekit.Int(avatar["actived_constellation_num"]))
-		}
-		card["type"] = "mini"
-		item := entry{id: id, card: card, level: gamekit.Int(card["level"]), star: gamekit.Int(card["star"]), cons: gamekit.Int(card["cons"]), fetter: gamekit.Int(avatar["fetter"])}
-		if talents, _ := card["talents"].([]any); talents != nil {
-			for _, talent := range talents {
-				item.aeq += gamekit.Int(talent.(map[string]any)["level"])
-			}
-		}
-		if weapon, _ := card["weapon"].(map[string]any); weapon != nil {
-			item.weaponLevel, item.weaponStar, item.fix = gamekit.Int(weapon["level"]), gamekit.Int(weapon["star"]), gamekit.Int(weapon["affix"])
-			if item.weaponStar == 5 {
-				gold += item.fix
-			}
-		}
-		// miao counts a five-star's constellations, travelers aside, and each
-		// five-star weapon's refinements as gold cards.
-		if item.star == 5 {
-			five++
-			if id != "10000005" && id != "10000007" {
-				gold += item.cons + 1
-			}
-		}
-		entries = append(entries, item)
-	}
-	// miao orders by level, rarity, talents, constellation, weapon level,
-	// rarity and refinement, then friendship, highest first.
-	sort.SliceStable(entries, func(i, j int) bool {
-		a, b := entries[i], entries[j]
-		for _, pair := range [][2]int{{a.level, b.level}, {a.star, b.star}, {a.aeq, b.aeq}, {a.cons, b.cons}, {a.weaponLevel, b.weaponLevel}, {a.weaponStar, b.weaponStar}, {a.fix, b.fix}, {a.fetter, b.fetter}} {
-			if pair[0] != pair[1] {
-				return pair[0] > pair[1]
-			}
-		}
-		return false
-	})
 	avatars := []any{}
 	for _, item := range entries {
 		avatars = append(avatars, item.card)
+		// miao counts a five-star's constellations, travelers aside, and each
+		// five-star weapon's refinements as gold cards.
+		if item.weaponStar == 5 {
+			gold += item.refinement
+		}
+		if item.star == 5 {
+			five++
+			if !traveler(item.id) {
+				gold += item.cons + 1
+			}
+		}
 	}
 
 	player := map[string]any{"name": "#" + result.Role.UID, "level": result.Role.Level}
@@ -196,3 +152,66 @@ func activeDays(days int) string {
 	}
 	return text
 }
+
+// rosterEntry is one owned character with what miao sorts rosters by.
+type rosterEntry struct {
+	id                                  string
+	card                                map[string]any
+	panel                               *gamekit.CharacterPanel
+	level, star, aeq, cons              int
+	weaponLevel, weaponStar, refinement int
+	fetter                              int
+}
+
+// buildRoster reads the requester's characters from the official list with
+// their details, as avatar cards in miao's order: level, rarity, original
+// talents, constellation, weapon level, rarity and refinement, then
+// friendship, highest first.
+func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources, list []any) ([]rosterEntry, *avatarCards) {
+	ids := []string{}
+	for _, raw := range list {
+		avatar, _ := raw.(map[string]any)
+		ids = append(ids, gamekit.Text(avatar["id"]))
+	}
+	cards := newAvatarCards(context, resources, ids)
+	entries := []rosterEntry{}
+	for _, raw := range list {
+		avatar, _ := raw.(map[string]any)
+		id := gamekit.Text(avatar["id"])
+		card, ok := cards.own(id)
+		if !ok {
+			card = cards.guest(id, gamekit.Int(avatar["level"]), gamekit.Int(avatar["actived_constellation_num"]))
+		}
+		card["type"] = "mini"
+		item := rosterEntry{id: id, card: card, level: gamekit.Int(card["level"]), star: gamekit.Int(card["star"]), cons: gamekit.Int(card["cons"]), fetter: gamekit.Int(avatar["fetter"])}
+		if panel, ok := cards.panels[id]; ok {
+			item.panel = &panel
+		}
+		// Without talents miao counts three.
+		item.aeq = 3
+		if talents, _ := card["talents"].([]any); talents != nil {
+			item.aeq = 0
+			for _, talent := range talents {
+				item.aeq += gamekit.Int(talent.(map[string]any)["original"])
+			}
+		}
+		if weapon, _ := card["weapon"].(map[string]any); weapon != nil {
+			item.weaponLevel, item.weaponStar, item.refinement = gamekit.Int(weapon["level"]), gamekit.Int(weapon["star"]), gamekit.Int(weapon["affix"])
+		}
+		entries = append(entries, item)
+	}
+	sort.SliceStable(entries, func(i, j int) bool {
+		a, b := entries[i], entries[j]
+		for _, pair := range [][2]int{{a.level, b.level}, {a.star, b.star}, {a.aeq, b.aeq}, {a.cons, b.cons}, {a.weaponLevel, b.weaponLevel}, {a.weaponStar, b.weaponStar}, {a.refinement, b.refinement}, {a.fetter, b.fetter}} {
+			if pair[0] != pair[1] {
+				return pair[0] > pair[1]
+			}
+		}
+		return false
+	})
+	return entries, cards
+}
+
+// traveler reports the two travelers, whom miao leaves out of gold cards
+// and shows at full friendship.
+func traveler(id string) bool { return id == "10000005" || id == "10000007" }

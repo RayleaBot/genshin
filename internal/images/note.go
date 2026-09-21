@@ -13,7 +13,16 @@ import (
 
 // Builders lists the image builders by the operation they draw.
 func Builders() map[string]gamekit.ImageBuilder {
-	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters}
+	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters, "genshin.training": Training}
+}
+
+// Queries lists the commands that run another operation's query: a single
+// abyss floor draws on the abyss record, and 练度统计 on the character list.
+func Queries() map[string]func(time.Time) string {
+	return map[string]func(time.Time) string{
+		"genshin.abyss_floor": func(time.Time) string { return "genshin.abyss" },
+		"genshin.training":    func(time.Time) string { return "genshin.characters" },
+	}
 }
 
 var weekdays = [...]string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}

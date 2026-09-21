@@ -23,6 +23,12 @@
       "input": "none"
     },
     {
+      "name": "genshin.training",
+      "label": "练度统计",
+      "command": "练度统计",
+      "input": "none"
+    },
+    {
       "name": "genshin.character",
       "label": "原神角色详情",
       "command": "面板",

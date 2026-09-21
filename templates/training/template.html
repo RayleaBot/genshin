@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container" id="container">
+  <div class="head-box">
+    <div class="title">#面板练度统计</div>
+    <div class="label">UID:{{ .uid }} 共{{ .count }}名角色</div>
+  </div>
+  <div id="profile-stat">
+    <div class="cont">
+      <div class="cont-table">
+        <div class="avatar tr thead">
+          <div class="td-idx">#</div>
+          <div class="td-name">角色</div>
+          <div class="td-lv">Lv</div>
+          <div class="td-cons">命座</div>
+          <div class="td-fetter">好感</div>
+          <div class="td-talent">A</div>
+          <div class="td-talent">E</div>
+          <div class="td-talent">Q</div>
+          <div class="td-weapon">武器</div>
+          <div class="td-artis">圣遗物</div>
+        </div>
+        {{ range $row := .rows }}
+        <div class="avatar tr">
+          <div class="td td-idx star{{ $row.star }}">{{ $row.no }}</div>
+          <div class="td td-name star{{ $row.star }}">
+            <div class="item-banner">
+              <div class="item-icon char-icon star{{ $row.star }}"><span class="img"{{ with $row.face }} data-render-resource="{{ . }}"{{ end }}></span></div>
+              <span class="item-name">{{ $row.name }}</span>
+            </div>
+          </div>
+          <div class="td td-lv">{{ $row.level }}</div>
+          <div class="td td-cons"><span class="cons avatar cons-{{ $row.cons }}">{{ $row.cons }}</span></div>
+          <div class="td td-fetter"><span class="fetter fetter{{ $row.fetter }}"></span></div>
+          {{ range $row.talents }}<div class="td-talent lv{{ .class }} {{ if .plus }}talent-plus{{ end }}">{{ .level }}</div>{{ end }}
+          <div class="td td-weapon{{ with $row.weapon }} star{{ .star }}{{ end }}">
+            {{ with $row.weapon }}
+            <div class="item-banner star{{ .star }}">
+              <span class="level">{{ .level }}</span>
+              <div class="item-icon weapon-icon"><span class="img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span></div>
+              <span class="cons weapon cons-{{ .badge }} star{{ .star }}">{{ .affix }}</span>
+              <span class="item-name">{{ .name }}</span>
+            </div>
+            {{ end }}
+          </div>
+          <div class="td td-artis class-{{ if $row.grade }}{{ $row.grade }}{{ else }}D{{ end }}">
+            <div class="item item-banner avatar-artis artis{{ len $row.artis }}">
+              <div class="artis item-icon {{ if $row.artis }}star5{{ else }}no-artis{{ end }}">
+                {{ range $row.artis }}<div class="img" data-render-resource="{{ . }}"></div>{{ end }}
+                {{ if not $row.artis }}<span class="img no-artis"></span>{{ end }}
+              </div>
+              {{ if $row.grade }}<span class="artis-mark-class class-{{ $row.grade }}">{{ $row.grade }}</span>{{ $row.mark }}{{ else }}<span class="artis-na">暂无面板数据</span>{{ end }}
+            </div>
+          </div>
+        </div>
+        {{ end }}
+      </div>
+      <div class="cont-notice"><strong>数据更新时间</strong> <span>米游社: {{ .updated }}</span></div>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
