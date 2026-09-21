@@ -46,14 +46,26 @@ func TestReferenceProfiles(t *testing.T) {
 			var output struct {
 				Baseline struct {
 					Results []struct {
+						ID       string   `json:"id"`
 						Expected *float64 `json:"expected"`
 						Text     string   `json:"text"`
 						Critical *float64 `json:"critical"`
+						Default  bool     `json:"default"`
 					} `json:"results"`
 				} `json:"baseline"`
 			}
 			if json.Unmarshal(result, &output) != nil || len(output.Baseline.Results) != len(v.Results) {
 				t.Fatal("result shape changed")
+			}
+			// Group ranks use one detail: 神里绫华 names the third with defDmgIdx.
+			defaults := []string{}
+			for _, result := range output.Baseline.Results {
+				if result.Default {
+					defaults = append(defaults, result.ID)
+				}
+			}
+			if len(defaults) > 1 || records[v.Key].Name == "神里绫华" && (len(defaults) != 1 || defaults[0] != "2") {
+				t.Fatalf("default details = %v", defaults)
 			}
 			equal := func(a, b float64) bool { return math.Abs(a-b) <= 1e-8*math.Max(1, math.Abs(b)) }
 			for i, expected := range v.Results {
