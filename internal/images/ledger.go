@@ -1,7 +1,6 @@
 package images
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 
@@ -10,6 +9,11 @@ import (
 
 // ledgerColors are Yunzai's colours for the primogem sources, by action ID.
 var ledgerColors = []string{"#73a9c6", "#d56565", "#70b2b4", "#bd9a5a", "#739970", "#7a6da7", "#597ea0", "#ffb6c1"}
+
+// ledgerColor is the colour of a primogem source by its action ID.
+func ledgerColor(id int) string {
+	return ledgerColors[((id%len(ledgerColors))+len(ledgerColors))%len(ledgerColors)]
+}
 
 // ledgerArtwork maps the images the ledger page names to Yunzai's paths.
 var ledgerArtwork = [][2]string{
@@ -48,45 +52,16 @@ func Ledger(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 		group, _ := raw.(map[string]any)
 		total += gamekit.Int(group["num"])
 	}
-	legend, slices := []any{}, []any{}
-	// G2Plot starts at the top and runs clockwise; the ring spans radius
-	// 0.7 to 1 of the 240px chart less its 10px padding.
-	const centre, outer, inner = 120.0, 110.0, 77.0
-	angle := -math.Pi / 2
+	legend, values, colors := []any{}, []float64{}, []string{}
 	for _, raw := range groups {
 		group, _ := raw.(map[string]any)
-		id, num := gamekit.Int(group["action_id"]), gamekit.Int(group["num"])
-		color := ledgerColors[((id%len(ledgerColors))+len(ledgerColors))%len(ledgerColors)]
-		legend = append(legend, map[string]any{"color": color, "action": gamekit.Text(group["action"]), "percent": gamekit.Text(group["percent"]), "num": num})
-		if total == 0 || num == 0 {
-			continue
-		}
-		share := float64(num) / float64(total)
-		end := angle + share*2*math.Pi
-		point := func(radius, at float64) string {
-			return fmt.Sprintf("%.2f %.2f", centre+radius*math.Cos(at), centre+radius*math.Sin(at))
-		}
-		large := 0
-		if end-angle > math.Pi {
-			large = 1
-		}
-		path := fmt.Sprintf("M %s A %.0f %.0f 0 %d 1 %s L %s A %.0f %.0f 0 %d 0 %s Z", point(outer, angle), outer, outer, large, point(outer, end),
-			point(inner, end), inner, inner, large, point(inner, angle))
-		if share >= 0.999999 {
-			// A full ring is two half rings.
-			path = fmt.Sprintf("M %s A %.0f %.0f 0 1 1 %s A %.0f %.0f 0 1 1 %s M %s A %.0f %.0f 0 1 0 %s A %.0f %.0f 0 1 0 %s Z",
-				point(outer, -math.Pi/2), outer, outer, point(outer, math.Pi/2), outer, outer, point(outer, -math.Pi/2),
-				point(inner, -math.Pi/2), inner, inner, point(inner, math.Pi/2), inner, inner, point(inner, -math.Pi/2))
-		}
-		slice := map[string]any{"path": path, "color": color}
-		// Upstream labels a slice with its share when it is over 2%.
-		if percent := int(math.Round(share * 100)); percent > 2 {
-			middle := (angle + end) / 2
-			slice["label"], slice["x"], slice["y"] = strconv.Itoa(percent)+"%", fmt.Sprintf("%.1f", centre+(outer+inner)/2*math.Cos(middle)), fmt.Sprintf("%.1f", centre+(outer+inner)/2*math.Sin(middle))
-		}
-		slices = append(slices, slice)
-		angle = end
+		color := ledgerColor(gamekit.Int(group["action_id"]))
+		legend = append(legend, map[string]any{"color": color, "action": gamekit.Text(group["action"]), "percent": gamekit.Text(group["percent"]), "num": gamekit.Int(group["num"])})
+		values, colors = append(values, float64(gamekit.Int(group["num"]))), append(colors, color)
 	}
+	// G2Plot starts at the top and runs clockwise; the ring spans radius 0.7
+	// to 1 of the 240px chart less its 10px padding.
+	slices := gamekit.G2Ring(values, colors, 120, 120, 110, 77)
 
 	day := gamekit.Text(result.Data["data_month"]) + "月"
 	if now := context.Now.In(chinaTime); gamekit.Int(result.Data["data_month"]) == int(now.Month()) {
