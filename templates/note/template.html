@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container">
+  <div class="title">
+    <div class="id"><span>ID：{{ .uid }}</span></div>
+    <div class="day"><span>{{ .day }}</span></div>
+  </div>
+  {{ range .rows }}
+  <div class="item">
+    <div class="main">
+      <img class="icon" data-render-resource="{{ .icon }}" alt="">
+      <div class="info">
+        <div class="name">{{ .name }}</div>
+        <div class="time">{{ .detail }}</div>
+      </div>
+    </div>
+    <div class="right"><span{{ if .alert }} class="red"{{ end }}>{{ .value }}</span></div>
+  </div>
+  {{ end }}
+  {{ with .render_footer }}<div class="footer">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

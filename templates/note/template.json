@@ -1,0 +1,11 @@
+{
+  "id": "note",
+  "name": "原神实时便笺",
+  "description": "体力命令的便笺图片，布局参照 Yunzai 原神插件",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 600,
+  "height": 548
+}
