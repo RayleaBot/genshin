@@ -1,73 +1,73 @@
 {
   "id": "genshin",
   "name": "原神",
-  "prefix": "原神",
+  "prefix": "/",
   "region": "cn_gf01",
   "operations": [
     {
       "name": "genshin.profile",
       "label": "原神信息",
-      "command": "原神信息",
+      "command": "信息",
       "input": "none"
     },
     {
       "name": "genshin.note",
       "label": "原神实时便笺",
-      "command": "原神体力",
+      "command": "体力",
       "input": "none"
     },
     {
       "name": "genshin.characters",
       "label": "原神角色列表",
-      "command": "原神角色",
+      "command": "角色",
       "input": "none"
     },
     {
       "name": "genshin.character",
       "label": "原神角色详情",
-      "command": "原神面板",
+      "command": "面板",
       "input": "characters"
     },
     {
       "name": "genshin.abyss",
       "label": "深境螺旋",
-      "command": "原神深渊",
+      "command": "深渊",
       "input": "period"
     },
     {
       "name": "genshin.theater",
       "label": "幻想真境剧诗",
-      "command": "原神剧诗",
+      "command": "剧诗",
       "input": "none"
     },
     {
       "name": "genshin.hard_challenge",
       "label": "幽境危战",
-      "command": "原神幽境",
+      "command": "幽境",
       "input": "none"
     },
     {
       "name": "genshin.monthly",
       "label": "旅行札记",
-      "command": "原神札记",
+      "command": "札记",
       "input": "month"
     },
     {
       "name": "genshin.tcg",
       "label": "七圣召唤",
-      "command": "原神七圣",
+      "command": "七圣",
       "input": "none"
     },
     {
       "name": "genshin.tcg_cards",
       "label": "七圣牌库",
-      "command": "原神牌库",
+      "command": "牌库",
       "input": "none"
     },
     {
       "name": "genshin.tcg_decks",
       "label": "七圣牌组",
-      "command": "原神牌组",
+      "command": "牌组",
       "input": "none"
     }
   ]
