@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+{{ if .header }}
+<div class="info-bg info-name">{{ with .user }}{{ .nickname }}{{ end }}</div>
+<div class="info-bg info-count">{{ .info }}</div>
+{{ if .weapon }}{{ with .bing }}
+<div class="info-bg poor-info">定轨：{{ . }}</div>
+<div class="info-bg poor-bing">命定值：{{ $.life }}</div>
+{{ end }}{{ else }}{{ with .pool }}
+<div class="info-bg poor-info">{{ . }}</div>
+{{ end }}{{ end }}
+{{ end }}
+<div class="list-box">
+  {{ range .list }}
+  <div class="item {{ .shadow }}">
+    <div class="item-bg-box">
+      <img class="item-bg"{{ with $.bg }} data-render-resource="{{ . }}"{{ end }} alt="">
+      {{ if .weapon_five }}<img class="item-bg-weapon"{{ with $.bg_weapon }} data-render-resource="{{ . }}"{{ end }} alt="">{{ end }}
+    </div>
+    <img class="item-shadow2"{{ with $.bg2 }} data-render-resource="{{ . }}"{{ end }} alt="">
+    {{ if .weapon }}
+    <div class="item-weapon-box"><span class="item-character-img"{{ with .image }} data-render-resource="{{ . }}"{{ end }}></span></div>
+    {{ else }}
+    <div class="item-img-box{{ if .have }} fiveHave{{ end }}"><span class="item-character-img"{{ with .image }} data-render-resource="{{ . }}"{{ end }}></span></div>
+    {{ end }}
+    {{ with .times }}<div class="times">「{{ . }}抽」</div>{{ end }}
+    {{ if .have }}
+    <img class="item-starGold"{{ with .dust }} data-render-resource="{{ . }}"{{ end }} alt="">
+    <img class="item-starlight"{{ with .glitter }} data-render-resource="{{ . }}"{{ end }} alt="">
+    {{ else }}
+    {{ with .element }}<img class="item-element" data-render-resource="{{ . }}" alt="">{{ end }}
+    <img class="item-star"{{ with .star }} data-render-resource="{{ . }}"{{ end }} alt="">
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+<svg viewBox="0 0 302.22 1333.94" height="0" width="0">
+  <clipPath id="wishframe" transform="scale(0.003308 0.00074965)" clipPathUnits="objectBoundingBox">
+    <path d="M0.01 168.12l0 -9.64c4.32,-21.34 12,-32.33 25.46,-25.58 -2.35,-10.3 -1.53,-26.06 5.79,-25.96 19.18,0.25 29.95,-3.14 40.24,-13.16 -4.5,-66.43 51.39,-54.26 79.61,-93.78l0 0c28.22,39.52 84.1,27.34 79.61,93.78 10.29,10.02 21.06,13.41 40.24,13.16 7.32,-0.1 8.13,15.66 5.79,25.96 13.46,-6.75 21.14,4.24 25.46,25.58l0 9.64 0.01 0 0 1004.21 -0.01 0 0 3.13c-4.32,21.34 -12,32.33 -25.46,25.58 2.35,10.3 1.53,26.06 -5.79,25.96 -19.18,-0.25 -29.95,3.14 -40.24,13.16 4.5,66.43 -51.39,54.26 -79.61,93.78l0 0c-28.22,-39.52 -84.1,-27.34 -79.61,-93.78 -10.29,-10.02 -21.06,-13.41 -40.24,-13.16 -7.32,0.1 -8.13,-15.66 -5.79,-25.96 -13.46,6.75 -21.14,-4.24 -25.46,-25.58l0 -3.13 -0.01 0 0 -1004.21 0.01 0z"/>
+  </clipPath>
+</svg>
+</body>
+</html>

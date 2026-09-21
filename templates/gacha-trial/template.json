@@ -1,0 +1,11 @@
+{
+  "id": "gacha-trial",
+  "name": "原神模拟十连",
+  "description": "十连命令的图片，布局参照 Yunzai 原神插件 html/gacha/gacha-trial",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1029,
+  "height": 536
+}

@@ -1151,11 +1151,11 @@
       "id": "simulation",
       "name": "十连",
       "description": "独立参考娱乐模拟，不消耗真实货币",
-      "usage": "#十连[角色|武器|常驻]",
+      "usage": "#十连[2|武器|常驻]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:模拟)?(?:十连|抽卡)(?P<pool>角色|武器|光锥|常驻)?$"
+        "pattern": "^(?:模拟)?(?:10|[武器池常驻]*十+|抽|单)[连抽卡奖][123武器池常驻]*$"
       }
     },
     {

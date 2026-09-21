@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["list", "header", "info", "weapon", "life", "bg", "bg2", "bg_weapon"],
+  "properties": {
+    "list": { "type": "array" },
+    "header": { "type": "boolean" },
+    "info": { "type": "string" },
+    "weapon": { "type": "boolean" },
+    "life": { "type": "integer" },
+    "pool": { "type": "string" },
+    "bing": { "type": "string" },
+    "bg": { "type": "string" },
+    "bg2": { "type": "string" },
+    "bg_weapon": { "type": "string" },
+    "user": { "type": "object" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
