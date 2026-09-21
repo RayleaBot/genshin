@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="row">
+    <div class="item">
+      <div>ID：{{ .uid }}</div>
+      <div>时间：{{ .time }}</div>
+    </div>
+    <div class="item">
+      <div>最深抵达：{{ .max_floor }}</div>
+      <div>星数：{{ .total_star }}</div>
+    </div>
+  </div>
+  <div class="role">
+    <div class="title">出战角色</div>
+    <div class="list">
+      {{ range .list }}
+      <div class="item">
+        {{ if .life }}<span class="life life{{ .life }}">{{ .life }}命</span>{{ end }}
+        <img class="role_img bg{{ .rarity }}"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+        <div class="desc">{{ .value }}次</div>
+        <img class="fill_img" data-render-resource="img-other-fill" alt="">
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="detail">
+    <div class="title">战斗数据</div>
+    <div class="row">
+      <div class="item">战斗次数：{{ .total_battle_times }}次</div>
+      <div class="item">最多击破：{{ .ranks.defeat.num }}<span class="line-icon"{{ with .ranks.defeat.icon }} data-render-resource="{{ . }}"{{ end }}></span></div>
+    </div>
+    <div class="row two">
+      <div class="item">承受伤害：{{ .ranks.take_damage.num }}<span class="line-icon"{{ with .ranks.take_damage.icon }} data-render-resource="{{ . }}"{{ end }}></span></div>
+      <div class="item">元素战技：{{ .ranks.normal_skill.num }}<span class="line-icon"{{ with .ranks.normal_skill.icon }} data-render-resource="{{ . }}"{{ end }}></span></div>
+    </div>
+    <div class="row">
+      <div class="item">最强一击：{{ .ranks.damage.num }}<span class="line-icon"{{ with .ranks.damage.icon }} data-render-resource="{{ . }}"{{ end }}></span></div>
+      <div class="item">元素爆发：{{ .ranks.energy_skill.num }}<span class="line-icon"{{ with .ranks.energy_skill.icon }} data-render-resource="{{ . }}"{{ end }}></span></div>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="footer">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

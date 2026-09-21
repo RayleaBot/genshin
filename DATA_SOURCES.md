@@ -28,4 +28,4 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 
 ## 图片模板
 
-`templates/note/` 与 `templates/gacha/` 按 Miao-Yunzai 原神插件的 daily-note-gs 与 gacha-log 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），抽卡分析的统计、卡池选择与 UP 判定同上游 gachaLog；`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来（MIT），图片地址改为宿主渲染资源。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。
+`templates/note/`、`templates/gacha/` 与 `templates/abyss/` 按 Miao-Yunzai 原神插件的 daily-note-gs、gacha-log 与 html/abyss/abyss 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），抽卡分析的统计、卡池选择与 UP 判定同上游 gachaLog；`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来（MIT），图片地址改为宿主渲染资源。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。
