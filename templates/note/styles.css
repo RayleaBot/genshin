@@ -5,7 +5,7 @@ body {
   background: #f0eae3;
   color: #1e1f20;
   font-size: 16px;
-  font-family: "Microsoft YaHei UI", "Noto Sans SC", sans-serif;
+  font-family: "tttgbnumber", "Microsoft YaHei UI", "Noto Sans SC", sans-serif;
 }
 .container { width: 400px; padding: 8px 16px 16px; background: #f0eae3; }
 .title { display: flex; position: relative; margin-bottom: 9px; color: #504c49; }

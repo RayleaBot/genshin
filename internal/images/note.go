@@ -105,6 +105,10 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		row("参量质变仪", "参量质变仪", transformerDetail, transformerValue, transformerReady),
 	}
 	resources := []rayleabot.RenderImageResource{}
+	// Upstream sets the whole card in its tttgbnumber font.
+	if font, ok := context.ArtworkResource("tttgbnumber", "yunzai-genshin", "resources/font/tttgbnumber.ttf"); ok {
+		resources = append(resources, font)
+	}
 	for _, icon := range noteIcons {
 		if resource, ok := context.ArtworkResource("icon-"+icon, "yunzai-genshin", "resources/html/player/items/"+icon+".png"); ok {
 			resources = append(resources, resource)
