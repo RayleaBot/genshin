@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+  <div class="title-box">
+    <div class="info">
+      <div class="uid">ID：{{ .uid }}</div>
+      <div class="month">{{ .day }}札记</div>
+    </div>
+    <img class="genshin_logo" data-render-resource="genshin-logo" alt="">
+  </div>
+  <div class="data-box">
+    <div class="month">
+      <div class="head">当月获取：</div>
+      <div class="primogems"><div class="icon-ys"></div><div class="text">原石：{{ .current_primogems }} | {{ .gacha }} 抽</div></div>
+      <div class="primogems"><div class="icon-mola"></div><div class="text">摩拉：{{ .current_mora }}</div></div>
+    </div>
+    <div class="day">
+      <div class="head">上月获取：</div>
+      <div class="primogems"><div class="icon-ys"></div><div class="text">原石：{{ .last_primogems }} | {{ .last_gacha }} 抽</div></div>
+      <div class="primogems"><div class="icon-mola"></div><div class="text">摩拉：{{ .last_mora }}</div></div>
+    </div>
+  </div>
+  <div class="chart-box">
+    <div class="head">原石收入组成：</div>
+    <div class="chart-info">
+      <div id="chartContainer">
+        <svg width="240" height="240" viewBox="0 0 240 240">
+          {{ range .slices }}<path d="{{ .path }}" fill="{{ .color }}" stroke="#fff" stroke-width="1"></path>{{ end }}
+          {{ range .slices }}{{ if .label }}<text class="slice-label" x="{{ .x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}{{ end }}
+          <text class="statistic-title" x="120" y="108">总计</text>
+          <text class="statistic-content" x="120" y="140">{{ .total }}</text>
+        </svg>
+      </div>
+      <ul class="tooltip">
+        {{ range .legend }}
+        <li><i style="background: {{ .color }}"></i><span class="action">{{ .action }}</span> <em>{{ .percent }}%</em><span class="num">{{ .num }}</span></li>
+        {{ end }}
+      </ul>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="footer">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

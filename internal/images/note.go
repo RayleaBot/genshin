@@ -13,7 +13,7 @@ import (
 
 // Builders lists the image builders by the operation they draw.
 func Builders() map[string]gamekit.ImageBuilder {
-	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters, "genshin.training": Training}
+	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters, "genshin.training": Training, "genshin.monthly": Ledger}
 }
 
 // Queries lists the commands that run another operation's query: a single

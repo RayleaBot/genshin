@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "day", "current_primogems", "gacha", "current_mora", "last_primogems", "last_gacha", "last_mora", "legend", "slices", "total"],
+  "properties": {
+    "uid": { "type": "string" },
+    "day": { "type": "string" },
+    "current_primogems": { "type": "string" },
+    "gacha": { "type": "string" },
+    "current_mora": { "type": "string" },
+    "last_primogems": { "type": "string" },
+    "last_gacha": { "type": "string" },
+    "last_mora": { "type": "string" },
+    "legend": { "type": "array" },
+    "slices": { "type": "array" },
+    "total": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
