@@ -1,0 +1,11 @@
+{
+  "id": "character-talent",
+  "name": "原神角色天赋",
+  "description": "天赋与命座命令的图片，布局参照 miao-plugin wiki/character-talent",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 880,
+  "height": 6000
+}

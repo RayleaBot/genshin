@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["elem", "name", "desc", "line", "cons", "card", "face"],
+  "properties": {
+    "elem": { "type": "string" },
+    "name": { "type": "string" },
+    "desc": { "type": "string" },
+    "line": { "type": "array" },
+    "cons": { "type": "boolean" },
+    "card": { "type": "string" },
+    "face": { "type": "string" },
+    "talents": { "type": "array" },
+    "passives": { "type": "array" },
+    "constellations": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

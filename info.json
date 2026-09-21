@@ -141,6 +141,17 @@
       }
     },
     {
+      "id": "talent-wiki",
+      "name": "角色天赋",
+      "description": "角色的天赋、被动与命之座资料",
+      "usage": "#胡桃天赋 / #胡桃命座",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)(?:天赋|技能|命座|命之座)$"
+      }
+    },
+    {
       "id": "accounts",
       "name": "账号",
       "description": "查看已授权角色与默认 UID",
@@ -1270,6 +1281,7 @@
       "title": "图鉴与养成",
       "commands": [
         "catalog",
+        "talent-wiki",
         "growth",
         "materials",
         "blueprint",

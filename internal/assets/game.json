@@ -116,7 +116,8 @@
         ".ttf",
         ".otf",
         ".woff",
-        ".woff2"
+        ".woff2",
+        ".json"
       ]
     },
     {

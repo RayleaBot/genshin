@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+<div class="head-box"{{ with .card }} data-render-resource="{{ . }}"{{ end }}>
+  <div class="head"><img{{ with .face }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+  <div class="head-detail">
+    <div class="name">{{ .name }}</div>
+    <div class="desc">{{ safeHTML .desc }}</div>
+  </div>
+  <div class="data-box">
+    <div class="tab-label">100级基础数据</div>
+    <div class="data-line">
+      {{ range .line }}<div class="data_line_item"><div class="num">{{ .num }}</div><div class="label">{{ .label }}</div></div>{{ end }}
+    </div>
+  </div>
+</div>
+{{ if .cons }}
+<div class="talent-box elem-bg">
+  <div class="talent-detail">
+    {{ range .constellations }}{{ template "detail" . }}{{ end }}
+  </div>
+</div>
+{{ else }}
+{{ range .talents }}
+<div class="talent-box elem-bg">
+  <div class="talent-detail cont{{ if .merged }} talent-merge{{ end }}">
+    {{ range .parts }}{{ template "detail" . }}{{ end }}
+  </div>
+</div>
+{{ end }}
+<div class="talent-box elem-bg">
+  <div class="talent-detail passive-talent">
+    {{ range .passives }}{{ template "detail" . }}{{ end }}
+  </div>
+</div>
+{{ end }}
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
+{{ define "detail" }}
+<div class="talent-line">
+  <div class="talent-icon"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+  <div class="talent-info">
+    <div class="talent-name">{{ .name }}</div>
+    <div class="talent-desc">{{ safeHTML .desc }}</div>
+  </div>
+  {{ if .tables }}
+  <div class="talent-common-info">
+    {{ range .shared }}<div><strong>{{ .name }}{{ with .unit }}({{ . }}){{ end }}</strong><span>{{ .value }}</span></div>{{ end }}
+  </div>
+  <table class="talent-table cont-table">
+    <tr class="tr"><td class="th"></td>{{ range .levels }}<td class="th lv">{{ . }}</td>{{ end }}</tr>
+    {{ range .rows }}
+    <tr class="tr">
+      <td class="th talent-name">{{ .name }}{{ with .unit }}<span class="unit">({{ . }})</span>{{ end }}</td>
+      {{ range .values }}<td class="td">{{ . }}</td>{{ end }}
+    </tr>
+    {{ end }}
+  </table>
+  {{ end }}
+</div>
+{{ end }}
