@@ -13,7 +13,7 @@ import (
 
 // Builders lists the image builders by the operation they draw.
 func Builders() map[string]gamekit.ImageBuilder {
-	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters, "genshin.training": Training, "genshin.monthly": Ledger,
+	return map[string]gamekit.ImageBuilder{"genshin.note": Note, "genshin.abyss": Abyss, "genshin.theater": Combat, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters, "genshin.training": Training, "genshin.talent_stat": Training, "genshin.monthly": Ledger,
 		"genshin.tcg_decks": TCGDecks, "genshin.profile": Profile}
 }
 
@@ -23,6 +23,7 @@ func Queries() map[string]func(time.Time) string {
 	return map[string]func(time.Time) string{
 		"genshin.abyss_floor": func(time.Time) string { return "genshin.abyss" },
 		"genshin.training":    func(time.Time) string { return "genshin.characters" },
+		"genshin.talent_stat": func(time.Time) string { return "genshin.characters" },
 	}
 }
 

@@ -29,6 +29,12 @@
       "input": "none"
     },
     {
+      "name": "genshin.talent_stat",
+      "label": "天赋统计",
+      "command": "天赋统计",
+      "input": "none"
+    },
+    {
       "name": "genshin.character",
       "label": "原神角色详情",
       "command": "面板",

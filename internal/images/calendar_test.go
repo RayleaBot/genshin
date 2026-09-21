@@ -61,3 +61,12 @@ func TestCalendarTalentsOfTheDay(t *testing.T) {
 		t.Errorf("freedom = %v", freedom)
 	}
 }
+
+func TestTalentBooksFollowMiaoDaily(t *testing.T) {
+	for book, want := range map[string][2]any{"「自由」的哲学": {1, "蒙德·自由"}, "「黄金」的哲学": {3, "璃月·黄金"}, "「荣光」的哲学": {3, "至冬·荣光"}, "「新书」的哲学": {0, "新书"}} {
+		week, label := talentBook(book)
+		if week != want[0] || label != want[1] {
+			t.Errorf("talentBook(%s) = %d %s", book, week, label)
+		}
+	}
+}

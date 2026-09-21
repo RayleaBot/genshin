@@ -54,4 +54,20 @@ func TestTrainingFollowsMiao(t *testing.T) {
 	if traveler["fetter"] != 10 || traveler["talents"].([]any)[0].(map[string]any)["level"] != "-" || traveler["grade"] != nil {
 		t.Errorf("traveler = %v", traveler)
 	}
+	// 天赋统计 keeps the characters whose book the weekday names and skips
+	// the scoring; Furina's 正义 books drop on Tuesday and Friday.
+	context.Word = "周二五星天赋统计"
+	image, _ = images.Training(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: list})
+	rows = image.Data["rows"].([]any)
+	book, _ := rows[0].(map[string]any)["book"].(map[string]any)
+	if image.Data["talent"] != true || len(rows) != 1 || book["label"] != "枫丹·正义" || book["week"] != "2/5" || scored != 1 {
+		t.Errorf("talent rows = %v", rows)
+	}
+	context.Word = "周一天赋统计"
+	image, _ = images.Training(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: list})
+	for _, raw := range image.Data["rows"].([]any) {
+		if raw.(map[string]any)["name"] == "芙宁娜" {
+			t.Error("周一 kept Furina's Tuesday book")
+		}
+	}
 }

@@ -1,6 +1,10 @@
 package images
 
 import (
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	gamekit "github.com/RayleaBot/game-plugin-kit"
@@ -34,22 +38,86 @@ var trainingArtwork = [][2]string{
 	{"common-item-fetter", "resources/common/item/fetter.png"},
 }
 
+var (
+	talentWeekWord = regexp.MustCompile(`周([1-6]|一|二|三|四|五|六)`)
+	talentStarWord = regexp.MustCompile(`(五|四|5|4|)+星`)
+	talentFiveWord = regexp.MustCompile(`(五|5)+星`)
+	talentElements = []string{"风", "岩", "雷", "草", "水", "火", "冰"}
+)
+
+// talentBook is a talent book's week group (1 for Monday and Thursday) and
+// miao's label for it, city and name, from miao's daily.js; 0 and the name
+// alone for a book that table does not list.
+func talentBook(book string) (int, string) {
+	name := strings.TrimSuffix(strings.TrimPrefix(book, "「"), "」的哲学")
+	for week, list := range calendarTalentWeeks {
+		if city := slices.Index(list, name); city >= 0 {
+			return week + 1, calendarCities[city] + "·" + name
+		}
+	}
+	return 0, name
+}
+
 // Training draws 练度统计 the way miao's character/profile-stat does: every
 // character in miao's order with level, constellation, friendship, the three
 // talents coloured by their original level, the weapon, and the artifact
-// sets with the pinned scoring's grade and score.
+// sets with the pinned scoring's grade and score. 天赋统计 is the same page's
+// talent mode: the weekly boss material and talent book in place of the
+// weapon and artifacts, today's books highlighted (the day turns at 04:00),
+// with miao's star, element and weekday filters from the command word.
 func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
 	list, _ := result.Data["list"].([]any)
 	if len(list) == 0 {
 		return gamekit.Image{}, false
 	}
+	talent := strings.Contains(context.Word, "天赋") || strings.Contains(context.Word, "技能")
 	resources := &gamekit.ImageResources{Context: context}
 	for _, item := range trainingArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
 	entries, _ := buildRoster(context, resources, list)
+	day := context.Now.In(chinaTime)
+	if day.Hour() < 4 {
+		day = day.AddDate(0, 0, -1)
+	}
+	weekday := (int(day.Weekday()) + 6) % 7
+	weekFilter, star := 0, 0
+	elements := []string{}
+	if talent {
+		if match := talentWeekWord.FindStringSubmatch(context.Word); match != nil {
+			weekFilter = strings.Index("123456", match[1]) + 1
+			if weekFilter == 0 {
+				weekFilter = slices.Index([]string{"一", "二", "三", "四", "五", "六"}, match[1]) + 1
+			}
+		}
+		switch {
+		case strings.Contains(context.Word, "今日") || strings.Contains(context.Word, "今天"):
+			weekFilter = weekday + 1
+		case strings.Contains(context.Word, "明日") || strings.Contains(context.Word, "明天"):
+			weekFilter = (weekday+1)%7 + 1
+		}
+		if talentStarWord.MatchString(context.Word) {
+			star = 4
+			if talentFiveWord.MatchString(context.Word) {
+				star = 5
+			}
+		}
+		for _, element := range talentElements {
+			if strings.Contains(context.Word, element) {
+				elements = append(elements, element)
+			}
+		}
+	}
 	rows := []any{}
 	for _, item := range entries {
+		entry, _ := context.Catalog.Get(item.id)
+		week, label := talentBook(entry.Materials["天赋材料"])
+		if talent {
+			if (star != 0 && item.star != star) || (len(elements) > 0 && !slices.Contains(elements, entry.Element)) ||
+				(weekFilter != 0 && weekFilter != 7 && week != (weekFilter-1)%3+1) {
+				continue
+			}
+		}
 		card := item.card
 		fetter := item.fetter
 		if traveler(item.id) {
@@ -80,6 +148,20 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 				"badge": gamekit.Int(weapon["affix"]) + 1, "name": name}
 		}
 		row["artis"] = card["artis"]
+		if talent {
+			weekText := "-"
+			if week > 0 {
+				weekText = []string{"1/4", "2/5", "3/6"}[week-1]
+			}
+			if label == "" {
+				label = "-"
+			}
+			row["book"] = map[string]any{"today": weekday == 6 || weekday%3+1 == week, "label": label, "week": weekText,
+				"icon":   resources.Artwork("book-"+strconv.Itoa(len(resources.List)), "miao-plugin", "resources/meta-gs/material/talent/"+entry.Materials["天赋材料"]+".webp"),
+				"weekly": resources.Artwork("weekly-"+strconv.Itoa(len(resources.List)), "miao-plugin", "resources/meta-gs/material/weekly/"+entry.Materials["周本材料"]+".webp")}
+			rows = append(rows, row)
+			continue
+		}
 		// Characters with artifacts get the pinned scoring's grade and score.
 		if item.panel != nil && len(item.panel.Equipment) > 0 && context.Score != nil {
 			if scored, err := context.Score(*item.panel); err == nil && scored.ScoreDetail != nil {
@@ -89,6 +171,6 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 		rows = append(rows, row)
 	}
 	return gamekit.Image{Template: "training", Data: map[string]any{
-		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
+		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"), "talent": talent,
 	}, Resources: resources.List}, true
 }

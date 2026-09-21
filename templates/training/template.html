@@ -19,8 +19,8 @@
           <div class="td-talent">A</div>
           <div class="td-talent">E</div>
           <div class="td-talent">Q</div>
-          <div class="td-weapon">武器</div>
-          <div class="td-artis">圣遗物</div>
+          {{ if .talent }}<div class="td">周本</div><div class="td">天赋书</div>{{ else }}<div class="td-weapon">武器</div>
+          <div class="td-artis">圣遗物</div>{{ end }}
         </div>
         {{ range $row := .rows }}
         <div class="avatar tr">
@@ -35,6 +35,10 @@
           <div class="td td-cons"><span class="cons avatar cons-{{ $row.cons }}">{{ $row.cons }}</span></div>
           <div class="td td-fetter"><span class="fetter fetter{{ $row.fetter }}"></span></div>
           {{ range $row.talents }}<div class="td-talent lv{{ .class }} {{ if .plus }}talent-plus{{ end }}">{{ .level }}</div>{{ end }}
+          {{ with $row.book }}
+          <div class="td td-weekly {{ if .today }}today{{ else }}not-today{{ end }}"><div class="item-icon"><span class="img"{{ with .weekly }} data-render-resource="{{ . }}"{{ end }}></span></div></div>
+          <div class="td {{ if .today }}today{{ else }}not-today{{ end }} td-material"><div class="item-icon"><span class="img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span></div>{{ .label }} (周{{ .week }})</div>
+          {{ else }}
           <div class="td td-weapon{{ with $row.weapon }} star{{ .star }}{{ end }}">
             {{ with $row.weapon }}
             <div class="item-banner star{{ .star }}">
@@ -54,6 +58,7 @@
               {{ if $row.grade }}<span class="artis-mark-class class-{{ $row.grade }}">{{ $row.grade }}</span>{{ $row.mark }}{{ else }}<span class="artis-na">暂无面板数据</span>{{ end }}
             </div>
           </div>
+          {{ end }}
         </div>
         {{ end }}
       </div>

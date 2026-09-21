@@ -10,7 +10,7 @@ import (
 // (config/help_default.js); commands miao does not list show none, as miao
 // hides an entry's missing icon.
 var helpIcons = map[string]int{
-	"profile": 61, "characters": 61, "note": 15, "training": 62, "accounts": 10, "select": 10,
+	"profile": 61, "characters": 61, "note": 15, "training": 62, "talent-stat": 62, "accounts": 10, "select": 10,
 	"monthly": 5, "monthly-history": 5, "monthly-save": 5,
 	"character": 66, "build": 66, "showcase": 63, "public-profile": 63, "score": 65,
 	"abyss": 64, "abyss-floor": 64, "theater": 64, "hard_challenge": 64, "challenge-submit": 77,

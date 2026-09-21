@@ -130,6 +130,17 @@
       }
     },
     {
+      "id": "talent-stat",
+      "name": "天赋统计",
+      "description": "全部角色的天赋等级、周本材料与天赋书，可按今日、明日、周几或星级筛选",
+      "usage": "#[今日|明日|周一][五星]天赋统计 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:我的)?(?:今日|今天|明日|明天|周.*)?(?:[五四54]星)?(?:技能|天赋)+(?:汇总|统计|列表)?$"
+      }
+    },
+    {
       "id": "accounts",
       "name": "账号",
       "description": "查看已授权角色与默认 UID",
@@ -1201,6 +1212,7 @@
         "note",
         "characters",
         "training",
+        "talent-stat",
         "accounts",
         "select",
         "monthly",

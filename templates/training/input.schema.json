@@ -7,6 +7,7 @@
     "count": { "type": "integer" },
     "rows": { "type": "array" },
     "updated": { "type": "string" },
+    "talent": { "type": "boolean" },
     "render_footer": { "type": "string" }
   },
   "additionalProperties": false
