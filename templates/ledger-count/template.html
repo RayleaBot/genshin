@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+  <div class="head_box">
+    <div class="id_text">ID: {{ .uid }}</div>
+    <h2 class="day_text">{{ .year_text }}原石统计</h2>
+    <img class="genshin_logo" data-render-resource="genshin-logo" alt="">
+  </div>
+  <div class="data_box">
+    <div class="tab_lable">数据总览</div>
+    <div class="data_line">
+      <div class="data_line_item"><div class="num">{{ .total }}</div><div class="lable">总原石</div></div>
+      <div class="data_line_item"><div class="num">{{ .gacha }}抽</div><div class="lable">总抽数</div></div>
+      <div class="data_line_item"><div class="num">{{ .best_month }}月</div><div class="lable">原石最多</div></div>
+      <div class="data_line_item"><div class="num">{{ .best_value }}</div><div class="lable">{{ .best_month }}月原石</div></div>
+    </div>
+    <div class="data_line">
+      <div class="data_line_item"><div class="num">{{ .mora }}</div><div class="lable">总摩拉</div></div>
+      <div class="data_line_item"><div class="num">{{ .best_mora_month }}月</div><div class="lable">摩拉最多</div></div>
+      <div class="data_line_item">{{ with index .top 0 }}<div class="num">{{ .num }}</div><div class="lable">{{ .action }}</div>{{ end }}</div>
+      <div class="data_line_item">{{ if gt (len .top) 1 }}{{ with index .top 1 }}<div class="num">{{ .num }}</div><div class="lable">{{ .action }}</div>{{ end }}{{ end }}</div>
+    </div>
+  </div>
+  <div class="data_box">
+    <div class="tab_lable">月份统计</div>
+    <div id="chartContainer">
+      {{ with .columns }}
+      <svg width="{{ .width }}" height="{{ .height }}" viewBox="0 0 {{ .width }} {{ .height }}">
+        {{ range .grid }}<line class="grid" x1="{{ $.columns.left }}" x2="{{ $.columns.right }}" y1="{{ .y }}" y2="{{ .y }}"></line><text class="axis-y-label" x="{{ $.columns.axis_x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}
+        {{ range .bars }}<rect class="bar" x="{{ .x }}" y="{{ .y }}" width="{{ .width }}" height="{{ .height }}"></rect><text class="bar-value" x="{{ .center }}" y="{{ .value_y }}">{{ .value }}</text><text class="axis-x-label" x="{{ .center }}" y="{{ $.columns.label_y }}">{{ .label }}</text>{{ end }}
+        <line class="axis-x" x1="{{ .left }}" x2="{{ .right }}" y1="{{ .bottom }}" y2="{{ .bottom }}"></line>
+      </svg>
+      {{ end }}
+    </div>
+  </div>
+  <div class="data_box">
+    <div class="tab_lable">详细统计</div>
+    <div id="chartContainer2">
+      <svg width="470" height="300" viewBox="0 0 470 300">
+        {{ range .ring }}<path d="{{ .path }}" fill="{{ .color }}" stroke="#fff" stroke-width="1"></path>{{ end }}
+        {{ range .ring }}{{ if .label }}<text class="slice-label" x="{{ .x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}{{ end }}
+        <text class="statistic-title" x="160" y="138">总计</text>
+        <text class="statistic-content" x="160" y="170">{{ .sum }}</text>
+        {{ range .legend }}<circle cx="330" cy="{{ .y }}" r="4" fill="{{ .color }}"></circle><text class="legend-name" x="342" y="{{ .y }}">{{ .action }}<tspan class="legend-value" dx="8">{{ .num }}</tspan></text>{{ end }}
+      </svg>
+    </div>
+  </div>
+  {{ if .more }}<div class="hasMore">*该数据只显示最近12个月</div>{{ end }}
+  {{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

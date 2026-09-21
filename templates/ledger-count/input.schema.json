@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "year_text", "total", "gacha", "mora", "best_month", "best_value", "best_mora_month", "top", "columns", "ring", "legend", "sum", "more"],
+  "properties": {
+    "uid": { "type": "string" },
+    "year_text": { "type": "string" },
+    "total": { "type": "string" },
+    "gacha": { "type": "string" },
+    "mora": { "type": "string" },
+    "best_month": { "type": "string" },
+    "best_value": { "type": "string" },
+    "best_mora_month": { "type": "string" },
+    "top": { "type": "array" },
+    "columns": { "type": "object" },
+    "ring": { "type": "array" },
+    "legend": { "type": "array" },
+    "sum": { "type": "string" },
+    "more": { "type": "boolean" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

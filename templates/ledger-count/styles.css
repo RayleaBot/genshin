@@ -1,0 +1,127 @@
+/* Converted from Yunzai html/ledger/ledger-count-gs, with genshinLayout's header style. */
+/* resources/html/ledger/ledger-count-gs.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+body {
+  font-size: 16px;
+  width: 530px;
+  color: #1e1f20;
+  zoom: 1.3;
+}
+.container {
+  width: 530px;
+  padding: 20px 15px 10px 15px;
+  background-color: #f5f6fb;
+}
+.head_box {
+  border-radius: 15px;
+  font-family: tttgbnumber;
+  padding: 10px 20px;
+  position: relative;
+  box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.15);
+}
+.head_box .id_text {
+  font-size: 24px;
+}
+.head_box .day_text {
+  font-size: 20px;
+}
+.head_box .genshin_logo {
+  position: absolute;
+  top: 1px;
+  right: 15px;
+  width: 97px;
+}
+.base_info {
+  position: relative;
+  padding-left: 10px;
+}
+.uid {
+  font-family: tttgbnumber;
+}
+.data_box {
+  border-radius: 15px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 20px 15px 5px 15px;
+  background: #fff;
+  box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+.tab_lable {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  background: #d4b98c;
+  color: #fff;
+  font-size: 14px;
+  padding: 3px 10px;
+  border-radius: 15px 0px 15px 15px;
+  z-index: 20;
+}
+.data_line {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 14px;
+}
+.data_line_item {
+  width: 100px;
+  text-align: center;
+  /*margin: 0 20px;*/
+}
+.num {
+  font-family: tttgbnumber;
+  font-size: 24px;
+}
+.data_box .lable {
+  font-size: 14px;
+  color: #7f858a;
+  line-height: 1;
+  margin-top: 3px;
+}
+#chartContainer {
+  width: 100%;
+  height: 300px;
+}
+#chartContainer2 {
+  width: 100%;
+  height: 300px;
+}
+.logo {
+  font-size: 14px;
+  font-family: "tttgbnumber";
+  text-align: center;
+  color: #7994a7;
+}
+.hasMore {
+  font-size: 12px;
+  margin: 6px 0;
+  color: #7f858a;
+}
+
+/* html/layout/genshin.html */
+.head_box {
+  background-image: var(--render-resource-head-banner, none);
+  background-position: right;
+  background-size: auto 100%;
+  background-repeat: no-repeat;
+  border-radius: 15px 50px 50px 15px;
+}
+
+/* The charts upstream draws with G2Plot. */
+#chartContainer svg, #chartContainer2 svg { display: block; }
+.grid { stroke: #d9d9d9; stroke-width: 1; }
+.axis-x { stroke: #bfbfbf; stroke-width: 1; }
+.axis-y-label { fill: #8c8c8c; font-size: 14px; font-family: "tttgbnumber"; text-anchor: end; dominant-baseline: central; }
+.axis-x-label { fill: #8c8c8c; font-size: 14px; font-family: "tttgbnumber"; text-anchor: middle; dominant-baseline: central; }
+.bar { fill: #5b8ff9; }
+.bar-value { fill: #595959; font-size: 12px; font-family: "tttgbnumber"; text-anchor: middle; }
+.slice-label { fill: #fff; font-size: 12px; font-family: "tttgbnumber"; text-anchor: middle; dominant-baseline: central; }
+.statistic-title { fill: rgba(0, 0, 0, 0.65); font-size: 14px; text-anchor: middle; }
+.statistic-content { fill: rgba(0, 0, 0, 0.85); font-size: 24px; font-family: "tttgbnumber"; text-anchor: middle; }
+.legend-name { fill: #595959; font-size: 16px; dominant-baseline: central; }
+.legend-value { fill: #595959; fill-opacity: 0.65; font-size: 16px; font-family: "tttgbnumber"; }

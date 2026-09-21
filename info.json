@@ -85,6 +85,17 @@
       }
     },
     {
+      "id": "monthly-history",
+      "name": "原石统计",
+      "description": "保存官方仍提供的月份后，统计最近十二个月或指定年份的原石与摩拉",
+      "usage": "#[去年|今年|2025年]原石统计 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:去年|今年|[0-9]{4}年)?(?:原石|札记|月报)统计$"
+      }
+    },
+    {
       "id": "training",
       "name": "练度统计",
       "description": "全部角色的等级、命座、天赋、武器与圣遗物评分",
@@ -476,21 +487,6 @@
         "type": "exact",
         "names": [
           "关闭挑战提醒"
-        ]
-      }
-    },
-    {
-      "id": "monthly-history",
-      "name": "原石统计",
-      "description": "已保存月报的累计收入",
-      "usage": "#原石统计 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "原石统计",
-          "札记统计",
-          "月报统计"
         ]
       }
     },
