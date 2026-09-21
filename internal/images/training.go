@@ -72,8 +72,8 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 			name := item.panel.Weapon.Name
 			if entry, ok := context.Catalog.Get(item.panel.Weapon.ID); ok {
 				name = entry.Name
-				if utf8.RuneCountInString(name) > 4 && len(entry.Aliases) > 0 {
-					name = entry.Aliases[0]
+				if utf8.RuneCountInString(name) > 4 && entry.Abbr != "" {
+					name = entry.Abbr
 				}
 			}
 			row["weapon"] = map[string]any{"star": weapon["star"], "level": weapon["level"], "icon": weapon["icon"], "affix": weapon["affix"],
