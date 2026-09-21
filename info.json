@@ -235,26 +235,13 @@
     {
       "id": "score",
       "name": "原神评分",
-      "description": "按指定规则计算装备评分",
-      "usage": "#原神评分 <角色> <规则编号> [UID]",
+      "description": "按角色专属权重计算装备评分",
+      "usage": "#原神评分 <角色> [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
           "原神评分"
-        ]
-      }
-    },
-    {
-      "id": "score-rules",
-      "name": "原神评分规则",
-      "description": "查看装备评分规则",
-      "usage": "#原神评分规则",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "原神评分规则"
         ]
       }
     },
@@ -1204,7 +1191,6 @@
         "tcg_cards",
         "tcg_decks",
         "score",
-        "score-rules",
         "build",
         "reminder",
         "reminder-stop",

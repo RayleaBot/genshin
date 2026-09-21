@@ -10,9 +10,7 @@
 
 ## 装备评分
 
-评分核心按固定参考原生实现：miao `ArtisMark`/`ArtisMarkCfg` 与 ZZZ `Score`。转换脚本 `game-plugin-kit/scripts/import-score-data.py` 只读取静态数字对象与 JSON，不运行原插件。对应版权许可保留在 `LICENSES/`，评分结果带规则版本。
-
-原神、星铁采用 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的基础权重；角色专属 `artis.js` 已由受限语法转换器编译为 Go，并与原始纯函数进行固定输入对照。绝区零采用 dev 提交 `fb66219cec0294e1834bacdf0033b2d43a9ccaf4` 的十个显式预设；动态模式已原生适配三份角色覆盖函数和条件预设选择，不在插件运行期执行 JS。评分不等于伤害计算或队伍收益。
+评分运行 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、命座、武器与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由相邻库的 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
 
 ## 自动参考计算
 
