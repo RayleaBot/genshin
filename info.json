@@ -997,7 +997,7 @@
       "id": "simulation-fate",
       "name": "定轨",
       "description": "独立参考娱乐模拟，不消耗真实货币",
-      "usage": "#定轨<武器名称|取消>",
+      "usage": "#定轨[武器名称|取消]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
