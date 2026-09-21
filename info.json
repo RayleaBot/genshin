@@ -1170,64 +1170,83 @@
   ],
   "command_groups": [
     {
-      "id": "genshin",
-      "title": "原神",
+      "id": "info",
+      "title": "信息查询",
       "commands": [
         "profile",
         "note",
         "characters",
-        "character",
-        "abyss",
         "accounts",
         "select",
-        "catalog",
-        "showcase",
-        "gacha",
-        "theater",
-        "hard_challenge",
         "monthly",
-        "tcg",
-        "tcg_cards",
-        "tcg_decks",
+        "monthly-history",
+        "monthly-save"
+      ]
+    },
+    {
+      "id": "panel",
+      "title": "角色面板",
+      "commands": [
+        "character",
+        "showcase",
         "score",
         "build",
-        "reminder",
-        "reminder-stop",
-        "growth",
-        "materials",
-        "calendar",
-        "group-settings",
-        "rank-submit",
-        "rank-withdraw",
-        "rank",
-        "simulation",
-        "simulation-history",
-        "simulation-reset",
-        "simulation-fate",
-        "signin",
-        "signin-status",
-        "signin-task",
+        "team-build",
         "public-profile",
+        "cloud-private-panel",
         "cloud-verify",
+        "original-image"
+      ]
+    },
+    {
+      "id": "records",
+      "title": "战绩",
+      "commands": [
+        "abyss",
+        "theater",
+        "hard_challenge",
+        "tcg",
+        "tcg_cards",
+        "tcg_decks"
+      ]
+    },
+    {
+      "id": "gacha",
+      "title": "抽卡",
+      "commands": [
+        "gacha",
         "gacha-background",
         "gacha-schedule",
         "gacha-progress",
         "gacha-stop",
-        "team-build",
-        "banner-history",
         "gacha-versions",
-        "cloud-private-panel",
-        "community-status",
-        "community-sign",
-        "cloud-game-status",
-        "cloud-game-sign",
-        "community-task",
-        "community-stop",
-        "cloud-game-task",
-        "cloud-game-stop",
-        "codes",
-        "redeem",
-        "billing",
+        "calendar",
+        "banner-history",
+        "simulation",
+        "simulation-history",
+        "simulation-reset",
+        "simulation-fate"
+      ]
+    },
+    {
+      "id": "wiki",
+      "title": "图鉴与养成",
+      "commands": [
+        "catalog",
+        "growth",
+        "materials",
+        "blueprint",
+        "guides",
+        "map",
+        "enemy",
+        "image-library",
+        "photo"
+      ]
+    },
+    {
+      "id": "news",
+      "title": "资讯",
+      "commands": [
         "news",
         "info",
         "events",
@@ -1237,17 +1256,57 @@
         "content-progress",
         "subscribe",
         "unsubscribe",
-        "guides",
-        "map",
-        "enemy",
-        "blueprint",
-        "photo",
-        "image-library",
-        "original-image",
+        "codes"
+      ]
+    },
+    {
+      "id": "sign",
+      "title": "签到与米游社",
+      "commands": [
+        "signin",
+        "signin-status",
+        "signin-task",
+        "community-status",
+        "community-sign",
+        "community-task",
+        "community-stop",
+        "cloud-game-status",
+        "cloud-game-sign",
+        "cloud-game-task",
+        "cloud-game-stop",
+        "redeem",
+        "billing"
+      ]
+    },
+    {
+      "id": "remind",
+      "title": "提醒",
+      "commands": [
+        "reminder",
+        "reminder-stop",
+        "challenge-remind",
+        "challenge-stop"
+      ]
+    },
+    {
+      "id": "rank",
+      "title": "排名",
+      "commands": [
+        "rank-submit",
+        "rank",
+        "rank-withdraw",
+        "challenge-submit",
+        "challenge-rank",
+        "challenge-withdraw",
+        "challenge-clear"
+      ]
+    },
+    {
+      "id": "fun",
+      "title": "互动",
+      "commands": [
         "interaction",
         "poke",
-        "help",
-        "version",
         "role-cards",
         "role-cards-submit",
         "role-cards-exchange",
@@ -1256,17 +1315,12 @@
       ]
     },
     {
-      "id": "challenges-and-history",
-      "title": "挑战与月报历史",
+      "id": "manage",
+      "title": "帮助与设置",
       "commands": [
-        "challenge-submit",
-        "challenge-rank",
-        "challenge-withdraw",
-        "challenge-clear",
-        "challenge-remind",
-        "challenge-stop",
-        "monthly-history",
-        "monthly-save"
+        "help",
+        "version",
+        "group-settings"
       ]
     }
   ],
