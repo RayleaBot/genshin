@@ -23,11 +23,25 @@ var manifest []byte
 //go:embed calc
 var calc embed.FS
 
+// data holds this game's fixed reference data: materials, banners and
+// birthdays, plus the optional feature data listed in Kit.
+//
+//go:embed data
+var data embed.FS
+
+func dataFile(name string) []byte {
+	raw, err := data.ReadFile("data/" + name)
+	if err != nil {
+		panic(err) // the embedded file names are fixed at build time
+	}
+	return raw
+}
+
 // Kit is everything the shared game library needs from this plugin.
 func Kit() gamekit.Assets {
 	files, err := fs.Sub(calc, "calc")
 	if err != nil {
 		panic(err) // the embedded directory name is fixed at build time
 	}
-	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: manifest, Calc: miao.Profile(files)}
+	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: manifest, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json")}
 }
