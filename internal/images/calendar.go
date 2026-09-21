@@ -115,6 +115,14 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	for _, item := range calendarArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
+	// The banners and icons download together on the first draw.
+	urls := []any{}
+	for _, group := range calendar.Announcements.Groups {
+		for _, ann := range calendarGroup(group) {
+			urls = append(urls, ann["banner"], ann["tag_icon"])
+		}
+	}
+	resources.Prefetch("mihoyo", urls...)
 	place := func(ann map[string]any, target *[]calendarItem, act bool, kind string) {
 		id, title := gamekit.Text(ann["ann_id"]), gamekit.Text(ann["title"])
 		if slices.Contains(calendarIgnoreIDs, id) || calendarIgnore.MatchString(title) {
