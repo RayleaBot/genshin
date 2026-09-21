@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+<div class="top">
+  <div class="role-image"{{ with .player.head }} data-render-resource="{{ . }}"{{ end }}></div>
+  <div class="role-text">
+    <p>{{ .player.nickname }}<span>Lv.{{ .player.level }}</span></p>
+    <p>UID: {{ .player.uid }}</p>
+  </div>
+</div>
+<div class="paneal_box">
+  <div class="paneal-title">{{ .difficulty }}模式<span class="heraldry h{{ .heraldry }}">{{ .start_time }}</span></div>
+  <div class="paneal">
+    <div class="paneal_txt">最佳记录<strong>第{{ .max_round }}幕</strong></div>
+    <div class="paneal_txt">明星挑战星章
+      <div class="medals">{{ range .medals }}<span class="medal-{{ . }}"></span>{{ end }}</div>
+    </div>
+    <div class="paneal_txt">消耗「幻剧之花」<strong><span class="flower"></span>{{ .coins }}</strong></div>
+    <div class="paneal_txt">触发场外观众声援<strong>{{ .bonus }}次</strong></div>
+    <div class="paneal_txt">助演角色支援其他玩家<strong>{{ .rent }}次</strong></div>
+  </div>
+</div>
+<div class="data_box">
+  {{ range .rounds }}
+  <div class="round">
+    {{ if .tarot }}
+    <div class="round_title"><span class="medal-{{ if .medal }}1{{ else }}0{{ end }}"></span>圣牌挑战{{ .tarot_no }}</div>
+    {{ else }}
+    <div class="round_title"><span class="medal-{{ if .medal }}1{{ else }}0{{ end }}"></span>第{{ .round }}幕</div>
+    {{ end }}
+    <span class="round_time">{{ .finish }}</span>
+    <div class="round_avatars">
+      {{ range .cast }}
+      <div class="round_avatar">
+        <div class="bg{{ .rarity }}" style="height: 80px;">
+          <img{{ with .face }} data-render-resource="{{ . }}"{{ end }} alt="">
+          <span class="element"{{ with .element }} data-render-resource="{{ . }}"{{ end }}></span>
+          {{ if .type_name }}<span class="type t{{ .type }}">{{ .type_name }}</span>{{ end }}
+        </div>
+        <div class="level">LV.{{ .level }}</div>
+      </div>
+      {{ end }}
+    </div>
+    {{ if .buffs }}<div class="round_buffs">{{ range .buffs }}<img data-render-resource="{{ . }}" alt="">{{ end }}</div>{{ end }}
+    {{ if .cards }}<div class="round_buffs">{{ range .cards }}<img data-render-resource="{{ . }}" alt="">{{ end }}</div>{{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="footer">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

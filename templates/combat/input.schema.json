@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["player", "difficulty", "max_round", "medals", "rounds"],
+  "properties": {
+    "player": { "type": "object" },
+    "difficulty": { "type": "string" },
+    "heraldry": { "type": "string" },
+    "start_time": { "type": "string" },
+    "max_round": { "type": "string" },
+    "medals": { "type": "array" },
+    "coins": { "type": "string" },
+    "bonus": { "type": "string" },
+    "rent": { "type": "string" },
+    "rounds": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

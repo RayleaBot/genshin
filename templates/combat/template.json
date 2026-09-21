@@ -1,0 +1,11 @@
+{
+  "id": "combat",
+  "name": "原神幻想真境剧诗",
+  "description": "剧诗命令的图片，布局参照 Yunzai 原神插件 html/abyss/combat",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 562,
+  "height": 2400
+}
