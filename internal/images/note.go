@@ -3,7 +3,6 @@
 package images
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -34,25 +33,27 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 	row := func(icon, name, detail, value string, alert bool) map[string]any {
 		return map[string]any{"icon": "icon-" + icon, "name": name, "detail": detail, "value": value, "alert": alert}
 	}
-	ratio := func(current, maximum string) string { return text(data[current]) + "/" + text(data[maximum]) }
+	ratio := func(current, maximum string) string {
+		return gamekit.Text(data[current]) + "/" + gamekit.Text(data[maximum])
+	}
 
 	resin := "树脂已完全恢复"
-	if seconds := integer(data["resin_recovery_time"]); seconds > 0 {
+	if seconds := gamekit.Int(data["resin_recovery_time"]); seconds > 0 {
 		resin = "将于" + clock(now, seconds, " ") + " 全部恢复"
 	}
 
 	coin := "存储已满"
-	if seconds := integer(data["home_coin_recovery_time"]); seconds > 0 {
+	if seconds := gamekit.Int(data["home_coin_recovery_time"]); seconds > 0 {
 		if days := seconds / 86400; days > 0 {
 			coin = fmt.Sprintf("预计%d天%d小时%d分钟后达到上限", days, seconds/3600%24, seconds/60%60)
 		} else {
 			coin = "预计" + clock(now, seconds, "") + "后达到上限"
 		}
 	}
-	coinFull := integer(data["max_home_coin"]) > 0 && float64(integer(data["current_home_coin"]))/float64(integer(data["max_home_coin"])) > 0.9
+	coinFull := gamekit.Int(data["max_home_coin"]) > 0 && float64(gamekit.Int(data["current_home_coin"]))/float64(gamekit.Int(data["max_home_coin"])) > 0.9
 
 	commission := "今日委托奖励未领取"
-	if received, _ := data["is_extra_task_reward_received"].(bool); received || integer(data["is_extra_task_reward_received"]) == 1 {
+	if received, _ := data["is_extra_task_reward_received"].(bool); received || gamekit.Int(data["is_extra_task_reward_received"]) == 1 {
 		commission = "今日委托奖励已领取"
 	}
 
@@ -61,7 +62,7 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		earliest := -1
 		for _, raw := range expeditions {
 			item, _ := raw.(map[string]any)
-			if remained := integer(item["remained_time"]); earliest < 0 || remained < earliest {
+			if remained := gamekit.Int(item["remained_time"]); earliest < 0 || remained < earliest {
 				earliest = remained
 			}
 		}
@@ -72,7 +73,7 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 	}
 
 	weekly := "周本树脂减半次数已用"
-	remaining := integer(data["remain_resin_discount_num"])
+	remaining := gamekit.Int(data["remain_resin_discount_num"])
 	if remaining <= 0 {
 		weekly = "周本已完成"
 	}
@@ -86,7 +87,7 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		} else {
 			wait := ""
 			for _, part := range [][2]string{{"Day", "天"}, {"Hour", "小时"}, {"Minute", "分钟"}} {
-				if value := integer(recovery[part[0]]); value > 0 {
+				if value := gamekit.Int(recovery[part[0]]); value > 0 {
 					wait += strconv.Itoa(value) + part[1]
 				}
 			}
@@ -100,7 +101,7 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		row("委托", "每日委托任务", commission, ratio("finished_task_num", "total_task_num"), false),
 		row("派遣", "探索派遣", expedition, ratio("current_expedition_num", "max_expedition_num"), false),
 		// Upstream counts the used discounts from a fixed three.
-		row("周本", "值得铭记的强敌", weekly, fmt.Sprintf("%d/%s", 3-remaining, text(data["resin_discount_num_limit"])), false),
+		row("周本", "值得铭记的强敌", weekly, fmt.Sprintf("%d/%s", 3-remaining, gamekit.Text(data["resin_discount_num_limit"])), false),
 		row("参量质变仪", "参量质变仪", transformerDetail, transformerValue, transformerReady),
 	}
 	resources := []rayleabot.RenderImageResource{}
@@ -128,36 +129,4 @@ func clock(now time.Time, seconds int, sameDay string) string {
 		return "明天 " + end.Format("15:04")
 	}
 	return sameDay + end.Format("15:04")
-}
-
-// integer and text read official numbers, which service calls decode as
-// json.Number.
-func integer(value any) int {
-	switch typed := value.(type) {
-	case json.Number:
-		parsed, _ := typed.Float64()
-		return int(parsed)
-	case float64:
-		return int(typed)
-	case int:
-		return typed
-	case string:
-		parsed, _ := strconv.Atoi(typed)
-		return parsed
-	}
-	return 0
-}
-
-func text(value any) string {
-	switch typed := value.(type) {
-	case json.Number:
-		return typed.String()
-	case float64:
-		return strconv.FormatFloat(typed, 'f', -1, 64)
-	case string:
-		return typed
-	case nil:
-		return "0"
-	}
-	return fmt.Sprint(value)
 }
