@@ -161,6 +161,11 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 			}
 			all = append(all, map[string]any{"class": class(attr.Key), "eff": attr.Eff, "title": name, "value": attr.Value})
 		}
+		// Upstream shows exactly nine cells: the nine best, padded when fewer.
+		all = all[:min(len(all), 9)]
+		for len(all) < 9 {
+			all = append(all, map[string]any{})
+		}
 		data["rating"] = map[string]any{"mark": detail.Mark, "grade": detail.Grade, "rule": detail.Title, "all": all}
 		pieces := []any{}
 		for slot := 1; slot <= 5; slot++ {

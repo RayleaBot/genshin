@@ -63,7 +63,7 @@
         <div class="arti-all-attr">
           <ul class="detail attr arti-attr">
             {{ range .all }}
-            <li class="{{ .class }}"><span class="title">{{ if .eff }}<i class="eff">{{ .eff }}</i>{{ end }} {{ .title }}</span><span class="val">+{{ .value }}</span></li>
+            {{ if .title }}<li class="{{ .class }}"><span class="title">{{ if .eff }}<i class="eff">{{ .eff }}</i>{{ end }} {{ .title }}</span><span class="val">+{{ .value }}</span></li>{{ else }}<li></li>{{ end }}
             {{ end }}
           </ul>
         </div>
