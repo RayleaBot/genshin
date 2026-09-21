@@ -7,6 +7,7 @@ import (
 
 	gamekit "github.com/RayleaBot/game-plugin-kit"
 	"github.com/RayleaBot/game-plugin-kit/reference/miao"
+	plugin "github.com/RayleaBot/plugin-genshin"
 )
 
 //go:embed catalog.json
@@ -14,9 +15,6 @@ var catalog []byte
 
 //go:embed game.json
 var game []byte
-
-//go:embed manifest.json
-var manifest []byte
 
 // calc holds the pinned upstream calculation scripts, see calc/catalog.json.
 //
@@ -43,5 +41,5 @@ func Kit() gamekit.Assets {
 	if err != nil {
 		panic(err) // the embedded directory name is fixed at build time
 	}
-	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: manifest, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json")}
+	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json")}
 }
