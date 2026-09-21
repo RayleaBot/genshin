@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["pool", "first_time", "last_time", "logs"],
+  "properties": {
+    "pool": { "type": "string" },
+    "first_time": { "type": "string" },
+    "last_time": { "type": "string" },
+    "logs": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

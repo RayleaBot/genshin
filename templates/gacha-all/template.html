@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+{{ range .logs }}
+<div class="info_box">
+  <div class="head_box">
+    <div class="id_text">ID: {{ .uid }}</div>
+    <h2 class="day_text">{{ .all }}抽 <span class="label label_{{ $.pool }}">{{ .pool_name }}池</span></h2>
+    <img class="genshin_logo" data-render-resource="logo" alt="">
+  </div>
+  <div class="data_box">
+    <div class="tab_lable">数据总览</div>
+    {{ range .lines }}
+    <div class="data_line">
+      {{ range . }}
+      <div class="data_line_item">
+        <div class="num">{{ .num }}<span class="unit">{{ .unit }}</span></div>
+        <div class="lable">{{ .label }}</div>
+      </div>
+      {{ end }}
+    </div>
+    {{ end }}
+    <div class="line_box">
+      <span class="line"></span>
+      <span class="text">五星历史 {{ $.first_time }} ~ {{ $.last_time }}</span>
+      <span class="line"></span>
+    </div>
+    <div class="card_list">
+      {{ range .cards }}
+      {{ if .null }}
+      <div class="item isNull star5 bad"><div class="role"></div><div class="num_name"></div></div>
+      {{ else }}
+      <div class="item star5 {{ .class }}">
+        {{ if .up }}<span class="minimum">UP</span>{{ end }}
+        <span class="role_img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span>
+        <div class="num_name {{ .class }}">{{ .num }}</div>
+      </div>
+      {{ end }}
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}
+{{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

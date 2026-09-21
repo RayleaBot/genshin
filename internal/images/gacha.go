@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	gamekit "github.com/RayleaBot/game-plugin-kit"
 	"github.com/RayleaBot/game-plugin-kit/gacha"
 )
@@ -75,10 +75,73 @@ func gachaPool(word string) (string, string) {
 	return "301", "角色"
 }
 
-// Gacha draws one pool's record the way Yunzai's gacha-log does: the summary
-// lines for the pool type and every five-star with its pull count.
+// gachaArtwork maps the images the gacha pages name to their paths;
+// genshinLayout's header shows 闲云's banner from miao.
+var gachaArtwork = [][3]string{
+	{"tttgbnumber", "yunzai-genshin", "resources/font/tttgbnumber.ttf"},
+	{"HYWenHei-55W", "yunzai-genshin", "resources/font/HYWenHei-55W.ttf"},
+	{"img-other-bg4", "yunzai-genshin", "resources/img/other/bg4.png"},
+	{"img-other-bg5", "yunzai-genshin", "resources/img/other/bg5.png"},
+	{"logo", "yunzai-genshin", "resources/img/other/原神.png"},
+	{"head-img", "miao-plugin", "resources/meta-gs/character/闲云/imgs/banner.webp"},
+}
+
+// gachaAllPools are the pools upstream's getAllGcLogData reads in turn; the
+// collaboration pools hold no Genshin records.
+var gachaAllPools = [][2]string{{"301", "角色"}, {"302", "武器"}, {"500", "集录"}, {"200", "常驻"}}
+
+// Gacha draws the gacha record the way Yunzai does: one pool with
+// gacha-log's summary lines for the pool type and every five-star with its
+// pull count, or, for 全部记录, gacha-all-log's block for every pool with
+// records, each five-star row padded to the longest.
 func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Image, bool) {
+	resources := &gamekit.ImageResources{Context: context}
+	for _, item := range gachaArtwork {
+		resources.Artwork(item[0], item[1], item[2])
+	}
+	if strings.Contains(image.Word, "全部") {
+		logs := []map[string]any{}
+		most := 0
+		for _, pool := range gachaAllPools {
+			if log, ok := gachaLog(context, image, resources, pool[0], pool[1]); ok {
+				logs = append(logs, log)
+				most = max(most, len(log["cards"].([]any)))
+			}
+		}
+		if len(logs) == 0 {
+			return gamekit.Image{}, false
+		}
+		// Upstream reads the label colour, the five-star period and the UP
+		// badges' pool from the first block for every block.
+		first := logs[0]
+		list := []any{}
+		for _, log := range logs {
+			cards := log["cards"].([]any)
+			for index, raw := range cards {
+				card := raw.(map[string]any)
+				card["up"] = card["rate_up"] == true && first["pool_name"] == "角色"
+				cards[index] = card
+			}
+			for len(cards) < most {
+				cards = append(cards, map[string]any{"null": true})
+			}
+			log["cards"] = cards
+			list = append(list, log)
+		}
+		return gamekit.Image{Template: "gacha-all", Data: map[string]any{"pool": first["pool"], "first_time": first["first_time"], "last_time": first["last_time"], "logs": list},
+			Resources: resources.List}, true
+	}
 	pool, poolName := gachaPool(image.Word)
+	log, ok := gachaLog(context, image, resources, pool, poolName)
+	if !ok {
+		return gamekit.Image{}, false
+	}
+	return gamekit.Image{Template: "gacha", Data: log, Resources: resources.List}, true
+}
+
+// gachaLog is upstream's analyse and randData for one pool: its pull count,
+// summary lines and five-stars; false when the pool has no records.
+func gachaLog(context gamekit.ImageContext, image gamekit.GachaImage, resources *gamekit.ImageResources, pool, poolName string) (map[string]any, bool) {
 	records := []gacha.Record{}
 	for _, record := range image.Archive.Records {
 		if gacha.Pool("genshin", record.GachaType) == pool {
@@ -86,7 +149,7 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 		}
 	}
 	if len(records) == 0 {
-		return gamekit.Image{}, false
+		return nil, false
 	}
 	// Upstream reads the log newest first; record IDs grow with time.
 	sort.Slice(records, func(i, j int) bool {
@@ -216,20 +279,6 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 		}
 	}
 
-	resources := []rayleabot.RenderImageResource{}
-	add := func(id, source, name string) bool {
-		resource, ok := context.ArtworkResource(id, source, name)
-		if ok {
-			resources = append(resources, resource)
-		}
-		return ok
-	}
-	add("tttgbnumber", "yunzai-genshin", "resources/font/tttgbnumber.ttf")
-	add("HYWenHei-55W", "yunzai-genshin", "resources/font/HYWenHei-55W.ttf")
-	add("img-other-bg4", "yunzai-genshin", "resources/img/other/bg4.png")
-	add("img-other-bg5", "yunzai-genshin", "resources/img/other/bg5.png")
-	add("logo", "yunzai-genshin", "resources/img/other/原神.png")
-	add("head-img", "miao-plugin", "resources/meta-gs/character/闲云/imgs/banner.webp")
 	weaponTypes := map[string]string{}
 	if context.Game.Calc != nil {
 		for _, weapon := range context.Game.Calc.Metadata().Weapons {
@@ -259,17 +308,14 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 			if item.record.ItemType == "武器" {
 				path = "resources/meta-gs/weapon/" + weaponTypes[item.record.Name] + "/" + item.record.Name + "/icon.webp"
 			}
-			icon = "icon-" + strconv.Itoa(len(icons))
-			if !add(icon, "miao-plugin", path) {
-				icon = ""
-			}
+			icon = resources.Artwork("icon-"+strconv.Itoa(len(resources.List)), "miao-plugin", path)
 			icons[item.record.Name] = icon
 		}
-		cards = append(cards, map[string]any{"class": class, "up": item.up && poolName == "角色", "icon": icon, "num": item.num})
+		cards = append(cards, map[string]any{"class": class, "up": item.up && poolName == "角色", "rate_up": item.up, "icon": icon, "num": item.num})
 	}
 	first, last := records[len(records)-1].Time, records[0].Time
-	return gamekit.Image{Template: "gacha", Data: map[string]any{
+	return map[string]any{
 		"uid": image.UID, "all": all, "pool": pool, "pool_name": poolName, "lines": lines, "cards": cards,
 		"first_time": first[:min(len(first), 16)], "last_time": last[:min(len(last), 16)],
-	}, Resources: resources}, true
+	}, true
 }

@@ -52,3 +52,32 @@ func TestGachaRateUpPeriods(t *testing.T) {
 		t.Error("rate-up periods do not follow upstream")
 	}
 }
+
+func TestGachaAllFollowsYunzai(t *testing.T) {
+	records := []gacha.Record{}
+	add := func(count int, pool, name, rank, itemType string) {
+		for range count {
+			records = append(records, gacha.Record{ID: strconv.Itoa(1000 + len(records)), GachaType: pool, Name: name, Rank: rank, ItemType: itemType, Time: "2024-05-01 10:00:00"})
+		}
+	}
+	// Two five-stars in the character pool, one in the weapon pool, none elsewhere.
+	add(30, "301", "黎明神剑", "3", "武器")
+	add(1, "301", "胡桃", "5", "角色")
+	add(20, "301", "黎明神剑", "3", "武器")
+	add(1, "301", "莫娜", "5", "角色")
+	add(40, "302", "黎明神剑", "3", "武器")
+	add(1, "302", "护摩之杖", "5", "武器")
+	image, ok := Gacha(gamekit.ImageContext{}, gamekit.GachaImage{UID: "100000001", Word: "全部记录", Archive: gacha.Archive{Records: records}})
+	if !ok || image.Template != "gacha-all" || image.Data["pool"] != "301" {
+		t.Fatalf("image = %v", image.Data)
+	}
+	logs := image.Data["logs"].([]any)
+	if len(logs) != 2 {
+		t.Fatalf("logs = %d", len(logs))
+	}
+	// Every block's five-star row is padded to the longest.
+	weapon := logs[1].(map[string]any)["cards"].([]any)
+	if weapon[0].(map[string]any)["null"] != nil || weapon[1].(map[string]any)["null"] != true {
+		t.Errorf("weapon cards = %v", weapon)
+	}
+}
