@@ -8,6 +8,7 @@ import (
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/game-plugin-kit/reference"
 )
 
 // panelArtwork maps the miao images named in the panel stylesheet to their
@@ -139,8 +140,8 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 		"elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"talents": talents, "attrs": attrs, "cons_icons": cons,
 		"data_source": "mys", "update_time": context.Now.In(chinaTime).Format("2006-01-02 15:04:05"),
-		"artifact_hint": context.Game.Prefix + gamekit.Text(record.Data["abbr"]) + "圣遗物",
-		"damage_hint":   context.Game.Prefix + gamekit.Text(record.Data["abbr"]) + "伤害",
+		"artifact_hint": context.Game.Prefix + abbreviation(record) + "圣遗物",
+		"damage_hint":   context.Game.Prefix + abbreviation(record) + "伤害",
 	}
 	if detail != nil {
 		class := func(key string) string {
@@ -286,4 +287,13 @@ func comma(value float64) string {
 		return "-" + digits
 	}
 	return digits
+}
+
+// abbreviation is the short name upstream uses in command hints, falling back
+// to the full name as miao's character model does.
+func abbreviation(record reference.Character) string {
+	if abbr := gamekit.Text(record.Data["abbr"]); abbr != "" {
+		return abbr
+	}
+	return record.Name
 }
