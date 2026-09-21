@@ -1,0 +1,93 @@
+package images
+
+import (
+	"regexp"
+
+	gamekit "github.com/RayleaBot/game-plugin-kit"
+)
+
+// tcgArtwork maps the images the Genius Invokation TCG pages name to
+// Yunzai's paths; the digits serve both character HP and dice costs.
+var tcgArtwork = [][2]string{
+	{"tttgbnumber", "resources/font/tttgbnumber.ttf"},
+	{"genshin-logo", "resources/img/other/原神.png"},
+	{"deck-frame", "resources/img/deck/边框.png"},
+	{"deck-container", "resources/img/deck/容器.png"},
+}
+
+var tcgDeckWord = regexp.MustCompile(`([0-9]{1,2})$`)
+
+// tcgResources adds a Yunzai deck image the first time a page names it.
+type tcgResources struct{ gamekit.ImageResources }
+
+func newTCGResources(context gamekit.ImageContext) *tcgResources {
+	resources := &tcgResources{gamekit.ImageResources{Context: context}}
+	for _, item := range tcgArtwork {
+		resources.Artwork(item[0], "yunzai-genshin", item[1])
+	}
+	return resources
+}
+
+// deck is one of Yunzai's img/deck images, a digit or a dice cost type.
+func (r *tcgResources) deck(name string) string {
+	return r.Artwork("deck-"+name, "yunzai-genshin", "resources/img/deck/"+name+".png")
+}
+
+// characters are a list's character cards with their HP.
+func (r *tcgResources) characters(list []any) []any {
+	cards := []any{}
+	for _, raw := range list {
+		card, _ := raw.(map[string]any)
+		cards = append(cards, map[string]any{"hp": r.deck(gamekit.Text(card["hp"])), "image": r.URL("mihoyo", card["image"])})
+	}
+	return cards
+}
+
+// actions are a list's action cards with their dice costs.
+func (r *tcgResources) actions(list []any) []any {
+	cards := []any{}
+	for _, raw := range list {
+		card, _ := raw.(map[string]any)
+		costs := []any{}
+		costList, _ := card["action_cost"].([]any)
+		for _, rawCost := range costList {
+			cost, _ := rawCost.(map[string]any)
+			costs = append(costs, map[string]any{"type": r.deck(gamekit.Text(cost["cost_type"])), "value": r.deck(gamekit.Text(cost["cost_value"]))})
+		}
+		cards = append(cards, map[string]any{"num": gamekit.Text(card["num"]), "costs": costs, "image": r.URL("mihoyo", card["image"])})
+	}
+	return cards
+}
+
+// TCGDecks draws 七圣召唤查询牌组 the way Yunzai's deckList and deck pages
+// do: every deck's character cards with a note naming the command for it, or,
+// when the command ends in a deck number, that deck's character cards and
+// action cards with their costs and copies. Upstream answers in text when the
+// number names no deck.
+func TCGDecks(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+	decks, _ := result.Data["deck_list"].([]any)
+	resources := newTCGResources(context)
+	data := map[string]any{"uid": result.Role.UID, "nickname": gamekit.Text(result.Data["nickname"]), "level": gamekit.Text(result.Data["level"])}
+	if match := tcgDeckWord.FindStringSubmatch(context.Word); match != nil {
+		for _, raw := range decks {
+			deck, _ := raw.(map[string]any)
+			if gamekit.Text(deck["id"]) != match[1] {
+				continue
+			}
+			characters, _ := deck["avatar_cards"].([]any)
+			actions, _ := deck["action_cards"].([]any)
+			data["deck"] = map[string]any{"characters": resources.characters(characters), "actions": resources.actions(actions)}
+			return gamekit.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
+		}
+		return gamekit.Image{}, false
+	}
+	list := []any{}
+	for _, raw := range decks {
+		deck, _ := raw.(map[string]any)
+		characters, _ := deck["avatar_cards"].([]any)
+		id := gamekit.Text(deck["id"])
+		list = append(list, map[string]any{"id": id, "command": context.Game.Prefix + "七圣查询卡组" + id, "characters": resources.characters(characters)})
+	}
+	data["decks"] = list
+	return gamekit.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
+}

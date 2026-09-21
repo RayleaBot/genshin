@@ -85,6 +85,28 @@
       }
     },
     {
+      "id": "tcg_cards",
+      "name": "七圣查询牌",
+      "description": "七圣召唤已有的角色牌与行动牌",
+      "usage": "#七圣查询[角色|行动]牌 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:七圣(?:召唤)?查询(?:角色|行动)?(?:卡)?牌(?:列表)?|牌库)$"
+      }
+    },
+    {
+      "id": "tcg_decks",
+      "name": "七圣查询牌组",
+      "description": "七圣召唤全部牌组，带编号时查看该牌组",
+      "usage": "#七圣查询牌组[编号] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:七圣(?:召唤)?查询(?:牌|卡)组(?:列表)?(?:[0-9]{1,2})?|牌组)$"
+      }
+    },
+    {
       "id": "monthly-history",
       "name": "原石统计",
       "description": "保存官方仍提供的月份后，统计最近十二个月或指定年份的原石与摩拉",
@@ -177,42 +199,6 @@
         "type": "exact",
         "names": [
           "七圣"
-        ]
-      }
-    },
-    {
-      "id": "tcg_cards",
-      "name": "七圣查询牌",
-      "description": "七圣牌库",
-      "usage": "#七圣查询牌 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "七圣查询牌",
-          "七圣查询卡牌",
-          "七圣查询角色牌",
-          "七圣查询行动牌",
-          "七圣召唤查询牌",
-          "七圣查询牌列表",
-          "牌库"
-        ]
-      }
-    },
-    {
-      "id": "tcg_decks",
-      "name": "七圣查询牌组",
-      "description": "七圣牌组",
-      "usage": "#七圣查询牌组 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "七圣查询牌组",
-          "七圣查询卡组",
-          "七圣召唤查询牌组",
-          "七圣查询牌组列表",
-          "牌组"
         ]
       }
     },

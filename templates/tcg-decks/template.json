@@ -1,0 +1,11 @@
+{
+  "id": "tcg-decks",
+  "name": "原神七圣召唤牌组",
+  "description": "七圣召唤查询牌组命令的图片，布局参照 Yunzai 原神插件 deckList 与 deck",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 930,
+  "height": 4000
+}
