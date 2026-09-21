@@ -1,0 +1,11 @@
+{
+  "id": "hard-challenge",
+  "name": "原神幽境危战",
+  "description": "幽境危战命令的战绩图片，布局参照 miao-plugin stat/hard-summary",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1164,
+  "height": 3000
+}

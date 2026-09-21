@@ -1,0 +1,124 @@
+package images
+
+import (
+	"strconv"
+
+	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/game-plugin-kit/reference"
+)
+
+// avatarCards builds miao's common avatar-card for the requester's own
+// characters: face and gacha portrait, level and constellation, talents with
+// their crown and bonus marks, the weapon with its refinement and the
+// artifact sets. Characters the query does not return are left out.
+type avatarCards struct {
+	resources *gamekit.ImageResources
+	records   map[string]reference.Character
+	weapons   map[string]reference.Weapon
+	panels    map[string]gamekit.CharacterPanel
+}
+
+func newAvatarCards(context gamekit.ImageContext, resources *gamekit.ImageResources, ids []string) *avatarCards {
+	cards := &avatarCards{resources: resources, records: map[string]reference.Character{}, weapons: map[string]reference.Weapon{}, panels: map[string]gamekit.CharacterPanel{}}
+	if context.Game.Calc != nil {
+		metadata := context.Game.Calc.Metadata()
+		for _, record := range metadata.Characters {
+			cards.records[record.ID] = record
+		}
+		for _, weapon := range metadata.Weapons {
+			cards.weapons[weapon.ID] = weapon
+		}
+	}
+	if context.Query != nil && len(ids) > 0 {
+		list := []any{}
+		for _, id := range ids {
+			list = append(list, id)
+		}
+		if result, err := context.Query("genshin.character", map[string]any{"character_ids": list}); err == nil {
+			for _, panel := range gamekit.NormalizePanels("genshin", result, context.Catalog) {
+				cards.panels[panel.ID] = panel
+			}
+		}
+	}
+	return cards
+}
+
+// miao adds a downloaded miao-plugin image under a generated ID.
+func (c *avatarCards) miao(name string) string {
+	return c.resources.Artwork("miao-"+strconv.Itoa(len(c.resources.List)), "miao-plugin", name)
+}
+
+// base is what every card shows, from the character's catalog record.
+func (c *avatarCards) base(id string) map[string]any {
+	record := c.records[id]
+	star := gamekit.Int(record.Data["star"])
+	if star != 4 {
+		star = 5
+	}
+	path := "resources/meta-gs/character/" + record.Name + "/imgs/"
+	return map[string]any{"known": record.Name != "", "name": record.Name, "abbr": abbreviation(record), "elem": record.Element, "star": star,
+		"face": c.miao(path + "face.webp"), "gacha": c.miao(path + "gacha.webp")}
+}
+
+// own is the card of the requester's character, or false when the query did
+// not return it.
+func (c *avatarCards) own(id string) (map[string]any, bool) {
+	panel, ok := c.panels[id]
+	if !ok {
+		return nil, false
+	}
+	card := c.base(id)
+	card["level"], card["cons"] = panel.Level, panel.Rank
+	levels := gamekit.PanelTalents("genshin", panel, c.records[id])
+	talents := []any{}
+	for _, key := range []string{"a", "e", "q"} {
+		level := levels[key]
+		talents = append(talents, map[string]any{"key": key, "level": level.Level, "crown": level.Original == 10, "plus": level.Level > level.Original})
+	}
+	if levels["a"].Level > 0 {
+		card["talents"] = talents
+	}
+	if weapon := panel.Weapon; weapon != nil {
+		entry := c.weapons[weapon.ID]
+		// miao colours refinement 5 with the constellation 6 badge.
+		badge := weapon.Refinement
+		if badge > 4 {
+			badge++
+		}
+		card["weapon"] = map[string]any{"icon": c.miao("resources/meta-gs/weapon/" + entry.Type + "/" + entry.Name + "/icon.webp"),
+			"star": gamekit.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge}
+	}
+	// miao shows each set worn as two or four pieces, by its flower (or its
+	// circlet when the set has no flower).
+	counts, order := map[string]int{}, []string{}
+	for _, piece := range panel.Equipment {
+		if piece.SetName == "" {
+			continue
+		}
+		if counts[piece.SetName] == 0 {
+			order = append(order, piece.SetName)
+		}
+		counts[piece.SetName]++
+	}
+	sets := []any{}
+	for _, name := range order {
+		if counts[name] < 2 {
+			continue
+		}
+		icon := c.miao("resources/meta-gs/artifact/imgs/" + name + "/1.webp")
+		if icon == "" {
+			icon = c.miao("resources/meta-gs/artifact/imgs/" + name + "/5.webp")
+		}
+		sets = append(sets, icon)
+	}
+	card["artis"] = sets
+	return card, true
+}
+
+// guest is the card miao draws for a character the requester does not own at
+// that level or constellation: only what the record shows.
+func (c *avatarCards) guest(id string, level, cons int) map[string]any {
+	card := c.base(id)
+	card["level"], card["cons"], card["artis"] = level, cons, []any{}
+	return card
+}

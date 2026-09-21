@@ -28,4 +28,4 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 
 ## 图片模板
 
-`templates/note/`、`templates/gacha/`、`templates/abyss/` 与 `templates/combat/` 按 Miao-Yunzai 原神插件的 daily-note-gs、gacha-log、html/abyss/abyss 与 html/abyss/combat 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），抽卡分析的统计、卡池选择与 UP 判定同上游 gachaLog；`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来（MIT），图片地址改为宿主渲染资源。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。
+`templates/note/`、`templates/gacha/`、`templates/abyss/` 与 `templates/combat/` 按 Miao-Yunzai 原神插件的 daily-note-gs、gacha-log、html/abyss/abyss 与 html/abyss/combat 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），抽卡分析的统计、卡池选择与 UP 判定同上游 gachaLog；`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来，`templates/hard-challenge/` 按 miao 的 `stat/hard-summary` 与通用角色卡片改写（均为 MIT），图片地址改为宿主渲染资源。幽境危战的角色卡片取自实时的角色详情查询，因此去掉了上游“先更新面板”的提示。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。

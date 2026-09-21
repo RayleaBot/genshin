@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "begin", "end", "difficulty", "difficulty_name", "second", "battles"],
+  "properties": {
+    "uid": { "type": "string" },
+    "begin": { "type": "string" },
+    "end": { "type": "string" },
+    "difficulty": { "type": "integer" },
+    "difficulty_name": { "type": "string" },
+    "second": { "type": "string" },
+    "battles": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
