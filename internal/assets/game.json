@@ -70,5 +70,84 @@
       "command": "牌组",
       "input": "none"
     }
+  ],
+  "artwork": [
+    {
+      "id": "miao-plugin",
+      "name": "喵喵插件图片",
+      "archives": [
+        "https://codeload.github.com/yoimiya-kokomi/miao-plugin/tar.gz/HEAD"
+      ],
+      "include": [
+        "resources/meta-gs/",
+        "resources/common/",
+        "resources/character/",
+        "resources/profile/",
+        "resources/help/",
+        "resources/character-img/",
+        "resources/stat/",
+        "resources/wiki/",
+        "resources/gacha/"
+      ],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif"
+      ]
+    },
+    {
+      "id": "yunzai-genshin",
+      "name": "原神插件图片",
+      "archives": [
+        "https://codeload.github.com/TimeRainStarSky/Yunzai-genshin/tar.gz/HEAD"
+      ],
+      "include": [
+        "resources/"
+      ],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif"
+      ]
+    },
+    {
+      "id": "genshin-atlas",
+      "name": "Atlas 原神图鉴",
+      "archives": [
+        "https://gitee.com/Nwflower/genshin-atlas/repository/archive/master.tar.gz",
+        "https://codeload.github.com/Nwflower/genshin-atlas/tar.gz/HEAD"
+      ],
+      "include": [],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".json",
+        ".yaml"
+      ]
+    },
+    {
+      "id": "xiaoyao-plus",
+      "name": "逍遥图鉴",
+      "archives": [
+        "https://codeload.github.com/ctrlcvs/xiaoyao_plus/tar.gz/HEAD"
+      ],
+      "include": [],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".json",
+        ".yaml"
+      ]
+    }
   ]
 }
