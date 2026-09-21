@@ -1137,14 +1137,58 @@
       }
     },
     {
-      "id": "rank",
-      "name": "排名",
-      "description": "查看本群主动提交的装备评分排行",
-      "usage": "#<角色>排名",
+      "id": "rank-top",
+      "name": "最强",
+      "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
+      "usage": "#最强<角色>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:群内?)?(?P<character>.*?)(?:伤害|圣遗物|遗器|评分|词条|双爆|双暴)?(?:排名|排行)榜?$"
+        "pattern": "^(?:群内?)?(?:排名|排行)?(?:最强|最高|最高分|最牛|第一)+.+$"
+      }
+    },
+    {
+      "id": "rank-reset",
+      "name": "重置排名",
+      "description": "机器人超级管理员清空本群排名或某个角色的排名",
+      "usage": "#重置[角色]排名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:重置|重设).*(?:排名|排行)$"
+      }
+    },
+    {
+      "id": "rank-refresh",
+      "name": "刷新排名",
+      "description": "群管理员按当前规则重新计算本群记录的面板",
+      "usage": "#刷新排名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:刷新|更新|重新加载)(?:群内|群|全部)*(?:排名|排行)$"
+      }
+    },
+    {
+      "id": "rank-switch",
+      "name": "开启排名",
+      "description": "群管理员开启或关闭本群排名的查询",
+      "usage": "#开启排名 / #关闭排名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:开启|打开|启用|关闭|禁用)(?:群内|群|全部)*(?:排名|排行)$"
+      }
+    },
+    {
+      "id": "rank",
+      "name": "排名",
+      "description": "本群在群内查看过的面板按伤害排行，带“圣遗物”“评分”按圣遗物评分；不写角色时列出各角色第一",
+      "usage": "#<角色>[圣遗物]排名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:群内?)?.+(?:排名|排行)榜?$"
       }
     },
     {
@@ -1341,6 +1385,10 @@
       "title": "排名",
       "commands": [
         "rank",
+        "rank-top",
+        "rank-reset",
+        "rank-refresh",
+        "rank-switch",
         "challenge-submit",
         "challenge-rank",
         "challenge-withdraw",

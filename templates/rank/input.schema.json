@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["elem", "title", "mode", "max", "since", "hash", "rows"],
+  "properties": {
+    "elem": { "type": "string" },
+    "title": { "type": "string" },
+    "mode": { "type": "string" },
+    "max": { "type": "boolean" },
+    "since": { "type": "string" },
+    "hash": { "type": "string" },
+    "rows": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

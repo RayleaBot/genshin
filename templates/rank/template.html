@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} {{ .mode }}-mode">
+<div class="container elem-bg" id="container">
+<div class="head-box">
+  <div class="title">{{ .title }}</div>
+</div>
+<div id="profile-stat">
+  <div class="cont group-rank-tip no-rank">
+    <div class="cont-title">群排名说明</div>
+    <div class="cont-body">
+      <ul class="cont-msg">
+        <li><i class="group-rank-icon dmg-icon"></i><strong>综合练度排名：</strong>以期望伤害（计算暴击率的平均伤害，不代表实际伤害值）为排序的群内排名</li>
+        <li><i class="group-rank-icon mark-icon"></i><strong>圣遗物评分排名：</strong>基于角色评分规则进行圣遗物评分。评分规则为线性规则，无法体现词条平衡等实际因素，评分仅供娱乐</li>
+        <li><i class="group-rank-icon mark-icon"></i><strong>双爆排名：</strong>以圣遗物的双爆（包括头）为排序的群内排名</li>
+        <li><i class="group-rank-icon mark-icon"></i><strong>加权有效词条排名：</strong>以圣遗物的加权有效词条（按照喵喵权重加权）为排序的群内排名</li>
+        <li><strong>排名范围：</strong>本群内 / 时间点：{{ .since }} 后 / 在群内主动通过 {{ .hash }}面板 命令查看过的面板数据</li>
+      </ul>
+    </div>
+  </div>
+  {{ range .rows }}
+  <div class="cont char-list-item">
+    {{ if not $.max }}<div class="char-idx"><span class="idx-icon idx-{{ .place }} mode-{{ $.mode }}">{{ .place }}</span></div>{{ end }}
+    <div class="item-icon char-icon star{{ .star }}">
+      {{ with .avatar }}<span class="img" data-render-resource="{{ . }}"></span>{{ else }}<span class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></span>{{ end }}
+    </div>
+    {{ if $.max }}<div class="char-idx"><div class="item-icon char-icon star{{ .star }}"><span class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></span></div></div>{{ end }}
+    <div class="char-info char-name">
+      <div class="name"><span class="cons cons-{{ .cons }}">{{ .cons }}</span> <strong>{{ .name }}</strong></div>
+      <div class="info"> {{ .uid }}</div>
+    </div>
+    <div class="char-talent elem-{{ .elem }}">
+      {{ range .talents }}
+      <div class="talent-item">
+        <div class="talent-icon{{ if .plus }} talent-plus{{ end }}{{ if .crown }} talent-crown{{ end }}">
+          <div class="talent-icon-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div>
+          <span>{{ .level }}</span>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    <div class="char-item char-weapon line">
+      {{ with .weapon }}
+      <div class="item item-icon star{{ .star }}"><div class="img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div></div>
+      <div class="char-info weapon-info">
+        <div class="name"><strong> {{ .name }}</strong></div>
+        <div class="info"><span class="cons cons-{{ .badge }}">精{{ .affix }}</span> Lv.{{ .level }}</div>
+      </div>
+      {{ else }}
+      <div class="item item-icon"><div class="img"></div></div>
+      <div class="char-info weapon-info"><div class="name"><strong> </strong></div><div class="info"></div></div>
+      {{ end }}
+    </div>
+    <div class="char-item char-artis class-{{ .grade }}">
+      <div class="item artis item-icon avatar-artis {{ if .sets }}star5{{ else }}no-artis{{ end }} artis{{ .set_count }}">
+        {{ range .sets }}<div class="img" data-render-resource="{{ . }}"></div>{{ end }}
+        {{ if not .sets }}<span class="img no-artis"></span>{{ end }}
+      </div>
+      <div class="char-info artis-info">
+        <div class="name artis-title">{{ .set_name }}</div>
+        <div class="artis-mark"><span class="cons artis-mark-class class-{{ .grade }}">{{ .grade }}</span> {{ .mark }}</div>
+      </div>
+    </div>
+    <div class="char-dmg line">
+      {{ with .damage }}<div class="dmg-title">{{ .title }}</div><div class="dmg-value">{{ .value }}</div>{{ end }}
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

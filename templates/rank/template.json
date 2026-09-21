@@ -1,0 +1,11 @@
+{
+  "id": "rank",
+  "name": "原神群排名",
+  "description": "排名命令的图片，布局参照 miao-plugin character/rank-profile-list",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1148,
+  "height": 3000
+}
