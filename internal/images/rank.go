@@ -2,7 +2,6 @@ package images
 
 import (
 	"strconv"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -83,7 +82,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 			row["weapon"] = map[string]any{"icon": info["icon"], "star": info["star"], "name": label, "affix": weapon.Refinement, "badge": weapon.Refinement + 1, "level": weapon.Level}
 		}
 		sets := card["artis"].([]any)
-		row["sets"], row["set_count"], row["set_name"] = sets[:min(2, len(sets))], min(2, len(sets)), rankSetName(context.Catalog, *entry.Panel)
+		row["sets"], row["set_count"], row["set_name"] = sets[:min(2, len(sets))], min(2, len(sets)), gamekit.RankSetName(context.Catalog, *entry.Panel)
 		grade := entry.Grade
 		if grade == "" {
 			grade = "D"
@@ -94,7 +93,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 			if value == "" {
 				value = miaoComma(entry.Damage.Value, 1)
 			}
-			row["damage"] = map[string]any{"title": rankDamageTitle(entry.Damage.Title), "value": value}
+			row["damage"] = map[string]any{"title": gamekit.RankDamageTitle(entry.Damage.Title), "value": value}
 		}
 		rows = append(rows, row)
 	}
@@ -108,54 +107,4 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
 	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "since": since, "hash": context.Game.Prefix, "rows": rows}
 	return gamekit.Image{Template: "rank", Data: data, Resources: resources.List}, true
-}
-
-// rankSetName is miao's set label: a single set by its name and piece count
-// when that fits in seven characters, otherwise up to two sets by their
-// abbreviations. Sets upstream gives no abbreviation keep their name.
-func rankSetName(catalog gamekit.Catalog, panel gamekit.CharacterPanel) string {
-	counts, order := map[string]int{}, []string{}
-	for _, piece := range panel.Equipment {
-		if piece.SetName == "" {
-			continue
-		}
-		if counts[piece.SetName] == 0 {
-			order = append(order, piece.SetName)
-		}
-		counts[piece.SetName]++
-	}
-	short, full := []string{}, []string{}
-	for _, name := range order {
-		if counts[name] < 2 {
-			continue
-		}
-		count := "2"
-		if counts[name] >= 4 {
-			count = "4"
-		}
-		abbr := catalog.SetAbbrs[name]
-		if abbr == "" {
-			abbr = name
-		}
-		short, full = append(short, abbr+count), append(full, name+count)
-	}
-	if len(full) == 0 {
-		return ""
-	}
-	if len(short) > 1 || utf8.RuneCountInString(full[0]) > 7 {
-		return strings.Join(short[:min(2, len(short))], "+")
-	}
-	return full[0]
-}
-
-// rankDamageTitle shortens a detail title as miao's rank list does: past ten
-// characters without spaces and dots, then without a trailing 伤害.
-func rankDamageTitle(title string) string {
-	if utf8.RuneCountInString(title) > 10 {
-		title = strings.NewReplacer(" ", "", "·", "").Replace(title)
-	}
-	if utf8.RuneCountInString(title) > 10 {
-		title = strings.TrimSuffix(title, "伤害")
-	}
-	return title
 }
