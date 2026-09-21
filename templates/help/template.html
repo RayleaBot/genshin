@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-default default-mode">
+<div class="container" id="container">
+  <div class="info-box">
+    <div class="head-box type">
+      <div class="title">{{ .title }}</div>
+      <div class="label">{{ .subtitle }}</div>
+    </div>
+  </div>
+  {{ range .groups }}
+  <div class="cont-box">
+    <div class="help-group">{{ .title }}</div>
+    <div class="help-table">
+      {{ range .rows }}
+      <div class="tr">
+        {{ range . }}{{ if . }}<div class="td">{{ with .position }}<span class="help-icon" style="background-position:{{ . }}"></span>{{ else }}<span class="help-icon none"></span>{{ end }}<strong class="help-title">{{ .title }}</strong><span class="help-desc">{{ .desc }}</span></div>{{ else }}<div class="td"></div>{{ end }}{{ end }}
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{ end }}
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

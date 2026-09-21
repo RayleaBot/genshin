@@ -1,0 +1,11 @@
+{
+  "id": "help",
+  "name": "原神帮助",
+  "description": "帮助命令的图片，布局参照 miao-plugin help",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 990,
+  "height": 4000
+}
