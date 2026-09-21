@@ -1,0 +1,15 @@
+const characterRule=(()=>{const exports={};
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.buffs = exports.mainAttr = exports.details = void 0;
+exports.details = [{
+        title: '霜袭E伤害',
+        dmg: ({ talent }, dmg) => dmg(talent.e['技能伤害'], 'e')
+    }, {
+        title: 'Q单段伤害',
+        dmg: ({ talent }, dmg) => dmg(talent.q['技能伤害'], 'q')
+    }];
+exports.mainAttr = 'atk,cpct,cdmg';
+exports.buffs = [];
+
+return exports;})();

@@ -1,0 +1,32 @@
+const characterRule=(()=>{const exports={};
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.buffs = exports.mainAttr = exports.defDmgIdx = exports.details = void 0;
+exports.details = [{
+        title: '半血开E重击',
+        dmg: ({ talent }, dmg) => dmg(talent.a['重击伤害'], 'a2')
+    }, {
+        title: '半血开E重击蒸发',
+        dmg: ({ talent }, dmg) => dmg(talent.a['重击伤害'], 'a2', 'vaporize')
+    }, {
+        title: '半血开E后Q',
+        dmg: ({ talent }, dmg) => dmg(talent.q['低血量时技能伤害'], 'q')
+    }];
+exports.defDmgIdx = 1;
+exports.mainAttr = 'hp,atk,cpct,cdmg,mastery';
+exports.buffs = [{
+        title: '蝶引来生：开E获得[atkPlus]点攻击力加成',
+        sort: 9,
+        data: {
+            atkPlus: ({ talent, attr }) => {
+                return Math.min(talent.e['攻击力提高'] * attr.hp / 100, attr.atk.base * 4);
+            }
+        }
+    }, {
+        title: '胡桃被动：半血获得33%火伤加成',
+        data: {
+            dmg: 33
+        }
+    }, 'vaporize'];
+
+return exports;})();
