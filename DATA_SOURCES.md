@@ -25,3 +25,7 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 云面板装备解释沿用同一固定 miao 快照的 artifact 元数据与 ArtisAttr 公式，包含原神 299、星铁 768 项装备映射。转换脚本为相邻业务库 `scripts/import-cloud-panel-data.mjs`，不加载上游机器人运行时；缺失档位明确显示未覆盖。
 
 原魔属性使用 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的文字数值资料：556 项条目、200 级曲线、102 项修饰因子，仅在原神界面开放。保留 `LICENSES/Atlas-GPL-3.0.txt`，转换器为编译期库的 `scripts/import-enemy-data.py`；未引入其外部图鉴图片仓库。攻略合集编号来自上述固定 Yunzai/StarRail/ZZZ 参考，运行时匿名读取官方文字与原图链接，不打包攻略图。
+
+## 图片模板
+
+`templates/note/` 按 Miao-Yunzai 原神插件的 daily-note-gs 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`）；`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来（MIT），图片地址改为宿主渲染资源。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。

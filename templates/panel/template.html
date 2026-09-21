@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} profile-mode">
+<div class="container elem-bg">
+<div class="profile-cont game-gs">
+  <div class="basic">
+    <div class="main-pic" data-render-resource="splash"></div>
+    <div class="detail">
+      <div class="char-name">{{ .name }}</div>
+      <div class="char-lv">UID {{ .uid }} - Lv.{{ .level }} <span class="cons cons-{{ .cons }}">{{ .cons }}命</span></div>
+      <div>
+        <div class="char-talents">
+          {{ range .talents }}
+          <div class="talent-item">
+            <div class="talent-icon{{ if .plus }} talent-plus{{ end }}{{ if .crown }} talent-crown{{ end }}">
+              <div class="talent-icon-img" data-render-resource="{{ .icon }}"></div>
+              <strong>{{ .level }}</strong>
+            </div>
+          </div>
+          {{ end }}
+        </div>
+        <ul class="char-attr">
+          {{ range .attrs }}
+          <li>
+            <div class="icon"><i class="i-{{ .key }}"></i></div>
+            <div class="title">{{ .title }}</div>
+            <div class="weight">{{ if .weight }}<span class="{{ if .gold }}gold{{ else }}normal{{ end }}">{{ .weight }}</span>{{ end }}</div>
+            <div class="value">{{ .value }}</div>
+            <div class="value2">
+              <span class="base{{ if .zero }} zero{{ end }}">{{ .base }}</span>
+              <span class="plus">+{{ .plus }}</span>
+            </div>
+          </li>
+          {{ end }}
+        </ul>
+      </div>
+    </div>
+    <div class="char-cons">
+      {{ range .cons_icons }}
+      <div class="cons-item">
+        <div class="talent-icon{{ if .off }} off{{ end }}"><div class="talent-icon-img" data-render-resource="{{ .icon }}"></div></div>
+      </div>
+      {{ end }}
+    </div>
+    <div class="data-info">
+      <span>数据源：{{ .data_source }}</span>
+      <span class="time">{{ .update_time }}</span>
+    </div>
+  </div>
+
+  <div class="profile-detail">
+    {{ with .rating }}
+    <div class="cont arti-mark-cont">
+      <div class="arti-stat">
+        <div class="arti-stat-ret">
+          <div><span>圣遗物总分</span><strong>{{ .mark }}</strong></div>
+          <div><span>圣遗物评级</span><strong class="mark-{{ .grade }}">{{ .grade }}</strong></div>
+        </div>
+        <div class="arti-class-title">评分规则：{{ .rule }}</div>
+      </div>
+      <div class="arti-info">
+        <div class="arti-all-attr">
+          <ul class="detail attr arti-attr">
+            {{ range .all }}
+            <li class="{{ .class }}"><span class="title">{{ if .eff }}<i class="eff">{{ .eff }}</i>{{ end }} {{ .title }}</span><span class="val">+{{ .value }}</span></li>
+            {{ end }}
+          </ul>
+        </div>
+        <div class="dmg-desc arti-notice">评分为<strong>喵喵版规则</strong>，仅供参考与娱乐。可使用<strong>{{ $.artifact_hint }}</strong>来查看评分详情</div>
+      </div>
+    </div>
+    {{ end }}
+
+    <div class="artis">
+      {{ with .weapon }}
+      <div class="artis-weapon">
+        <div class="item weapon">
+          <div class="img" data-render-resource="weapon-icon"></div>
+          <div class="head">
+            <strong>{{ .name }}</strong>
+            <span class="info"><span class="affix affix-{{ .affix }}">精{{ .affix }}</span> Lv.{{ .level }} </span>
+            <div class="weapon-attr">
+              {{ range .attrs }}<div><span>{{ .title }}</span> +{{ .value }}</div>{{ end }}
+            </div>
+          </div>
+          <div class="weapon-desc-cont">
+            <div class="weapon-desc">{{ range .desc }}{{ .text }}{{ if .value }}<nobr>{{ .value }}</nobr>{{ end }}{{ end }}</div>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+
+      {{ range .artifacts }}
+      {{ if .empty }}<div class="item arti"></div>{{ else }}
+      <div class="item arti arti-class-{{ .grade }}">
+        <div class="arti-icon">
+          <div class="img" data-render-resource="{{ .icon }}"></div>
+          <span>+{{ .level }}</span>
+        </div>
+        <div class="head">
+          <strong>{{ .name }}</strong>
+          <span class="mark mark-{{ .grade }}"><span>{{ .mark }}分</span> - {{ .grade }}</span>
+        </div>
+        <ul class="detail attr">
+          <li class="arti-main"><span class="title">{{ .main.title }}</span><span class="val">+{{ .main.value }}</span></li>
+          {{ range .attrs }}
+          <li class="{{ .class }}"><span class="title">{{ if .eff }}<i class="eff">{{ .eff }}</i>{{ end }}{{ if .up }}<i class="up-num up-{{ .up }}"></i>{{ end }}{{ .title }}</span><span class="val">+{{ .value }}</span></li>
+          {{ end }}
+        </ul>
+      </div>
+      {{ end }}
+      {{ end }}
+    </div>
+  </div>
+
+  {{ with .damage }}
+  <div>
+    <div class="dmg-cont dmg-list cont">
+      <div class="cont-title">伤害计算<span class="not-dmg-mode dmg-desc">使用<strong>{{ $.damage_hint }}</strong>命令可以查看伤害详情</span></div>
+      <div class="cont-table">
+        <div class="tr thead">
+          <div class="title dmg-idx">#</div>
+          <div class="title dmg-title">伤害类型</div>
+          <div>暴击伤害</div>
+          <div>期望伤害</div>
+        </div>
+        {{ range $row := .rows }}
+        <div class="dmg tr">
+          <div class="title dmg-idx">{{ $row.index }}</div>
+          <div class="title dmg-title">{{ $row.title }}</div>
+          {{ if $row.full }}<div class="value value-full">{{ $row.full }}</div><div class="value value-none"></div>{{ else }}<div class="value">{{ $row.dmg }}</div><div class="value">{{ $row.avg }}</div>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+      <div class="cont-footer dmg-desc"><span>目标为{{ .enemy_level }}级小宝</span></div>
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

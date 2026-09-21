@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["elem", "name", "uid", "level", "cons", "talents", "attrs", "cons_icons"],
+  "properties": {
+    "elem": { "type": "string" },
+    "name": { "type": "string" },
+    "uid": { "type": "string" },
+    "level": { "type": "integer" },
+    "cons": { "type": "integer" },
+    "talents": { "type": "array" },
+    "attrs": { "type": "array" },
+    "cons_icons": { "type": "array" },
+    "data_source": { "type": "string" },
+    "update_time": { "type": "string" },
+    "artifact_hint": { "type": "string" },
+    "damage_hint": { "type": "string" },
+    "rating": { "type": "object" },
+    "artifacts": { "type": "array" },
+    "weapon": { "type": "object" },
+    "damage": { "type": "object" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
