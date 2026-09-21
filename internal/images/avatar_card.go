@@ -12,6 +12,7 @@ import (
 // their crown and bonus marks, the weapon with its refinement and the
 // artifact sets. Characters the query does not return are left out.
 type avatarCards struct {
+	catalog   gamekit.Catalog
 	resources *gamekit.ImageResources
 	records   map[string]reference.Character
 	weapons   map[string]reference.Weapon
@@ -19,7 +20,7 @@ type avatarCards struct {
 }
 
 func newAvatarCards(context gamekit.ImageContext, resources *gamekit.ImageResources, ids []string) *avatarCards {
-	cards := &avatarCards{resources: resources, records: map[string]reference.Character{}, weapons: map[string]reference.Weapon{}, panels: map[string]gamekit.CharacterPanel{}}
+	cards := &avatarCards{catalog: context.Catalog, resources: resources, records: map[string]reference.Character{}, weapons: map[string]reference.Weapon{}, panels: map[string]gamekit.CharacterPanel{}}
 	if context.Game.Calc != nil {
 		metadata := context.Game.Calc.Metadata()
 		for _, record := range metadata.Characters {
@@ -57,7 +58,7 @@ func (c *avatarCards) base(id string) map[string]any {
 		star = 5
 	}
 	path := "resources/meta-gs/character/" + record.Name + "/imgs/"
-	return map[string]any{"known": record.Name != "", "name": record.Name, "abbr": abbreviation(record), "elem": record.Element, "star": star,
+	return map[string]any{"known": record.Name != "", "name": record.Name, "abbr": abbreviation(c.catalog, record), "elem": record.Element, "star": star,
 		"face": c.miao(path + "face.webp"), "gacha": c.miao(path + "gacha.webp")}
 }
 

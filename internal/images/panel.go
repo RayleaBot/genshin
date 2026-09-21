@@ -140,8 +140,8 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 		"elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"talents": talents, "attrs": attrs, "cons_icons": cons,
 		"data_source": "mys", "update_time": context.Now.In(chinaTime).Format("2006-01-02 15:04:05"),
-		"artifact_hint": context.Game.Prefix + abbreviation(record) + "圣遗物",
-		"damage_hint":   context.Game.Prefix + abbreviation(record) + "伤害",
+		"artifact_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "圣遗物",
+		"damage_hint":   context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
 	}
 	if detail != nil {
 		class := func(key string) string {
@@ -289,9 +289,13 @@ func comma(value float64) string {
 	return digits
 }
 
-// abbreviation is the short name upstream uses in command hints, falling back
-// to the full name as miao's character model does.
-func abbreviation(record reference.Character) string {
+// abbreviation is the short name upstream uses in command hints and cards:
+// miao's abbreviation when the name has one, otherwise the full name, as
+// miao's character model does.
+func abbreviation(catalog gamekit.Catalog, record reference.Character) string {
+	if entry, ok := catalog.Get(record.ID); ok && entry.Abbr != "" {
+		return entry.Abbr
+	}
 	if abbr := gamekit.Text(record.Data["abbr"]); abbr != "" {
 		return abbr
 	}

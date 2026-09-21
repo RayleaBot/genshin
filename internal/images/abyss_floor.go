@@ -56,7 +56,7 @@ func AbyssFloor(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 	abbreviations := map[string]string{}
 	if context.Game.Calc != nil {
 		for _, record := range context.Game.Calc.Metadata().Characters {
-			abbreviations[record.ID] = abbreviation(record)
+			abbreviations[record.ID] = abbreviation(context.Catalog, record)
 		}
 	}
 	// The constellations come from the account index, as upstream reads them.
