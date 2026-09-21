@@ -759,19 +759,6 @@
       }
     },
     {
-      "id": "content-progress",
-      "name": "资料进度",
-      "description": "官方公开内容资料进度",
-      "usage": "#资料进度 任务编号",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "资料进度"
-        ]
-      }
-    },
-    {
       "id": "enemy",
       "name": "原魔",
       "description": "原魔查询",
@@ -1319,7 +1306,6 @@
         "live-calendar",
         "search",
         "post",
-        "content-progress",
         "subscribe",
         "unsubscribe",
         "codes"
