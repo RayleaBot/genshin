@@ -25,14 +25,24 @@
   "commands": [
     {
       "id": "profile",
-      "name": "信息",
+      "name": "角色卡片",
       "description": "原神信息",
-      "usage": "#信息 [UID]",
+      "usage": "#角色卡片 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "信息"
+          "信息",
+          "角色卡片",
+          "探索",
+          "探险",
+          "探索度",
+          "探险度",
+          "宝箱",
+          "成就",
+          "尘歌壶",
+          "家园",
+          "声望"
         ]
       }
     },
@@ -45,7 +55,13 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "体力"
+          "体力",
+          "树脂",
+          "查询体力",
+          "便笺",
+          "便签",
+          "全部体力",
+          "多体力"
         ]
       }
     },
@@ -58,33 +74,13 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "角色"
-        ]
-      }
-    },
-    {
-      "id": "character",
-      "name": "面板",
-      "description": "原神角色详情",
-      "usage": "#面板 <角色> [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "面板"
-        ]
-      }
-    },
-    {
-      "id": "abyss",
-      "name": "深渊",
-      "description": "深境螺旋",
-      "usage": "#深渊 [期数] [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "深渊"
+          "角色",
+          "查询",
+          "角色查询",
+          "查询角色",
+          "人物",
+          "五星角色",
+          "四星角色"
         ]
       }
     },
@@ -92,103 +88,60 @@
       "id": "accounts",
       "name": "账号",
       "description": "查看已授权角色与默认 UID",
-      "usage": "#账号",
+      "usage": "#uid",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "账号"
-        ]
-      }
-    },
-    {
-      "id": "select",
-      "name": "绑定",
-      "description": "选择已验证的默认游戏角色",
-      "usage": "#绑定 <UID>",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "绑定"
-        ]
-      }
-    },
-    {
-      "id": "catalog",
-      "name": "图鉴",
-      "description": "查询离线角色和装备资料",
-      "usage": "#图鉴 <名称或ID>",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "图鉴"
+          "账号",
+          "uid",
+          "UID",
+          "我的uid"
         ]
       }
     },
     {
       "id": "showcase",
-      "name": "展柜",
+      "name": "更新面板",
       "description": "查询已开放的公开展柜",
-      "usage": "#展柜 [UID]",
+      "usage": "#更新面板 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "更新面板",
+          "面板更新",
+          "更新全部面板",
+          "全部面板更新",
+          "面板",
+          "面板列表",
+          "角色面板",
+          "面板角色",
           "展柜"
         ]
       }
     },
     {
       "id": "gacha",
-      "name": "抽卡",
+      "name": "抽卡记录",
       "description": "分析已导入的抽卡记录",
-      "usage": "#抽卡 [UID]",
+      "usage": "#抽卡记录 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "抽卡"
-        ]
-      }
-    },
-    {
-      "id": "theater",
-      "name": "剧诗",
-      "description": "幻想真境剧诗",
-      "usage": "#剧诗 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "剧诗"
-        ]
-      }
-    },
-    {
-      "id": "hard_challenge",
-      "name": "幽境",
-      "description": "幽境危战",
-      "usage": "#幽境 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "幽境"
-        ]
-      }
-    },
-    {
-      "id": "monthly",
-      "name": "札记",
-      "description": "旅行札记",
-      "usage": "#札记 [月份] [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "札记"
+          "抽卡记录",
+          "抽卡分析",
+          "抽卡祈愿",
+          "角色记录",
+          "武器记录",
+          "常驻记录",
+          "集录记录",
+          "新手记录",
+          "全部记录",
+          "up记录",
+          "角色联动记录",
+          "武器联动记录"
         ]
       }
     },
@@ -207,118 +160,65 @@
     },
     {
       "id": "tcg_cards",
-      "name": "牌库",
+      "name": "七圣查询牌",
       "description": "七圣牌库",
-      "usage": "#牌库 [UID]",
+      "usage": "#七圣查询牌 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "七圣查询牌",
+          "七圣查询卡牌",
+          "七圣查询角色牌",
+          "七圣查询行动牌",
+          "七圣召唤查询牌",
+          "七圣查询牌列表",
           "牌库"
         ]
       }
     },
     {
       "id": "tcg_decks",
-      "name": "牌组",
+      "name": "七圣查询牌组",
       "description": "七圣牌组",
-      "usage": "#牌组 [UID]",
+      "usage": "#七圣查询牌组 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "七圣查询牌组",
+          "七圣查询卡组",
+          "七圣召唤查询牌组",
+          "七圣查询牌组列表",
           "牌组"
         ]
       }
     },
     {
-      "id": "score",
-      "name": "评分",
-      "description": "按角色专属权重计算装备评分",
-      "usage": "#评分 <角色> [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "评分"
-        ]
-      }
-    },
-    {
-      "id": "build",
-      "name": "计算",
-      "description": "自动应用固定参考情境计算角色伤害",
-      "usage": "#计算 <角色> [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "计算"
-        ]
-      }
-    },
-    {
       "id": "reminder",
-      "name": "体力提醒",
+      "name": "开启体力推送",
       "description": "原神体力提醒",
-      "usage": "#体力提醒 百分数 [UID]",
+      "usage": "#开启体力推送 [百分比] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "开启体力推送",
           "体力提醒"
         ]
       }
     },
     {
       "id": "reminder-stop",
-      "name": "关闭提醒",
+      "name": "关闭体力推送",
       "description": "原神关闭提醒",
-      "usage": "#关闭提醒 [UID]",
+      "usage": "#关闭体力推送 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "关闭体力推送",
           "关闭提醒"
-        ]
-      }
-    },
-    {
-      "id": "growth",
-      "name": "养成",
-      "description": "计算升至上限的材料需求",
-      "usage": "#养成 角色 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "养成"
-        ]
-      }
-    },
-    {
-      "id": "materials",
-      "name": "材料",
-      "description": "查询固定参考资料",
-      "usage": "#材料 名称",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "材料"
-        ]
-      }
-    },
-    {
-      "id": "calendar",
-      "name": "卡池",
-      "description": "查询固定参考资料",
-      "usage": "#卡池 版本 [YYYY-MM-DD]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "卡池"
         ]
       }
     },
@@ -362,32 +262,6 @@
       }
     },
     {
-      "id": "rank",
-      "name": "排行",
-      "description": "查看本群主动提交的装备评分排行",
-      "usage": "#排行 角色",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "排行"
-        ]
-      }
-    },
-    {
-      "id": "simulation",
-      "name": "模拟十连",
-      "description": "独立参考娱乐模拟，不消耗真实货币",
-      "usage": "#模拟十连 [角色|武器|光锥|常驻]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "模拟十连"
-        ]
-      }
-    },
-    {
       "id": "simulation-history",
       "name": "模拟记录",
       "description": "独立参考娱乐模拟，不消耗真实货币",
@@ -414,19 +288,6 @@
       }
     },
     {
-      "id": "simulation-fate",
-      "name": "模拟定轨",
-      "description": "独立参考娱乐模拟，不消耗真实货币",
-      "usage": "#模拟定轨 [武器名称|取消]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "模拟定轨"
-        ]
-      }
-    },
-    {
       "id": "signin",
       "name": "签到",
       "description": "官方游戏签到与状态",
@@ -435,7 +296,8 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "签到"
+          "签到",
+          "游戏签到"
         ]
       }
     },
@@ -448,7 +310,8 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "签到状态"
+          "签到状态",
+          "签到查询"
         ]
       }
     },
@@ -462,19 +325,6 @@
         "type": "exact",
         "names": [
           "自动签到"
-        ]
-      }
-    },
-    {
-      "id": "public-profile",
-      "name": "公开信息",
-      "description": "使用主动共享的公共池查询官方公开资料",
-      "usage": "#公开信息 UID [区服]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "公开信息"
         ]
       }
     },
@@ -493,13 +343,15 @@
     },
     {
       "id": "gacha-background",
-      "name": "同步抽卡",
+      "name": "更新抽卡记录",
       "description": "单次后台读取官方抽卡记录",
-      "usage": "#同步抽卡 [增量/全量] [UID]",
+      "usage": "#更新抽卡记录 [增量|全量] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "更新抽卡记录",
+          "获取抽卡记录",
           "同步抽卡"
         ]
       }
@@ -557,27 +409,22 @@
       }
     },
     {
-      "id": "banner-history",
-      "name": "卡池历史",
-      "description": "卡池历史",
-      "usage": "#卡池历史 [角色或装备名]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "卡池历史"
-        ]
-      }
-    },
-    {
       "id": "gacha-versions",
-      "name": "版本抽卡",
+      "name": "版本统计",
       "description": "版本抽卡",
-      "usage": "#版本抽卡 [UID]",
+      "usage": "#版本统计 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "版本统计",
+          "抽卡统计",
+          "角色统计",
+          "武器统计",
+          "常驻统计",
+          "集录统计",
+          "全部统计",
+          "up统计",
           "版本抽卡"
         ]
       }
@@ -662,13 +509,15 @@
     },
     {
       "id": "monthly-history",
-      "name": "月报统计",
+      "name": "原石统计",
       "description": "已保存月报的累计收入",
-      "usage": "#月报统计 [UID]",
+      "usage": "#原石统计 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "原石统计",
+          "札记统计",
           "月报统计"
         ]
       }
@@ -701,52 +550,59 @@
     },
     {
       "id": "community-status",
-      "name": "米游币",
+      "name": "米游币查询",
       "description": "查询社区米游币与任务",
-      "usage": "#米游币 [账号序号]",
+      "usage": "#米游币查询",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "米游币查询",
+          "米币查询",
           "米游币"
         ]
       }
     },
     {
       "id": "community-sign",
-      "name": "社区签到",
+      "name": "米游社原神签到",
       "description": "显式为所选账号在本游戏社区签到",
-      "usage": "#社区签到 [账号序号]",
+      "usage": "#米游社原神签到",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "米游社原神签到",
+          "mys原神签到",
+          "社区原神签到",
           "社区签到"
         ]
       }
     },
     {
       "id": "cloud-game-status",
-      "name": "云游戏状态",
+      "name": "云原神查询",
       "description": "查看最近云钱包快照",
-      "usage": "#云游戏状态 [账号序号]",
+      "usage": "#云原神查询",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "云原神查询",
           "云游戏状态"
         ]
       }
     },
     {
       "id": "cloud-game-sign",
-      "name": "云游戏签到",
+      "name": "云原神签到",
       "description": "显式查询钱包并领取可能发放的时长",
-      "usage": "#云游戏签到 [账号序号]",
+      "usage": "#云原神签到",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "云原神签到",
           "云游戏签到"
         ]
       }
@@ -812,20 +668,9 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "兑换码"
-        ]
-      }
-    },
-    {
-      "id": "redeem",
-      "name": "兑换",
-      "description": "明确为本人海外角色兑换代码",
-      "usage": "#兑换 代码 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "兑换"
+          "兑换码",
+          "直播兑换码",
+          "前瞻兑换码"
         ]
       }
     },
@@ -851,7 +696,9 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "公告"
+          "公告",
+          "公告列表",
+          "官方公告"
         ]
       }
     },
@@ -864,7 +711,8 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "资讯"
+          "资讯",
+          "资讯列表"
         ]
       }
     },
@@ -877,33 +725,23 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "活动"
+          "活动",
+          "活动列表"
         ]
       }
     },
     {
       "id": "live-calendar",
-      "name": "活动日历",
+      "name": "日历",
       "description": "官方公开内容活动日历",
-      "usage": "#活动日历",
+      "usage": "#日历",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "日历",
+          "日历列表",
           "活动日历"
-        ]
-      }
-    },
-    {
-      "id": "search",
-      "name": "搜索",
-      "description": "官方公开内容搜索",
-      "usage": "#搜索 关键词",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "搜索"
         ]
       }
     },
@@ -934,58 +772,6 @@
       }
     },
     {
-      "id": "subscribe",
-      "name": "订阅",
-      "description": "官方公开内容订阅",
-      "usage": "#订阅 公告/资讯/活动/到期 [天数]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "订阅"
-        ]
-      }
-    },
-    {
-      "id": "unsubscribe",
-      "name": "退订",
-      "description": "官方公开内容退订",
-      "usage": "#退订 [类型]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "退订"
-        ]
-      }
-    },
-    {
-      "id": "guides",
-      "name": "攻略",
-      "description": "攻略查询",
-      "usage": "#攻略 [角色名]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "攻略"
-        ]
-      }
-    },
-    {
-      "id": "map",
-      "name": "地图",
-      "description": "地图查询",
-      "usage": "#地图 资源 [地图]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "地图"
-        ]
-      }
-    },
-    {
       "id": "enemy",
       "name": "原魔",
       "description": "原魔查询",
@@ -995,32 +781,6 @@
         "type": "exact",
         "names": [
           "原魔"
-        ]
-      }
-    },
-    {
-      "id": "blueprint",
-      "name": "摹本",
-      "description": "摹本查询",
-      "usage": "#摹本 分享码 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "摹本"
-        ]
-      }
-    },
-    {
-      "id": "photo",
-      "name": "照片",
-      "description": "本地图库与角色照片",
-      "usage": "#照片 角色名",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "照片"
         ]
       }
     },
@@ -1046,20 +806,17 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "原图"
-        ]
-      }
-    },
-    {
-      "id": "interaction",
-      "name": "互动",
-      "description": "本地图库与角色互动",
-      "usage": "#互动 关系 操作 [角色名]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "互动"
+          "原图",
+          "获取原图",
+          "给我原图",
+          "我要原图",
+          "求原图",
+          "发原图",
+          "发下原图",
+          "发个原图",
+          "发一下原图",
+          "原图吧",
+          "原图呗"
         ]
       }
     },
@@ -1078,40 +835,49 @@
     },
     {
       "id": "help",
-      "name": "帮助",
+      "name": "原神帮助",
       "description": "查看本版本插件帮助",
-      "usage": "#帮助 [关键词]",
+      "usage": "#原神帮助 [关键词]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "帮助"
+          "原神帮助",
+          "喵喵帮助"
         ]
       }
     },
     {
       "id": "version",
-      "name": "版本",
+      "name": "原神版本",
       "description": "查看本版本插件版本",
-      "usage": "#版本",
+      "usage": "#原神版本",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "版本"
+          "原神版本",
+          "喵喵版本"
         ]
       }
     },
     {
       "id": "role-cards",
-      "name": "圣牌",
+      "name": "月谕圣牌",
       "description": "查询本人月谕圣牌收藏",
-      "usage": "#圣牌 [UID]",
+      "usage": "#月谕圣牌",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "圣牌"
+          "月谕圣牌",
+          "圣牌",
+          "月谕圣牌收藏",
+          "幻想圣牌",
+          "剧诗圣牌",
+          "月谕卡牌",
+          "月谕卡片",
+          "月谕塔罗牌"
         ]
       }
     },
@@ -1130,14 +896,19 @@
     },
     {
       "id": "role-cards-exchange",
-      "name": "圣牌交换",
+      "name": "月谕圣牌交换",
       "description": "查询本群双向交换匹配",
-      "usage": "#圣牌交换 [UID]",
+      "usage": "#月谕圣牌交换",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "圣牌交换"
+          "月谕圣牌交换",
+          "圣牌交换",
+          "月谕圣牌互换",
+          "月谕圣牌换牌",
+          "幻想圣牌交换",
+          "剧诗圣牌交换"
         ]
       }
     },
@@ -1156,15 +927,310 @@
     },
     {
       "id": "birthday",
-      "name": "生日留影",
+      "name": "留影叙佳期",
       "description": "查询留影叙佳期活动",
-      "usage": "#生日留影 [UID]",
+      "usage": "#留影叙佳期 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "生日留影"
+          "留影叙佳期",
+          "生日留影",
+          "留影",
+          "生日",
+          "角色生日",
+          "领生日",
+          "领角色生日",
+          "生日卡",
+          "角色生日卡",
+          "领角色生日卡"
         ]
+      }
+    },
+    {
+      "id": "select",
+      "name": "绑定",
+      "description": "选择已验证的默认游戏角色",
+      "usage": "#绑定<UID>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^绑定(?:uid|UID)?(?P<uid>[0-9]*)$"
+      }
+    },
+    {
+      "id": "redeem",
+      "name": "兑换",
+      "description": "明确为本人海外角色兑换代码",
+      "usage": "#兑换码使用<兑换码> [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:兑换|兑换码使用|cdk-u)(?P<code>[A-Za-z0-9]*)$"
+      }
+    },
+    {
+      "id": "subscribe",
+      "name": "开启公告推送",
+      "description": "官方公开内容订阅",
+      "usage": "#开启公告推送",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:订阅|开启(?P<kind>公告|资讯)推送|开启(?P<expiry>到期)活动(?:预警)?(?:推送)?)$"
+      }
+    },
+    {
+      "id": "unsubscribe",
+      "name": "关闭公告推送",
+      "description": "官方公开内容退订",
+      "usage": "#关闭公告推送",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:退订|关闭(?P<kind>公告|资讯)推送|关闭(?P<expiry>到期)活动(?:预警)?(?:推送)?)$"
+      }
+    },
+    {
+      "id": "blueprint",
+      "name": "尘歌壶模数",
+      "description": "摹本查询",
+      "usage": "#尘歌壶模数<分享码>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:摹本|尘歌壶(?:模数|养成|养成计算)(?P<code>[0-9]*))$"
+      }
+    },
+    {
+      "id": "interaction",
+      "name": "老婆",
+      "description": "本地图库与角色互动",
+      "usage": "#老婆设置<角色>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:互动|(?P<relation>老婆|媳妇|女友|女朋友|老公|男友|男朋友|女儿|儿子|伙伴)(?P<action>设置|添加|移除|列表|随机|照片|卡片)?(?P<character>[^0-9]*?))$"
+      }
+    },
+    {
+      "id": "photo",
+      "name": "照片",
+      "description": "本地图库与角色照片",
+      "usage": "#<角色>照片",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:照片|(?P<character>.+?)(?:照片|写真|图片|图像))$"
+      }
+    },
+    {
+      "id": "simulation-fate",
+      "name": "定轨",
+      "description": "独立参考娱乐模拟，不消耗真实货币",
+      "usage": "#定轨<武器名称|取消>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:模拟)?定轨(?P<weapon>.*)$"
+      }
+    },
+    {
+      "id": "public-profile",
+      "name": "uid+UID",
+      "description": "使用主动共享的公共池查询官方公开资料",
+      "usage": "#uid+<UID>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:公开信息|(?:uid|UID)?[+＋]*(?P<uid>(?:18|[1-9])[0-9]{8}))$"
+      }
+    },
+    {
+      "id": "calendar",
+      "name": "卡池",
+      "description": "查询固定参考资料",
+      "usage": "#<版本>卡池",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:卡池|(?P<version>[0-9]+(?:\\.[0-9]+)+)(?:上半|下半)?卡池)$"
+      }
+    },
+    {
+      "id": "banner-history",
+      "name": "卡池历史",
+      "description": "卡池历史",
+      "usage": "#<角色或武器>卡池",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:卡池历史|复刻记录|(?P<item>.+?)卡池(?:详情|详细|历史)?)$"
+      }
+    },
+    {
+      "id": "abyss",
+      "name": "深渊",
+      "description": "深境螺旋",
+      "usage": "#[上期]深渊 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<period>本期|上期|往期)?(?:深渊|深境螺旋|深境)$"
+      }
+    },
+    {
+      "id": "theater",
+      "name": "剧诗",
+      "description": "幻想真境剧诗",
+      "usage": "#剧诗 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:本期|上期)?(?:幻想真境剧诗|幻想|幻境|剧诗)$"
+      }
+    },
+    {
+      "id": "hard_challenge",
+      "name": "幽境危战",
+      "description": "幽境危战",
+      "usage": "#幽境危战 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:本期|上期)?(?:幽境危战|幽境|危战)(?:单人|单挑|组队|多人|合作|最佳)?$"
+      }
+    },
+    {
+      "id": "monthly",
+      "name": "札记",
+      "description": "旅行札记",
+      "usage": "#原石[月份] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:原石|札记)(?P<month>[0-9]{1,2})?月?$"
+      }
+    },
+    {
+      "id": "score",
+      "name": "圣遗物",
+      "description": "按角色专属权重计算装备评分",
+      "usage": "#<角色>圣遗物 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:评分|(?P<character>.+?)圣遗物)$"
+      }
+    },
+    {
+      "id": "build",
+      "name": "伤害",
+      "description": "自动应用固定参考情境计算角色伤害",
+      "usage": "#<角色>伤害 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.*?)伤害(?:[1-9][0-9]*)?$"
+      }
+    },
+    {
+      "id": "growth",
+      "name": "养成",
+      "description": "计算升至上限的材料需求",
+      "usage": "#<角色>养成 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.*?)(?:养成|计算)$"
+      }
+    },
+    {
+      "id": "materials",
+      "name": "材料",
+      "description": "查询固定参考资料",
+      "usage": "#<名称>材料",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<name>.*?)(?:突破|材料|素材|培养)$"
+      }
+    },
+    {
+      "id": "rank",
+      "name": "排名",
+      "description": "查看本群主动提交的装备评分排行",
+      "usage": "#<角色>排名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:群内?)?(?P<character>.*?)(?:伤害|圣遗物|遗器|评分|词条|双爆|双暴)?(?:排名|排行)榜?$"
+      }
+    },
+    {
+      "id": "simulation",
+      "name": "十连",
+      "description": "独立参考娱乐模拟，不消耗真实货币",
+      "usage": "#十连[角色|武器|常驻]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:模拟)?(?:十连|抽卡)(?P<pool>角色|武器|光锥|常驻)?$"
+      }
+    },
+    {
+      "id": "search",
+      "name": "米游社",
+      "description": "官方公开内容搜索",
+      "usage": "#米游社<关键词>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:搜索|(?:米游社|mys)(?P<keyword>.+))$"
+      }
+    },
+    {
+      "id": "map",
+      "name": "地图",
+      "description": "地图查询",
+      "usage": "#<资源>在哪里",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:地图|(?:刷新|更新)?(?P<resource>.+?)在[哪那]里*)$"
+      }
+    },
+    {
+      "id": "guides",
+      "name": "攻略",
+      "description": "攻略查询",
+      "usage": "#<角色>攻略",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:更新)?(?P<character>.*?)攻略(?:[0-9]+|all)?$"
+      }
+    },
+    {
+      "id": "catalog",
+      "name": "图鉴",
+      "description": "查询离线角色和装备资料",
+      "usage": "#<名称>图鉴",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<name>.*?)(?:图鉴|资料)$"
+      }
+    },
+    {
+      "id": "character",
+      "name": "面板",
+      "description": "原神角色详情",
+      "usage": "#<角色>面板 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)(?:面板|面版|详情|详细)$"
       }
     }
   ],
