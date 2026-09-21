@@ -1,0 +1,11 @@
+{
+  "id": "calendar",
+  "name": "原神日历",
+  "description": "日历命令的图片，布局参照 miao-plugin wiki/calendar",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1096,
+  "height": 3000
+}

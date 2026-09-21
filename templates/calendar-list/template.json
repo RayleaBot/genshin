@@ -1,0 +1,11 @@
+{
+  "id": "calendar-list",
+  "name": "原神日历列表",
+  "description": "日历列表命令的图片，与 calendar 同一页面，宽度取上游列表模式的 740px",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 814,
+  "height": 3000
+}

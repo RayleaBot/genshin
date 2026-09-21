@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro {{ .mode }}-mode">
+<div class="container elem-bg" id="container">
+<div class="calendar">
+  <div class="cal-bg for-calendar-mode">
+    <table class="cont-table" border-collapse="collapse">
+      <tr class="tr thead">{{ range .months }}<td colspan="{{ len .dates }}" class="td month">{{ .month }}月</td>{{ end }}</tr>
+      <tr class="tr thead">
+        {{ range .months }}{{ range .dates }}
+        <td class="td date{{ if .current }} current-date{{ end }}"><span class="date-num">{{ .date }}日</span><span class="date-week">周{{ .week }}</span></td>
+        {{ end }}{{ end }}
+      </tr>
+      <tr class="tr">
+        {{ range .months }}{{ range .dates }}
+        <td class="line{{ if .current }} current-date{{ end }}">
+          {{ range index $.births .key }}
+          <div class="card"><div class="item-icon star{{ .star }}"><div class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></div><span class="char-name">{{ .name }}</span></div></div>
+          {{ end }}
+        </td>
+        {{ end }}{{ end }}
+      </tr>
+    </table>
+  </div>
+  <div class="cal-bg for-list-mode">
+    <table class="cont-table" border-collapse="collapse">
+      <tr class="tr thead"><td class="td month">活动列表</td></tr>
+      <tr class="tr"><td class="line"></td></tr>
+    </table>
+  </div>
+  <div class="cal-list {{ .list_class }}">
+    {{ range .abyss }}
+    <div class="cal-abyss-cont">
+      <div class="cal-item type-{{ .kind }}" style="left:{{ .left }}%;width:{{ .width }}%;">
+        <div class="info"><img data-render-resource="{{ .kind }}-icon" class="cal-icon" alt=""><strong>{{ .title }}</strong><span>{{ .label }}</span></div>
+      </div>
+    </div>
+    {{ end }}
+    {{ range .rows }}{{ range . }}
+    <div class="cal-item {{ .class }}" style="margin-left:{{ .left }}%;width:{{ .width }}%">
+      {{ if .card }}<div class="banner" data-render-resource="{{ .card }}"></div>{{ else if .banner }}<div class="banner" data-render-resource="{{ .banner }}"></div>{{ end }}
+      <div class="info">
+        {{ if and .character .face }}<img data-render-resource="{{ .face }}" class="character-img" alt="">{{ else if .icon }}<img data-render-resource="{{ .icon }}" class="cal-icon" alt="">{{ else }}<img data-render-resource="calendar-icon" class="cal-icon" alt="">{{ end }}
+        <strong>{{ .title }}</strong>
+        <span>{{ .label }}</span>
+      </div>
+    </div>
+    {{ end }}{{ end }}
+  </div>
+  <div class="now-line" style="left:{{ .now_left }}%"></div>
+  <div class="now-line line2" style="left:{{ .now_left }}%"></div>
+</div>
+<div class="now-time"><span>当前时间：{{ .now_time }}</span></div>
+<div class="daily-talent">
+  {{ range .talents }}{{ $talent := . }}
+  {{ range .chars }}
+  <div class="card">
+    <div class="banner city-{{ $talent.cid }}">
+      {{ if .first }}<div class="title"><div class="icon"{{ with $talent.icon }} data-render-resource="{{ . }}"{{ end }}></div><span>{{ $talent.label }}</span></div>{{ end }}
+      <div class="line {{ .position }}"></div>
+    </div>
+    <div class="item-icon star{{ .star }}">
+      <div class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></div>
+      <div class="weekly"><div class="weekly-icon"{{ with .weekly }} data-render-resource="{{ . }}"{{ end }}></div></div>
+    </div>
+  </div>
+  {{ end }}
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
