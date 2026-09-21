@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+<div class="head_box">
+  {{ if and .user .user.avatar_url }}<img class="icon" src="{{ .user.avatar_url }}" alt="">{{ else }}<img class="icon"{{ with .head }} data-render-resource="{{ . }}"{{ end }} alt="">{{ end }}
+  <p class="id_text">{{ .nickname }} | <span style="font-size:15px;color:#1e1f20;margin-left: -2px">Lv.{{ .level }}</span></p>
+  <div class="day_text">{{ .region }} | UID{{ .uid }}</div>
+  <img class="genshin_logo" data-render-resource="genshin-logo" alt="">
+</div>
+<div class="data_box">
+  <div class="tab_lable">数据总览</div>
+  {{ range .lines }}
+  <div class="data_line">
+    {{ range . }}
+    <div class="data_line_item">
+      <div style="color:{{ .color }};font-size:15px" class="num">{{ .num }}
+        {{ with .extra }}<span style="font-size:11px;color:#757575;margin-left: -4px">/{{ . }}</span>{{ end }}
+      </div>
+      <div class="lable">{{ .label }}</div>
+    </div>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ with .tcg }}
+<div class="basicInfo">
+  <div class="tab_lable">七圣召唤</div>
+  <div class="basicInfo_header">
+    <div class="basicInfo_icon"><span>{{ .level }}</span></div>
+    <div class="basicInfo_right">
+      <div class="item"><div>已收集角色牌</div><div>{{ .characters }}</div></div>
+      <div class="item"><div>已收集行动牌</div><div>{{ .actions }}</div></div>
+    </div>
+  </div>
+</div>
+{{ end }}
+<div class="explor_box">
+  <div class="tab_lable">地图探险</div>
+  {{ range .explorations }}
+  <div class="item">
+    <img class="icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    <div class="content">
+      {{ range .lines }}<p class="name">{{ .name }}：<span class="num">{{ .text }}</span></p>{{ end }}
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

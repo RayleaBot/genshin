@@ -1,0 +1,11 @@
+{
+  "id": "role-explore",
+  "name": "原神探索",
+  "description": "探索与宝箱等命令的图片，布局参照 Yunzai 原神插件 html/player/role-explore",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 705,
+  "height": 2000
+}

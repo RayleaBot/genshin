@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+<div class="info-box">
+  <div class="head-box">
+    <div class="avatar">{{ with .user }}{{ with .avatar_url }}<img src="{{ . }}" alt="">{{ end }}{{ end }}</div>
+    <div class="name"><div>{{ with .user }}{{ .nickname }}{{ end }}</div></div>
+    <div class="uid"><div>UID：{{ .uid }}</div></div>
+    <div class="genshin"><img class="genshin-img" data-render-resource="genshin-logo" alt=""></div>
+  </div>
+  <div class="tab">数据总览</div>
+  <div class="data-box">
+    {{ range .lines }}
+    <div class="data-line">
+      {{ range . }}<div class="data-line-item"><div class="num">{{ .num }}</div><div class="lable">{{ .label }}</div></div>{{ end }}
+    </div>
+    {{ end }}
+  </div>
+</div>
+<div class="list-box">
+  <div class="list">
+    {{ range .avatars }}
+    <div class="item">
+      <div class="item-bg">
+        <div class="role-box {{ .element }}"><div class="role"{{ with .image }} data-render-resource="{{ . }}"{{ end }}></div></div>
+        {{ if .constellation }}<div class="role-life life{{ .constellation }}">{{ .constellation }}命</div>{{ end }}
+        <div class="role-lv"><div class="text">Lv {{ .level }}</div><div class="text-bg"></div></div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
