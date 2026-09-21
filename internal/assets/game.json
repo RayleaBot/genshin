@@ -35,6 +35,12 @@
       "input": "period"
     },
     {
+      "name": "genshin.abyss_floor",
+      "label": "深渊楼层",
+      "command": "深渊十二层",
+      "input": "period"
+    },
+    {
       "name": "genshin.theater",
       "label": "幻想真境剧诗",
       "command": "剧诗",

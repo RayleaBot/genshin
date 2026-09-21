@@ -1033,6 +1033,17 @@
       }
     },
     {
+      "id": "abyss-floor",
+      "name": "深渊楼层",
+      "description": "深境螺旋第 9 至 12 层的每间战绩",
+      "usage": "#[上期]深渊十二层 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<period>本期|上期|往期)?(?:深渊|深境螺旋|深境)第?(?:9|10|11|12|九|十|十一|十二)层$"
+      }
+    },
+    {
       "id": "theater",
       "name": "剧诗",
       "description": "幻想真境剧诗",
@@ -1221,6 +1232,7 @@
       "title": "战绩",
       "commands": [
         "abyss",
+        "abyss-floor",
         "theater",
         "hard_challenge",
         "tcg",

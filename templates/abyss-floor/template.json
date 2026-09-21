@@ -1,0 +1,11 @@
+{
+  "id": "abyss-floor",
+  "name": "原神深渊楼层",
+  "description": "深渊第 9 至 12 层命令的战绩图片，布局参照 Yunzai 原神插件 html/abyss/abyss-floor",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 800,
+  "height": 1600
+}

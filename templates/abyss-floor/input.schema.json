@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "floor", "star", "max_star", "rooms"],
+  "properties": {
+    "uid": { "type": "string" },
+    "floor": { "type": "integer" },
+    "star": { "type": "string" },
+    "max_star": { "type": "string" },
+    "rooms": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

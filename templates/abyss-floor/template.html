@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="page bg{{ .floor }}">
+    <div class="border"></div>
+    <div class="header">
+      <div>
+        <div class="uid">ID:{{ .uid }}</div>
+        <div class="title">深境第{{ .floor }}层</div>
+      </div>
+      <div class="star">
+        <img data-render-resource="star" alt="">
+        <span>{{ .star }}/{{ .max_star }}</span>
+      </div>
+    </div>
+    <div class="room-list">
+      {{ range .rooms }}
+      <div class="floor">
+        <div class="floor-header">
+          <span class="index">第{{ .index }}间</span>
+          <span class="date">{{ .time }}</span>
+        </div>
+        <div class="content">
+          <div class="role-box">
+            {{ range .battles }}
+            <div class="roles">
+              {{ range .avatars }}
+              <div class="item">
+                {{ if .life }}<span class="life life{{ .life }}">{{ .life }}命</span>{{ end }}
+                <img class="role_img bg{{ .rarity }}"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+                <div class="desc">Lv.{{ .level }}</div>
+                <img class="fill_img" data-render-resource="fill" alt="">
+              </div>
+              {{ end }}
+              <div class="split-text split-text-{{ .index }}">{{ if eq .index "1" }}上{{ else }}下{{ end }}半</div>
+            </div>
+            {{ end }}
+          </div>
+          <div class="star-box">{{ range .stars }}<img{{ if not . }} class="nostar"{{ end }} data-render-resource="star" alt="">{{ end }}</div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    {{ with $.render_footer }}<div class="footer">{{ . }}</div>{{ end }}
+  </div>
+</div>
+</body>
+</html>
