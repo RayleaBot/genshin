@@ -50,8 +50,6 @@ type GroupData struct {
 	// recorded, as upstream); RankSinceMS is when the ranking started.
 	RankOff     bool  `json:"rank_off,omitempty"`
 	RankSinceMS int64 `json:"rank_since_ms,omitempty"`
-	// QueryRanks are the UIDs in each query ranking, by ranking ID and UID.
-	QueryRanks map[string]map[string]QueryRankMember `json:"query_ranks,omitempty"`
 }
 
 // GroupStore keeps each group's data in its own file. The settings every
@@ -256,8 +254,6 @@ func (a *App) manageGroups(action string, input map[string]any) (map[string]any,
 			return nil, gameError("input_invalid", "群列表页码无效。")
 		}
 		items, next, err := a.Groups.List(q.Page)
-		// Games whose upstream ranks records otherwise, as Zenless Zone Zero,
-		// declare no challenge board.
 		board := slices.ContainsFunc(a.Manifest.Commands, func(c pluginmeta.Command) bool { return c.ID == "challenge-rank" })
 		return map[string]any{"items": items, "next_page": next, "challenge_board": board}, err
 	}
@@ -307,7 +303,6 @@ func (a *App) manageGroups(action string, input map[string]any) (map[string]any,
 			}
 			d.Config = GroupConfig{Aliases: map[string]string{}}
 			d.Rank = []RankEntry{}
-			d.QueryRanks = nil
 			d.Challenges = nil
 			return nil
 		})

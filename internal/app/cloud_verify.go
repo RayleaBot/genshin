@@ -10,11 +10,11 @@ import (
 var cloudQQPattern = regexp.MustCompile(`^[1-9][0-9]{4,11}$`)
 var cloudCodePattern = regexp.MustCompile(`^[A-Za-z0-9_:\-]{1,128}$`)
 
-func cloudVerifyRequest(game string, input CloudInput) (string, map[string]any, error) {
+func cloudVerifyRequest(input CloudInput) (string, map[string]any, error) {
 	if input.owner == nil || input.owner.SourceProtocol != "onebot11" || input.owner.SourceAdapter == "" || input.owner.BotID == "" || !cloudQQPattern.MatchString(input.owner.ActorID) || !uidPattern.MatchString(input.UID) || !input.Consent {
 		return "", nil, gameError("input_invalid", "云验证需要本人 OneBot11 私聊身份、有效 UID 和明确确认。")
 	}
-	body := map[string]any{"version": "0.1.0", "uid": input.UID, "type": cloudGame(game)}
+	body := map[string]any{"version": "0.1.0", "uid": input.UID, "type": arkGame}
 	if input.Mode == "verify_code" {
 		return "verify/code", body, nil
 	}
@@ -66,8 +66,8 @@ func (c *CloudClient) pollVerification(game string, owner Subject, cancel bool) 
 	return CloudJob{}, gameError("cloud_missing", "没有有效的云验证请求，请先获取验证码或查询关联状态。")
 }
 func (a *App) cloudVerifyCommand(event *rayleabot.EventContext, args []string) error {
-	if (a.Game.ID != "genshin" && a.Game.ID != "starrail") || event.Event.EventType != "message.private" || event.Event.SourceProtocol != "onebot11" {
-		return event.SendText("云 UID 验证仅支持原神/星铁的 OneBot11 本人私聊；不会把其他协议的开放 ID 当作 QQ。")
+	if event.Event.EventType != "message.private" || event.Event.SourceProtocol != "onebot11" {
+		return event.SendText("云 UID 验证仅支持 OneBot11 本人私聊；不会把其他协议的开放 ID 当作 QQ。")
 	}
 	owner := Subject{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, BotID: event.Bot.ID, ActorID: event.Event.Actor.ID}
 	if len(args) == 1 && (args[0] == "进度" || args[0] == "取消") {

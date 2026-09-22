@@ -5,10 +5,10 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/reference/miao"
 	plugin "github.com/RayleaBot/plugin-genshin"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
+	"github.com/RayleaBot/plugin-genshin/internal/reference/miao"
 	"github.com/RayleaBot/plugin-genshin/internal/showcase"
 )
 

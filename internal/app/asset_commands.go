@@ -7,7 +7,7 @@ import (
 
 func (a *App) assetCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	if command == "codes" {
-		data, err := a.Content.codes(ctx, a.Game.ID)
+		data, err := a.Content.codes(ctx)
 		if err != nil {
 			return event.SendText(friendlyError(err))
 		}
@@ -36,7 +36,7 @@ func (a *App) assetCommand(ctx context.Context, event *rayleabot.EventContext, c
 		input["confirm"] = true
 		input["code"] = args[0]
 	} else {
-		for _, c := range billingCategories(a.Game.ID) {
+		for _, c := range billingCategories() {
 			if args[0] == c["label"] {
 				input["category"] = c["id"]
 			}

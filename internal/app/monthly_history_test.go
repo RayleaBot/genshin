@@ -32,12 +32,12 @@ func (c *monthCaller) CallService(_ context.Context, req rayleabot.ServiceCallRe
 	return gameError("operation_denied", "unexpected")
 }
 func TestMonthlyHistoryCoverageAndConcurrentChanges(t *testing.T) {
-	role := Role{Ref: "role", Game: "starrail", UID: "100000001", Region: "prod_gf_cn"}
-	caller := &monthCaller{role: role, data: map[string]any{"data_month": 202608, "month_data": map[string]any{"current_hcoin": 1000, "current_money": 0}, "optional_month": []any{202608, 202609}}}
-	client := AccountsClient{Caller: caller, Provider: "p", Game: "starrail"}
+	role := Role{Ref: "role", Game: "genshin", UID: "100000001", Region: "cn_gf01"}
+	caller := &monthCaller{role: role, data: map[string]any{"data_month": 8, "month_data": map[string]any{"current_primogems": 1000, "current_mora": 0}, "optional_month": []any{8, 9}}}
+	client := AccountsClient{Caller: caller, Provider: "p", Game: "genshin"}
 	choice := Selection{"account", "role"}
 	input := map[string]any{"account_ref": "account", "role_ref": "role"}
-	a := App{Game: Game{ID: "starrail"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
+	a := App{Game: Game{ID: "genshin"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
 	defer a.Close()
 	call := func(action string) map[string]any {
 		t.Helper()
@@ -48,11 +48,11 @@ func TestMonthlyHistoryCoverageAndConcurrentChanges(t *testing.T) {
 		return out
 	}
 	call("monthly.fetch")
-	caller.data = map[string]any{"data_month": 202609, "month_data": map[string]any{"current_hcoin": 2000}}
+	caller.data = map[string]any{"data_month": 9, "month_data": map[string]any{"current_primogems": 2000}}
 	call("monthly.fetch")
 	a.Monthly = &MonthlyStore{Directory: a.Monthly.Directory}
 	list := call("monthly.list")
-	if list["totals"].(map[string]float64)["星琼"] != 3000 || list["coverage"].(map[string]int)["信用点"] != 1 {
+	if list["totals"].(map[string]float64)["原石"] != 3000 || list["coverage"].(map[string]int)["摩拉"] != 1 {
 		t.Fatal(list)
 	}
 	caller.beforeReply = func() {
@@ -77,18 +77,10 @@ func TestMonthlyHistoryCoverageAndConcurrentChanges(t *testing.T) {
 		t.Fatal(data, err)
 	}
 }
-func TestMonthlyJanuaryYearInferenceAndZZZCurrencies(t *testing.T) {
-	key, estimated, err := monthlyKey("genshin", map[string]any{"data_month": 12}, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+func TestMonthlyJanuaryYearInference(t *testing.T) {
+	key, estimated, err := monthlyKey(map[string]any{"data_month": 12}, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil || key != "2025-12" || !estimated {
 		t.Fatal(key, estimated, err)
-	}
-	_, _, err = monthlyKey("zzz", map[string]any{"data_month": 12}, time.Now())
-	if err == nil {
-		t.Fatal("missing year guessed outside supported API")
-	}
-	totals := monthlyAmounts("zzz", map[string]any{"month_data": map[string]any{"list": []any{map[string]any{"data_type": "PolychromesData", "count": 1200}, map[string]any{"data_type": "MatserTapeData", "count": 0}}}})
-	if totals["菲林"] != 1200 || len(totals) != 2 {
-		t.Fatal(totals)
 	}
 }
 
@@ -132,26 +124,26 @@ func (c *monthsCaller) CallService(_ context.Context, req rayleabot.ServiceCallR
 }
 
 func TestRefreshMonthlyKeepsOfferedMonthsNotYetFinal(t *testing.T) {
-	role := Role{Ref: "role", Game: "zzz", UID: "10000001"}
+	role := Role{Ref: "role", Game: "genshin", UID: "10000001"}
 	month := func(key int) map[string]any {
-		return map[string]any{"data_month": key, "month_data": map[string]any{"list": []any{}}, "optional_month": []any{202607, 202608, 202609}}
+		return map[string]any{"data_month": key, "month_data": map[string]any{"current_primogems": 0}, "optional_month": []any{7, 8, 9}}
 	}
-	caller := &monthsCaller{role: role, months: map[string]map[string]any{"": month(202609), "202607": month(202607), "202608": month(202608)}}
-	client := AccountsClient{Caller: caller, Provider: "p", Game: "zzz"}
+	caller := &monthsCaller{role: role, months: map[string]map[string]any{"": month(9), "7": month(7), "8": month(8)}}
+	client := AccountsClient{Caller: caller, Provider: "p", Game: "genshin"}
 	choice := Selection{"account", "role"}
-	a := App{Game: Game{ID: "zzz"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
+	a := App{Game: Game{ID: "genshin"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
 	// July was saved after it ended, August while it ran.
 	august := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
-	if _, err := a.Monthly.Keep("p", choice, "zzz", month(202607), august); err != nil {
+	if _, err := a.Monthly.Keep("p", choice, month(7), august); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.Monthly.Keep("p", choice, "zzz", month(202608), august); err != nil {
+	if _, err := a.Monthly.Keep("p", choice, month(8), august); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.refreshMonthly(t.Context(), client, choice); err != nil {
 		t.Fatal(err)
 	}
-	if len(caller.asked) != 2 || caller.asked[0] != "" || caller.asked[1] != "202608" {
+	if len(caller.asked) != 2 || caller.asked[0] != "" || caller.asked[1] != "8" {
 		t.Fatalf("asked %q", caller.asked)
 	}
 	archive, _ := a.Monthly.Read("p", choice)

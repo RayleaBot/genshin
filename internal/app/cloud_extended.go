@@ -39,7 +39,7 @@ func cloudIDs(values []string, maxCount int, uid bool) bool {
 	}
 	return true
 }
-func extendedCloudRequest(game string, input CloudInput) (string, map[string]any, bool, error) {
+func extendedCloudRequest(input CloudInput) (string, map[string]any, bool, error) {
 	body := map[string]any{"version": "0.1.0"}
 	invalid := func() (string, map[string]any, bool, error) {
 		return "", nil, true, gameError("input_invalid", "云查询需要有效的 UID、角色列表或版本，且列表不能重复。")
@@ -50,7 +50,7 @@ func extendedCloudRequest(game string, input CloudInput) (string, map[string]any
 			return invalid()
 		}
 		body["uid"] = input.UID
-		body["type"] = cloudGame(game)
+		body["type"] = arkGame
 		return "panel/refresh", body, true, nil
 	case "self_rank":
 		if !uidPattern.MatchString(input.UID) || !cloudIDs(input.CharacterIDs, 250, false) {
@@ -58,7 +58,7 @@ func extendedCloudRequest(game string, input CloudInput) (string, map[string]any
 		}
 		body["uid"] = input.UID
 		body["ids"] = input.CharacterIDs
-		body["type"] = cloudGame(game)
+		body["type"] = arkGame
 		return "rank/self", body, true, nil
 	case "group_rank":
 		if !cloudIDs(input.UIDs, 50, true) || !cloudIDs([]string{input.CharacterID}, 1, false) || !slices.Contains([]string{"", "dmg", "mark"}, input.Query) {
@@ -74,13 +74,13 @@ func extendedCloudRequest(game string, input CloudInput) (string, map[string]any
 		body["data"] = nil
 		return "rank/group", body, true, nil
 	case "stygian":
-		if game != "genshin" || !cloudIDs(input.UIDs, 50, true) {
+		if !cloudIDs(input.UIDs, 50, true) {
 			return invalid()
 		}
 		body["uid"] = input.UIDs
 		return "rank/stygian", body, true, nil
 	case "akasha_stygian":
-		if game != "genshin" || input.Authenticated || !cloudIDs(input.UIDs, 50, true) || !cloudVersionPattern.MatchString(input.Version) {
+		if input.Authenticated || !cloudIDs(input.UIDs, 50, true) || !cloudVersionPattern.MatchString(input.Version) {
 			return invalid()
 		}
 		return "akasha/stygian", body, true, nil
@@ -148,8 +148,8 @@ func extendedCloudResult(game Game, input CloudInput, result map[string]any) (Cl
 	}
 	return CloudResult{View: &v}, true, nil
 }
-func (c *CloudClient) akashaStygian(ctx context.Context, game Game, input CloudInput) (CloudResult, error) {
-	if _, _, _, err := extendedCloudRequest(game.ID, input); err != nil {
+func (c *CloudClient) akashaStygian(ctx context.Context, input CloudInput) (CloudResult, error) {
+	if _, _, _, err := extendedCloudRequest(input); err != nil {
 		return CloudResult{}, err
 	}
 	filter := ""

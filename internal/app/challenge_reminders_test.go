@@ -15,16 +15,16 @@ func TestChallengeReminderScheduleUnknownAndRestart(t *testing.T) {
 		t.Fatal("weekly duplicate admission")
 	}
 	s := reminderStore(t.TempDir())
-	task := Reminder{Ref: "task", Kind: "challenge", ChallengeKind: "deadly", Metric: "star", Threshold: 9, Enabled: true, Hour: 20, ExpiresAtMS: now + int64(7*24*time.Hour/time.Millisecond)}
+	task := Reminder{Ref: "task", Kind: "challenge", ChallengeKind: "abyss", Metric: "star", Threshold: 9, Enabled: true, Hour: 20, ExpiresAtMS: now + int64(7*24*time.Hour/time.Millisecond)}
 	if err := seedReminders(s, []Reminder{task}); err != nil {
 		t.Fatal(err)
 	}
 	var queries, sends atomic.Int32
-	data := map[string]any{"start_time": 1760000000, "total_star": 6, "total_score": 200}
+	data := map[string]any{"schedule_id": 12, "max_floor": "12-3", "floors": []any{map[string]any{"index": 12, "star": 6}}, "total_battle_times": 20}
 	query := func(Reminder) (QueryResult, error) { queries.Add(1); return QueryResult{Data: data}, nil }
 	send := func(Reminder, string) error { sends.Add(1); return errors.New("synthetic uncertain result") }
 	tick := func() {
-		if err := s.Tick(t.Context(), "task", now, query, send, Game{ID: "zzz"}); err != nil {
+		if err := s.Tick(t.Context(), "task", now, query, send, Game{ID: "genshin"}); err != nil {
 			t.Error(err)
 		}
 	}
@@ -43,14 +43,14 @@ func TestChallengeReminderScheduleUnknownAndRestart(t *testing.T) {
 	}
 	items, _ := s.List()
 	now = items[0].NextCheckMS
-	data = map[string]any{"start_time": 1760000000, "total_star": 9}
+	data = map[string]any{"schedule_id": 12, "max_floor": "12-3", "floors": []any{map[string]any{"index": 12, "star": 9}}, "total_battle_times": 20}
 	tick()
 	items, _ = s.List()
 	if items[0].LastCode != "target_met" || sends.Load() != 1 {
 		t.Fatal(items)
 	}
 	now = items[0].NextCheckMS
-	data = map[string]any{"start_time": 1760000000}
+	data = map[string]any{"schedule_id": 12, "max_floor": "12-3", "total_battle_times": 20}
 	tick()
 	if sends.Load() != 1 {
 		t.Fatal("missing treated as zero")

@@ -6,9 +6,6 @@ import (
 )
 
 func (a *App) birthdayAction(ctx context.Context, client AccountsClient, action string, input map[string]any) (map[string]any, error) {
-	if a.Game.ID != "genshin" {
-		return nil, gameError("operation_denied", "留影叙佳期仅适用于原神。")
-	}
 	choice := Selection{asText(input["account_ref"]), asText(input["role_ref"])}
 	var result QueryResult
 	var err error

@@ -141,7 +141,7 @@ func DailyMaterial(context app.ImageContext, page app.DailyMaterialImage) (app.I
 		star := app.Int(record.Data["star"])
 		id, _ := strconv.Atoi(panel.ID)
 		path := "resources/meta-gs/character/" + record.Name + "/imgs/"
-		levels := app.PanelTalents("genshin", panel, record)
+		levels := app.PanelTalents(panel, record)
 		talents, lowest := []any{}, math.MaxInt
 		for _, key := range []string{"a", "e", "q"} {
 			level := levels[key]

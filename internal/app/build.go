@@ -90,31 +90,30 @@ type BuildWeaponChoice struct {
 
 // findBuildCharacter returns the reference character only when it has a damage
 // rule; some characters are catalogued for scoring alone.
-func findBuildCharacter(engine *reference.Engine, game string, panel CharacterPanel) (reference.Character, error) {
-	record, err := findReferenceCharacter(engine, game, panel)
+func findBuildCharacter(engine *reference.Engine, panel CharacterPanel) (reference.Character, error) {
+	record, err := findReferenceCharacter(engine, panel)
 	if err == nil && record.Script == "" {
 		return reference.Character{}, buildUnavailable("character")
 	}
 	return record, err
 }
 
-func findReferenceCharacter(engine *reference.Engine, game string, panel CharacterPanel) (reference.Character, error) {
+func findReferenceCharacter(engine *reference.Engine, panel CharacterPanel) (reference.Character, error) {
 	metadata := engine.Metadata()
-	short := map[string]string{"genshin": "gs", "starrail": "sr", "zzz": "zzz"}[game]
+	short := "gs"
 	if short == "" {
 		return reference.Character{}, buildUnavailable("game")
 	}
 	wanted := canonicalBuildElement(panel.Element)
-	ruleID := referenceCharacterID(game, panel)
+	ruleID := referenceCharacterID(panel)
 	for _, record := range metadata.Characters {
 		match := record.ID == ruleID
-		if game == "genshin" && slices.Contains([]string{"10000005", "10000007"}, panel.ID) && slices.Contains([]string{"10000005", "10000007", "20000000"}, record.ID) {
+		if slices.Contains([]string{"10000005", "10000007"}, panel.ID) && slices.Contains([]string{"10000005", "10000007", "20000000"}, record.ID) {
 			match = true
 		}
 		if record.Game == short && match && canonicalBuildElement(record.Element) == wanted {
-			if game == "genshin" {
-				record.ID = panel.ID
-			}
+			record.ID = panel.ID
+
 			return record, nil
 		}
 	}
@@ -128,15 +127,7 @@ func findReferenceCharacter(engine *reference.Engine, game string, panel Charact
 
 // Pinned MysPanelHSRApi selects enhanced rules from the actual skill prefix,
 // while account queries continue to use the official, original character ID.
-func referenceCharacterID(game string, panel CharacterPanel) string {
-	if game != "starrail" || !slices.Contains([]string{"1212", "1205", "1005", "1006", "1004", "1102", "1217", "1310", "1306", "1307"}, panel.ID) {
-		return panel.ID
-	}
-	for _, skill := range panel.Skills {
-		if strings.HasPrefix(skill.ID, "1"+panel.ID) {
-			return "2" + panel.ID[1:]
-		}
-	}
+func referenceCharacterID(panel CharacterPanel) string {
 	return panel.ID
 }
 func canonicalBuildElement(value string) string {
@@ -157,17 +148,11 @@ func buildStatNumber(raw string) (float64, bool) {
 	value, err := strconv.ParseFloat(raw, 64)
 	return value, err == nil && !math.IsNaN(value) && !math.IsInf(value, 0) && math.Abs(value) <= 1e8
 }
-func buildProfile(engine *reference.Engine, game string, panel CharacterPanel, record reference.Character) (BuildProfile, error) {
-	if game == "zzz" {
-		return buildZZZProfile(engine, panel, record)
-	}
+func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfile, error) {
 	if !panel.RankKnown || panel.Level < 1 || panel.Rank < 0 || panel.Rank > 6 || (panel.Weapon == nil && !panel.WeaponKnown) {
 		return BuildProfile{}, buildUnavailable("identity")
 	}
 	maxLevel := 100
-	if game == "starrail" {
-		maxLevel = 80
-	}
 	if panel.Level > maxLevel {
 		return BuildProfile{}, buildUnavailable("level")
 	}
@@ -177,18 +162,11 @@ func buildProfile(engine *reference.Engine, game string, panel CharacterPanel, r
 		w = &PanelEquipment{Promote: &zero, Refinement: 1}
 	}
 	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: []string{}, Attributes: map[string]float64{}, Equipment: []BuildGear{}, EnemyLevel: 103}
-	if game == "starrail" {
-		// miao profile-detail passes enemy level 80 for Star Rail.
-		p.EnemyLevel = 80
-	}
 	if w.ID != "" && (w.Level < 1 || w.Level > 90 || w.Refinement < 1 || w.Refinement > 5) {
 		return p, buildUnavailable("weapon")
 	}
 	keys := map[string]string{"2000": "hp", "2001": "atk", "2002": "def", "20": "cpct", "22": "cdmg", "23": "recharge", "28": "mastery", "26": "heal", "30": "phy"}
-	if game == "starrail" {
-		keys = map[string]string{"1": "hp", "2": "atk", "3": "def", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "58": "stance"}
-	}
-	if value, ok := elementDamageBonus(game, panel); ok {
+	if value, ok := elementDamageBonus(panel); ok {
 		p.Attributes["dmg"] = value
 	}
 	for _, stat := range panel.Stats {
@@ -211,15 +189,8 @@ func buildProfile(engine *reference.Engine, game string, panel CharacterPanel, r
 		}
 	}
 	talents := asObject(record.Data["talent"])
-	for key, talent := range PanelTalents(game, panel, record) {
+	for key, talent := range PanelTalents(panel, record) {
 		p.Talents[key] = talent.Level
-	}
-	if game == "starrail" {
-		for _, skill := range panel.Skills {
-			if skill.Active && skill.PointType != 2 && skill.ID != "" {
-				p.Trees = append(p.Trees, RecordSkillID(game, panel, record, skill))
-			}
-		}
 	}
 	for key, raw := range talents {
 		if !slices.Contains([]string{"a", "e", "q", "t", "me", "mt", "xe"}, key) {
@@ -230,7 +201,7 @@ func buildProfile(engine *reference.Engine, game string, panel CharacterPanel, r
 		}
 	}
 	var err error
-	p.Equipment, err = buildGearSet(game, panel)
+	p.Equipment, err = buildGearSet(panel)
 	return p, err
 }
 func referenceBuild(ctx context.Context, engine *reference.Engine, record reference.Character, input BuildProfile) (BuildResult, error) {
@@ -253,11 +224,11 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 	if err != nil {
 		return nil, err
 	}
-	record, err := findBuildCharacter(a.Game.Calc, a.Game.ID, panel)
+	record, err := findBuildCharacter(a.Game.Calc, panel)
 	if err != nil {
 		return nil, err
 	}
-	profile, err := buildProfile(a.Game.Calc, a.Game.ID, panel, record)
+	profile, err := buildProfile(panel, record)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +237,7 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 		if calcErr != nil {
 			return nil, calcErr
 		}
-		applyBuildIdentity(&calculated, panel, record)
+		applyBuildIdentity(&calculated, panel)
 		metadata := a.Game.Calc.Metadata()
 		choices := []BuildWeaponChoice{}
 		for _, weapon := range metadata.Weapons {
@@ -296,9 +267,6 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 	if value, exists := input["candidate_weapon"]; exists {
 		var w BuildWeapon
 		maxPromote, maxLevel := 6, 90
-		if record.Game == "zzz" {
-			maxPromote, maxLevel = 5, 60
-		}
 		if value == nil || decodeObject(value, &w) != nil || w.Promote == nil || *w.Promote < 0 || *w.Promote > maxPromote || w.Refinement < 1 || w.Refinement > 5 || (w.ID != "" && (w.Level < 1 || w.Level > maxLevel)) || (w.ID == "" && (w.Level != 0 || *w.Promote != 0 || w.Refinement != 1)) {
 			return nil, gameError("build_input_invalid", "请填写有效的武器、等级、突破阶段和精炼。")
 		}
@@ -313,12 +281,6 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 				}
 			}
 			steps := []int{1, 20, 40, 50, 60, 70, 80, 90}
-			if record.Game == "sr" {
-				steps = []int{1, 20, 30, 40, 50, 60, 70, 80}
-			}
-			if record.Game == "zzz" {
-				steps = []int{1, 10, 20, 30, 40, 50, 60}
-			}
 			if !valid || w.Level < steps[*w.Promote] || w.Level > steps[*w.Promote+1] {
 				return nil, gameError("build_input_invalid", "候选武器类型或突破阶段与所选角色、等级不符。")
 			}
@@ -338,7 +300,7 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 				return nil, err
 			}
 		}
-		gear, err := buildGearSet(a.Game.ID, source)
+		gear, err := buildGearSet(source)
 		if err != nil {
 			return nil, err
 		}
@@ -349,28 +311,24 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 	if err != nil {
 		return nil, err
 	}
-	applyBuildIdentity(&result, panel, record)
+	applyBuildIdentity(&result, panel)
 	result.EquipmentFrom = equipmentSource
 	result.Conditions = profile.Conditions
 	return map[string]any{"build": result}, nil
 }
-func applyBuildIdentity(result *BuildResult, panel CharacterPanel, record reference.Character) {
+func applyBuildIdentity(result *BuildResult, panel CharacterPanel) {
 	result.CharacterID = panel.ID
 	result.Character = panel.Name
-	if record.Game == "sr" && record.ID != panel.ID {
-		result.Variant = "enhanced"
-		result.Character += "（强化形态）"
-	}
 }
 
 // panelDamage calculates the reference damage of a panel already read from the
 // account, so a panel reply does not query it twice.
 func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResult, error) {
-	record, err := findBuildCharacter(a.Game.Calc, a.Game.ID, panel)
+	record, err := findBuildCharacter(a.Game.Calc, panel)
 	if err != nil {
 		return BuildResult{}, err
 	}
-	profile, err := buildProfile(a.Game.Calc, a.Game.ID, panel, record)
+	profile, err := buildProfile(panel, record)
 	if err != nil {
 		return BuildResult{}, err
 	}
@@ -378,7 +336,7 @@ func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResul
 	if err != nil {
 		return BuildResult{}, err
 	}
-	applyBuildIdentity(&result, panel, record)
+	applyBuildIdentity(&result, panel)
 	return result, nil
 }
 
@@ -415,7 +373,7 @@ func (a *App) fullPanelView(ctx context.Context, event *rayleabot.EventContext, 
 	}
 	if a.panel != nil {
 		if a.Game.Calc != nil {
-			image.Record, _ = findReferenceCharacter(a.Game.Calc, a.Game.ID, panel)
+			image.Record, _ = findReferenceCharacter(a.Game.Calc, panel)
 		}
 		if drawn, ok := a.panel(a.imageContext(ctx), image); ok {
 			view.Image = &drawn
@@ -442,24 +400,13 @@ func BuildView(game Game, result BuildResult) View {
 // elementDamageBonus reads the damage bonus of the character's own element from
 // the official panel. Only displayed percentages are accepted, so a fractional
 // number from an unknown endpoint revision is never mistaken for one.
-func elementDamageBonus(game string, panel CharacterPanel) (float64, bool) {
+func elementDamageBonus(panel CharacterPanel) (float64, bool) {
 	element := normalizedElement(panel.Element)
 	if mapped := map[string]string{"fire": "pyro", "ice": "cryo", "lightning": "electro", "wind": "anemo", "以太": "ether", "电": "electro"}[element]; mapped != "" {
 		element = mapped
 	}
 	statID := map[string]string{"pyro": "40", "electro": "41", "hydro": "42", "dendro": "43", "anemo": "44", "geo": "45", "cryo": "46"}[element]
 	statName := ""
-	switch game {
-	case "starrail":
-		statID = map[string]string{"physical": "12", "pyro": "14", "cryo": "16", "electro": "18", "anemo": "20", "quantum": "22", "imaginary": "24"}[element]
-	case "zzz":
-		// Official property names disambiguate element-specific short IDs; an
-		// unknown element is deliberately not assigned another element's bonus.
-		statID = map[string]string{"physical": "31503", "pyro": "31603", "cryo": "31703", "electro": "31803", "anemo": "32303", "ether": "31903"}[element]
-		if label := map[string]string{"physical": "物理", "pyro": "火", "cryo": "冰", "electro": "电", "anemo": "风", "ether": "以太"}[element]; label != "" {
-			statName = label + "属性伤害加成"
-		}
-	}
 	for _, stat := range panel.Stats {
 		if (statID == "" || stat.ID != statID) && (statName == "" || stat.Name != statName) {
 			continue
@@ -484,19 +431,15 @@ type PanelTalent struct {
 	Original int
 }
 
-// PanelTalents maps the panel's skills to miao talent keys (a, e and q, plus
-// t, me, mt and xe in Star Rail) with the calculation record.
-func PanelTalents(game string, panel CharacterPanel, record reference.Character) map[string]PanelTalent {
+// PanelTalents maps the panel's skills to miao talent keys (a, e and q) with
+// the calculation record.
+func PanelTalents(panel CharacterPanel, record reference.Character) map[string]PanelTalent {
 	result := map[string]PanelTalent{}
 	talents := asObject(record.Data["talent"])
 	talentIDs := asObject(record.Data["talentId"])
-	skillKinds := map[string]string{"普攻": "a", "战技": "e", "终结技": "q", "天赋": "t", "秘技": "z", "欢愉技": "xe", "忆灵技": "me", "忆灵天赋": "mt"}
 	activeIndex := 0
 	for _, skill := range panel.Skills {
-		key := asText(talentIDs[RecordSkillID(game, panel, record, skill)])
-		if game == "starrail" && skillKinds[skill.Kind] != "" {
-			key = skillKinds[skill.Kind]
-		}
+		key := asText(talentIDs[skill.ID])
 		if key == "" {
 			for k, raw := range talents {
 				if firstText(asObject(raw), "name") == skill.Name {
@@ -505,7 +448,7 @@ func PanelTalents(game string, panel CharacterPanel, record reference.Character)
 				}
 			}
 		}
-		if game == "genshin" && skill.SkillType == 1 {
+		if skill.SkillType == 1 {
 			if key == "" && activeIndex < 3 {
 				key = []string{"a", "e", "q"}[activeIndex]
 			}
@@ -519,21 +462,33 @@ func PanelTalents(game string, panel CharacterPanel, record reference.Character)
 	return result
 }
 
-// RecordSkillID translates a Star Rail skill ID of a character variant (such
-// as the Trailblazer paths) to the record's own IDs.
-func RecordSkillID(game string, panel CharacterPanel, record reference.Character, skill PanelSkill) string {
-	skillID := skill.ID
-	if game != "starrail" || record.ID == panel.ID {
-		return skillID
+func buildGearSet(panel CharacterPanel) ([]BuildGear, error) {
+	if !panel.EquipmentKnown {
+		return nil, buildUnavailable("equipment.missing")
 	}
-	if strings.HasPrefix(skillID, "1"+panel.ID) {
-		skillID = record.ID + strings.TrimPrefix(skillID, "1"+panel.ID)
-	}
-	traceData, traceDetails := asObject(record.Data["tree"]), asObject(record.Data["treeData"])
-	for _, candidate := range []string{skill.ID, skillID, "1" + skillID} {
-		if traceData[candidate] != nil || traceDetails[candidate] != nil {
-			return candidate
+	out := []BuildGear{}
+	slots := map[int]bool{}
+	maxSlot := 5
+
+	for _, gear := range panel.Equipment {
+		if !gear.Complete || len(gear.Main) != 1 || gear.Slot < 1 || gear.Slot > maxSlot || slots[gear.Slot] || gear.SetName == "" {
+			return nil, buildUnavailable("equipment")
 		}
+		slots[gear.Slot] = true
+		piece := BuildGear{Slot: gear.Slot, SetName: gear.SetName, Sub: []BuildStat{}}
+		for i, stat := range append(append([]PanelStat{}, gear.Main...), gear.Sub...) {
+			value, ok := buildStatNumber(stat.Value)
+			if !ok || stat.ID == "" || stat.Key == "" {
+				return nil, buildUnavailable("equipment.stat")
+			}
+			s := BuildStat{ID: stat.ID, Key: stat.Key, Value: value, Percent: strings.HasSuffix(strings.TrimSpace(stat.Value), "%")}
+			if i == 0 {
+				piece.Main = s
+			} else {
+				piece.Sub = append(piece.Sub, s)
+			}
+		}
+		out = append(out, piece)
 	}
-	return skillID
+	return out, nil
 }

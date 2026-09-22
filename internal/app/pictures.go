@@ -17,9 +17,9 @@ import (
 
 // 照片, 老婆 and 图鉴 read the upstream images an administrator downloaded:
 // photos the way miao-plugin reads character-img, 图鉴 the way Atlas and
-// xiaoyao read their libraries. Each game declares where in game.json.
+// xiaoyao read their libraries, from the sources game.json declares.
 
-// Pictures are where a game's downloaded chat images are.
+// Pictures are where the downloaded chat images are.
 type Pictures struct {
 	// Photos are directories of a character's photos; {name} stands for the
 	// character.
@@ -27,7 +27,7 @@ type Pictures struct {
 	// Atlas are the 图鉴 libraries, tried in order: an Atlas repository's
 	// path.json index, or file paths with {name}.
 	Atlas []PictureSource `json:"atlas"`
-	// Static are commands answered with fixed upstream images, by command.
+	// Static are commands answered with a fixed upstream image, by command.
 	Static map[string]StaticPicture `json:"static"`
 }
 

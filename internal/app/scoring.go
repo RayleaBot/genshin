@@ -16,8 +16,7 @@ type EquipmentScore struct {
 
 // ScoreDetail is what miao's getMarkDetail gives its panel image: the total
 // mark and grade, attribute weights, every piece's formatted main stat and
-// substats, and the substats summed over all pieces. ZZZ scoring leaves it
-// empty.
+// substats, and the substats summed over all pieces.
 type ScoreDetail struct {
 	Title    string              `json:"title"`
 	Mark     string              `json:"mark"`
@@ -67,23 +66,19 @@ func normalizedElement(value string) string {
 }
 
 // scorePanel rates each complete piece of equipment with the character's
-// upstream rule, run by the calculation engine: miao ArtisMark for Genshin
-// Impact and Honkai: Star Rail, ZZZ-Plugin Score for Zenless Zone Zero.
+// upstream rule, run by the calculation engine: miao's ArtisMark.
 func (a *App) scorePanel(ctx context.Context, panel CharacterPanel) (CharacterPanel, error) {
 	engine := a.Game.Calc
 	if engine == nil {
 		return panel, gameError("score_unavailable", "当前资料没有评分规则。")
 	}
-	record, err := findReferenceCharacter(engine, a.Game.ID, panel)
+	record, err := findReferenceCharacter(engine, panel)
 	if err != nil {
 		return panel, gameError("score_unavailable", "缺少角色基准资料，暂不计算评分。")
 	}
 	var input map[string]any
-	if a.Game.ID == "zzz" {
-		input, err = zzzScoreInput(panel)
-	} else {
-		input, err = miaoScoreInput(a.Game.ID, panel)
-	}
+	input, err = miaoScoreInput(panel)
+
 	if err != nil {
 		return panel, err
 	}
@@ -132,35 +127,24 @@ func (a *App) scorePanel(ctx context.Context, panel CharacterPanel) (CharacterPa
 	return panel, nil
 }
 
-// scoreVersion identifies the scoring rules behind a submitted rank entry.
-func (a *App) scoreVersion() string {
-	return a.Catalog.Version + "/" + a.Game.Calc.Metadata().Version
-}
-
 // miaoAttributeKeys maps official panel property IDs to miao attribute keys.
-var miaoAttributeKeys = map[string]map[string]string{
-	"genshin":  {"2000": "hp", "2001": "atk", "2002": "def", "20": "cpct", "22": "cdmg", "23": "recharge", "28": "mastery", "26": "heal", "30": "phy"},
-	"starrail": {"1": "hp", "2": "atk", "3": "def", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "58": "stance"},
-}
+var miaoAttributeKeys = map[string]string{"2000": "hp", "2001": "atk", "2002": "def", "20": "cpct", "22": "cdmg", "23": "recharge", "28": "mastery", "26": "heal", "30": "phy"}
 
 // miaoScoreInput passes the attributes, eidolon or constellation, weapon and
 // complete equipment pieces that miao scoring rules read.
-func miaoScoreInput(game string, panel CharacterPanel) (map[string]any, error) {
+func miaoScoreInput(panel CharacterPanel) (map[string]any, error) {
 	if !panel.RankKnown || panel.Rank < 0 || panel.Rank > 6 {
-		return nil, gameError("score_unavailable", "面板缺少命座或星魂信息，暂不计算评分。")
+		return nil, gameError("score_unavailable", "面板缺少命座信息，暂不计算评分。")
 	}
 	attributes := map[string]float64{}
 	for _, stat := range panel.Stats {
-		if key := miaoAttributeKeys[game][stat.ID]; key != "" {
+		if key := miaoAttributeKeys[stat.ID]; key != "" {
 			if value, ok := buildStatNumber(stat.Value); ok {
 				attributes[key] = value
 			}
 		}
 	}
 	required := []string{"hp", "atk", "def", "cpct", "cdmg", "recharge", "mastery"}
-	if game == "starrail" {
-		required = []string{"hp", "atk", "def", "speed", "cpct", "cdmg", "recharge"}
-	}
 	for _, key := range required {
 		if _, ok := attributes[key]; !ok {
 			return nil, gameError("score_unavailable", "面板缺少评分所需的属性，暂不计算评分。")
@@ -174,9 +158,8 @@ func miaoScoreInput(game string, panel CharacterPanel) (map[string]any, error) {
 		weapon = BuildWeapon{ID: w.ID, Name: w.Name, Refinement: w.Refinement}
 	}
 	maxSlot := 6
-	if game == "genshin" {
-		maxSlot = 5
-	}
+	maxSlot = 5
+
 	gear := []BuildGear{}
 	seen := map[int]bool{}
 	for _, piece := range panel.Equipment {
@@ -206,60 +189,4 @@ func miaoScoreInput(game string, panel CharacterPanel) (map[string]any, error) {
 		return nil, gameError("score_unavailable", "缺少完整词条，暂不输出评分。")
 	}
 	return map[string]any{"rank": panel.Rank, "attributes": attributes, "weapon": weapon, "equipment": gear}, nil
-}
-
-// zzzScoreInput passes the official property list, Mindscape level and the
-// complete drive discs that ZZZ-Plugin Score reads.
-func zzzScoreInput(panel CharacterPanel) (map[string]any, error) {
-	if !panel.RankKnown || panel.Rank < 0 || panel.Rank > 6 {
-		return nil, gameError("score_unavailable", "面板缺少影画信息，暂不计算评分。")
-	}
-	properties := []map[string]any{}
-	names := map[string]bool{}
-	for _, stat := range panel.Stats {
-		id, err := strconv.Atoi(stat.ID)
-		if err != nil || stat.Name == "" || stat.Value == "" {
-			continue
-		}
-		properties = append(properties, map[string]any{"property_id": id, "property_name": stat.Name, "base": strings.ReplaceAll(stat.Base, ",", ""), "final": strings.ReplaceAll(stat.Value, ",", "")})
-		names[stat.Name] = true
-	}
-	for _, name := range []string{"生命值", "攻击力", "防御力", "暴击率", "暴击伤害", "异常掌控", "异常精通"} {
-		if !names[name] {
-			return nil, gameError("score_unavailable", "面板缺少评分所需的属性，暂不计算评分。")
-		}
-	}
-	rarities := map[string]string{"S": "S", "A": "A", "B": "B", "5": "S", "4": "S", "3": "A", "2": "B"}
-	discs := []map[string]any{}
-	seen := map[int]bool{}
-	for _, piece := range panel.Equipment {
-		rarity := rarities[piece.Rarity]
-		if !piece.Complete || len(piece.Main) != 1 || piece.Slot < 1 || piece.Slot > 6 || seen[piece.Slot] || piece.Level < 0 || piece.Level > 15 || rarity == "" {
-			continue
-		}
-		if _, err := strconv.Atoi(piece.Main[0].ID); err != nil {
-			continue
-		}
-		sub := []map[string]string{}
-		valid := true
-		for _, stat := range piece.Sub {
-			if _, err := strconv.Atoi(stat.ID); err != nil {
-				valid = false
-				break
-			}
-			if _, ok := decimalStat(stat.Value); !ok {
-				valid = false
-				break
-			}
-			sub = append(sub, map[string]string{"id": stat.ID, "value": strings.TrimSpace(stat.Value)})
-		}
-		if valid {
-			seen[piece.Slot] = true
-			discs = append(discs, map[string]any{"slot": piece.Slot, "level": piece.Level, "rarity": rarity, "main": piece.Main[0].ID, "sub": sub})
-		}
-	}
-	if len(discs) == 0 {
-		return nil, gameError("score_unavailable", "缺少完整词条，暂不输出评分。")
-	}
-	return map[string]any{"rank": panel.Rank, "properties": properties, "equipment": discs}, nil
 }

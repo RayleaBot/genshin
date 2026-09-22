@@ -37,7 +37,7 @@ func TestPublicCodesFixedSourcesEstimatedExpiryAndNoCredentials(t *testing.T) {
 		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":` + data + `}`))}, nil
 	})}
-	result, err := c.codes(t.Context(), "genshin")
+	result, err := c.codes(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}

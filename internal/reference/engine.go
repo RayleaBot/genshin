@@ -36,9 +36,6 @@ type Profile struct {
 	Files   fs.FS
 	Prelude []Script
 	Runner  Script
-	// PassWeapons hands the game's weapon catalog to runBuild. The ZZZ runtime
-	// carries its own weapon maps and skips it.
-	PassWeapons bool
 }
 
 // Character names its damage rule under characters/ and its equipment scoring
@@ -99,11 +96,7 @@ func New(profile Profile) (*Engine, error) {
 			}
 		}
 	}
-	weapons := []Weapon{}
-	if profile.PassWeapons {
-		weapons = engine.catalog.Weapons
-	}
-	encoded, err := json.Marshal(weapons)
+	encoded, err := json.Marshal(engine.catalog.Weapons)
 	if err != nil {
 		return nil, err
 	}

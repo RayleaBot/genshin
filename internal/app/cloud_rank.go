@@ -27,13 +27,10 @@ type CloudRanking struct {
 	Sort string         `json:"sort"`
 }
 
-func cloudGame(game string) string {
-	if game == "genshin" {
-		return "gs"
-	}
-	return "sr"
-}
-func customCloudRequest(game string, input CloudInput, id int) (string, map[string]any, error) {
+// arkGame is ark-plugin's name for Genshin in its requests.
+const arkGame = "gs"
+
+func customCloudRequest(input CloudInput, id int) (string, map[string]any, error) {
 	if input.Sort == "" {
 		input.Sort = "dmg_avg"
 	}
@@ -48,16 +45,16 @@ func customCloudRequest(game string, input CloudInput, id int) (string, map[stri
 	for _, f := range input.Filters {
 		rule, ok := rules[f.Op]
 		if !ok || f.Value < 0 || f.Value > 6 {
-			return "", nil, gameError("input_invalid", "命座/星魂筛选必须使用有效比较符和 0–6 的整数。")
+			return "", nil, gameError("input_invalid", "命座筛选必须使用有效比较符和 0–6 的整数。")
 		}
 		filters = append(filters, map[string]any{"type": "cons", "rule": rule, "value": f.Value})
 	}
-	advanced, err := advancedCloudFilters(game, input)
+	advanced, err := advancedCloudFilters(input)
 	if err != nil {
 		return "", nil, err
 	}
 	filters = append(filters, advanced...)
-	return "rank/custom", map[string]any{"version": "0.1.0", "charId": id, "game": cloudGame(game), "data": map[string]any{"rank": map[string]any{"col": input.Sort, "order": "desc"}, "filter": filters, "nums": input.Limit}}, nil
+	return "rank/custom", map[string]any{"version": "0.1.0", "charId": id, "game": arkGame, "data": map[string]any{"rank": map[string]any{"col": input.Sort, "order": "desc"}, "filter": filters, "nums": input.Limit}}, nil
 }
 func cloudText(v any) string {
 	s, ok := v.(string)
@@ -115,9 +112,9 @@ func customCloudResult(game Game, input CloudInput, result map[string]any) (Clou
 		if weapon == "" {
 			weapon = cloudNumber(r["weapon_id"])
 		}
-		v := View{Title: "UID " + uid, Rows: cloudNumericRows(r, "level", "等级", "promote", "突破", "cons", "命座 / 星魂", "weapon_level", "装备等级", "weapon_promote", "装备突破", "weapon_affix", "精炼 / 叠影", "talent_a", "普攻", "talent_e", "战技", "talent_q", "爆发 / 终结技", "talent_t", "天赋", "talent_me", "忆灵技", "talent_mt", "忆灵天赋", "dmg_avg", "服务伤害评分", "mark_score", "服务装备评分")}
+		v := View{Title: "UID " + uid, Rows: cloudNumericRows(r, "level", "等级", "promote", "突破", "cons", "命座", "weapon_level", "装备等级", "weapon_promote", "装备突破", "weapon_affix", "精炼 / 叠影", "talent_a", "普攻", "talent_e", "战技", "talent_q", "爆发 / 终结技", "talent_t", "天赋", "talent_me", "忆灵技", "talent_mt", "忆灵天赋", "dmg_avg", "服务伤害评分", "mark_score", "服务装备评分")}
 		if weapon != "" {
-			v.Rows = append(v.Rows, Row{Label: "武器 / 光锥", Value: weapon})
+			v.Rows = append(v.Rows, Row{Label: "武器", Value: weapon})
 		}
 		ranking.Rows = append(ranking.Rows, CloudRankRow{Index: i, UID: uid, Level: cloudNumber(r["level"]), Cons: cloudNumber(r["cons"]), Weapon: weapon, Damage: cloudNumber(r["dmg_avg"]), Score: cloudNumber(r["mark_score"]), View: v, CanReadPanel: queryID != "" && i < 20})
 	}
@@ -130,7 +127,7 @@ func customCloudResult(game Game, input CloudInput, result map[string]any) (Clou
 
 // Called under c.mu. The upstream query ID is owned by the result, never the UI.
 func (c *CloudClient) rankPanelRequest(game string, input CloudInput) (string, map[string]any, CloudInput, error) {
-	if !input.Consent || (game != "genshin" && game != "starrail") {
+	if !input.Consent {
 		return "", nil, input, gameError("cloud_consent_required", "请确认向 ark 云服务读取所选公开面板。")
 	}
 	j := c.jobs[input.Ref]
@@ -154,21 +151,15 @@ type CloudFilterField struct {
 	Options []string `json:"options,omitempty"`
 }
 
-func cloudFilterSchema(game string) []CloudFilterField {
+func cloudFilterSchema() []CloudFilterField {
 	out := []CloudFilterField{}
-	for _, v := range [][2]string{{"level", "角色等级"}, {"promote", "角色突破"}, {"cons", "命座/星魂"}, {"talent_a", "普攻等级"}, {"talent_e", "战技等级"}, {"talent_q", "爆发/终结技等级"}, {"weapon_level", "装备等级"}, {"weapon_promote", "装备突破"}, {"weapon_affix", "精炼/叠影"}, {"dmg_avg", "伤害均值"}, {"mark_score", "装备评分"}, {"data_time", "数据时间戳"}} {
+	for _, v := range [][2]string{{"level", "角色等级"}, {"promote", "角色突破"}, {"cons", "命座"}, {"talent_a", "普攻等级"}, {"talent_e", "战技等级"}, {"talent_q", "爆发/终结技等级"}, {"weapon_level", "装备等级"}, {"weapon_promote", "装备突破"}, {"weapon_affix", "精炼/叠影"}, {"dmg_avg", "伤害均值"}, {"mark_score", "装备评分"}, {"data_time", "数据时间戳"}} {
 		out = append(out, CloudFilterField{Key: v[0], Label: v[1], Kind: "number"})
 	}
 	out = append(out, CloudFilterField{Key: "artis_sets", Label: "装备套装名称或编号", Kind: "text"})
-	if game == "starrail" {
-		for i, names := range [][]string{{"生命值"}, {"攻击力"}, {"生命百分比", "攻击百分比", "防御百分比", "暴击率", "暴击伤害", "治疗加成", "效果命中"}, {"生命百分比", "攻击百分比", "防御百分比", "速度"}, {"生命百分比", "攻击百分比", "防御百分比", "物理伤害", "火伤害", "冰伤害", "雷伤害", "风伤害", "量子伤害", "虚数伤害"}, {"击破特攻", "能量恢复效率", "生命百分比", "攻击百分比", "防御百分比"}} {
-			out = append(out, CloudFilterField{Key: fmtPosition(i + 1), Label: "部位 " + strconv.Itoa(i+1) + " 主词条", Kind: "choice", Options: names})
-		}
-	}
 	return out
 }
-func fmtPosition(n int) string { return "pos" + strconv.Itoa(n) }
-func advancedCloudFilters(game string, input CloudInput) ([]any, error) {
+func advancedCloudFilters(input CloudInput) ([]any, error) {
 	if len(input.AdvancedFilters) == 0 {
 		return nil, nil
 	}
@@ -178,7 +169,7 @@ func advancedCloudFilters(game string, input CloudInput) ([]any, error) {
 	if len(input.AdvancedFilters) > 16 {
 		return nil, gameError("input_invalid", "高级筛选最多 16 项。")
 	}
-	fields := cloudFilterSchema(game)
+	fields := cloudFilterSchema()
 	rules := map[string]int{">=": 0, "=": 1, "<=": 2, ">": 3, "<": 4, "!=": 5}
 	out := []any{}
 	for _, f := range input.AdvancedFilters {

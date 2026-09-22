@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 )
@@ -26,9 +25,6 @@ func (a *App) assetAccountAction(ctx context.Context, client AccountsClient, act
 			state = "此代码已经兑换过"
 		}
 		return map[string]any{"view": View{Title: a.Game.Name + "兑换码", Subtitle: result.Role.UID, Rows: []Row{{Label: code, Value: state}}, Note: "结果由官方兑换接口返回，请在游戏内核对奖励。"}, "result": result}, nil
-	}
-	if a.Game.ID == "zzz" {
-		return nil, gameError("operation_denied", "当前参考未提供绝区零客服资产记录接口。")
 	}
 	params := map[string]any{}
 	for _, key := range []string{"category", "direction", "end_id", "page"} {
@@ -65,14 +61,8 @@ func billingPageView(game Game, result QueryResult) View {
 	}
 	return view
 }
-func billingCategories(game string) []map[string]string {
-	if game == "genshin" {
-		return []map[string]string{{"id": "crystal", "label": "创世结晶"}, {"id": "primogem", "label": "原石"}}
-	}
-	if game == "starrail" {
-		return []map[string]string{{"id": "dreams", "label": "古老梦华"}, {"id": "stellar", "label": "星琼"}, {"id": "power", "label": "开拓力"}, {"id": "relic", "label": "遗器"}, {"id": "cone", "label": "光锥"}}
-	}
-	return []map[string]string{}
+func billingCategories() []map[string]string {
+	return []map[string]string{{"id": "crystal", "label": "创世结晶"}, {"id": "primogem", "label": "原石"}}
 }
 func (a *App) codesView(result map[string]any) View {
 	view := View{Title: a.Game.Name + "官方前瞻兑换码", Subtitle: asText(result["title"]), Rows: []Row{}, Note: "来源：官方前瞻活动。请以官方有效期与实际兑换结果为准。"}
@@ -92,17 +82,6 @@ func (a *App) codesView(result map[string]any) View {
 	}
 	return view
 }
-func billingSelectionLabel(game Game, category string) string {
-	for _, v := range billingCategories(game.ID) {
-		if v["id"] == category {
-			return v["label"]
-		}
-	}
-	return category
-}
-func validBillingCategory(game, id string) bool {
-	return slices.ContainsFunc(billingCategories(game), func(v map[string]string) bool { return v["id"] == id })
-}
-func assetSummaryTitle(game Game, category string) string {
-	return fmt.Sprintf("%s · %s记录", game.Name, billingSelectionLabel(game, category))
+func validBillingCategory(id string) bool {
+	return slices.ContainsFunc(billingCategories(), func(v map[string]string) bool { return v["id"] == id })
 }

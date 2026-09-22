@@ -12,7 +12,7 @@ import (
 )
 
 func TestEnemyFormulaFactorsLevelAndUnknown(t *testing.T) {
-	a := App{Game: testGame(t, "genshin")}
+	a := App{Game: testGame(t)}
 	plain, err := a.enemyAction("enemies.query", map[string]any{"name": "无相之火", "stat": "HP", "level": 1})
 	if err != nil || math.Abs(plain["value"].(float64)-72.916996656*7) > 1e-8 {
 		t.Fatal(plain, err)
@@ -33,10 +33,10 @@ func TestEnemyFormulaFactorsLevelAndUnknown(t *testing.T) {
 }
 func TestGuidesFixedCollectionFullOriginalsAndVersionedDefault(t *testing.T) {
 	s := GuideSettings{Path: filepath.Join(t.TempDir(), "guides.json")}
-	if _, err := s.Manage("genshin", "guides.configure", map[string]any{"default_source": "2", "revision": 0}); err != nil {
+	if _, err := s.Manage("guides.configure", map[string]any{"default_source": "2", "revision": 0}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Manage("genshin", "guides.configure", map[string]any{"default_source": "3", "revision": 0}); err == nil {
+	if _, err := s.Manage("guides.configure", map[string]any{"default_source": "3", "revision": 0}); err == nil {
 		t.Fatal("stale settings overwritten")
 	}
 	client := PublicContentClient{HTTP: cloudDoer(func(r *http.Request) (*http.Response, error) {
@@ -45,7 +45,7 @@ func TestGuidesFixedCollectionFullOriginalsAndVersionedDefault(t *testing.T) {
 		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":{"posts":[{"post":{"post_id":"1","game_id":2,"subject":"胡桃攻略","content":"<p>合成正文</p>","images":["https://upload-bbs.miyoushe.com/a.png"]}},{"post":{"post_id":"2","game_id":2,"subject":"其他"}}]}}`))}, nil
 	})}
-	out, err := client.guides(context.Background(), "genshin", ContentQuery{Source: "2", Query: "胡桃"})
+	out, err := client.guides(context.Background(), ContentQuery{Source: "2", Query: "胡桃"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestGuidesFixedCollectionFullOriginalsAndVersionedDefault(t *testing.T) {
 	if len(posts) != 1 || len(posts[0].Parts) != 1 || len(posts[0].Images) != 1 || out["next_offset"] != -1 {
 		t.Fatal(out)
 	}
-	a := App{Game: testGame(t, "genshin")}
+	a := App{Game: testGame(t)}
 	m, err := a.mapQuery(map[string]any{"query": "琉璃百合&cookie=none", "map_id": 7})
 	if err != nil {
 		t.Fatal(err)

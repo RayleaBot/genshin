@@ -117,14 +117,14 @@ func (a *App) fetchContent(ctx context.Context, q ContentQuery) (map[string]any,
 	case "stats":
 		return a.publicStatistics(ctx, q)
 	case "estimate":
-		return a.Content.estimate(ctx, a.Game.ID)
+		return a.Content.estimate(ctx)
 	case "guides":
-		return a.Content.guides(ctx, a.Game.ID, q)
+		return a.Content.guides(ctx, q)
 	case "codes":
-		return a.Content.codes(ctx, a.Game.ID)
+		return a.Content.codes(ctx)
 	case "calendar":
-		return a.Content.calendar(ctx, a.Game.ID)
+		return a.Content.calendar(ctx)
 	default:
-		return a.Content.posts(ctx, a.Game.ID, q)
+		return a.Content.posts(ctx, q)
 	}
 }

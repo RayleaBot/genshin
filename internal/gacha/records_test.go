@@ -11,20 +11,20 @@ func fixture() Archive {
 }
 func TestMergePreservesLargeIDsTimeAndSharedPoolPity(t *testing.T) {
 	first := fixture()
-	merged, added, err := Merge("genshin", Archive{}, first)
+	merged, added, err := Merge(Archive{}, first)
 	if err != nil || added != 2 {
 		t.Fatal(err)
 	}
-	again, added, err := Merge("genshin", merged, first)
+	again, added, err := Merge(merged, first)
 	if err != nil || added != 0 || !reflect.DeepEqual(again.Records, first.Records) {
 		t.Fatal("duplicate import changed records")
 	}
-	summary := Summarize("genshin", again)
+	summary := Summarize(again)
 	if len(summary) != 1 || summary[0].CurrentPity != 1 || summary[0].PityLowerBound || !summary[0].Rare[0].LowerBound {
 		t.Fatal("incorrect history or shared pool handling")
 	}
 	first.Records[0].ItemID = "20001"
-	if _, _, err := Merge("genshin", merged, first); !errors.Is(err, ErrConflict) {
+	if _, _, err := Merge(merged, first); !errors.Is(err, ErrConflict) {
 		t.Fatal("conflicting record overwritten")
 	}
 }
@@ -74,12 +74,12 @@ func TestCrossRegionAndTimezoneAreNotMerged(t *testing.T) {
 	first := fixture()
 	other := fixture()
 	other.Region = "os_usa"
-	if _, _, err := Merge("genshin", first, other); !errors.Is(err, ErrConflict) {
+	if _, _, err := Merge(first, other); !errors.Is(err, ErrConflict) {
 		t.Fatal("regions merged")
 	}
 	other = fixture()
 	other.Timezone = -5
-	if _, _, err := Merge("genshin", first, other); !errors.Is(err, ErrConflict) {
+	if _, _, err := Merge(first, other); !errors.Is(err, ErrConflict) {
 		t.Fatal("timezone silently converted")
 	}
 }

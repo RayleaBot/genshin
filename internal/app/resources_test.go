@@ -3,7 +3,7 @@ package app
 import "testing"
 
 func TestMaterialRotationAndRelatedCatalogEntries(t *testing.T) {
-	a := &App{Game: testGame(t, "genshin"), Catalog: Catalog{Entries: []Entry{{Name: "测试角色", Materials: map[string]string{"天赋材料": "「勤劳」的哲学"}}}}}
+	a := &App{Game: testGame(t), Catalog: Catalog{Entries: []Entry{{Name: "测试角色", Materials: map[string]string{"天赋材料": "「勤劳」的哲学"}}}}}
 	result, err := a.resourceQuery("materials.query", map[string]any{"query": "勤劳", "weekday": 2})
 	if err != nil || result["total"].(int) != 3 {
 		t.Fatal(result, err)
@@ -23,7 +23,7 @@ func TestMaterialRotationAndRelatedCatalogEntries(t *testing.T) {
 	}
 }
 func TestCalendarVersionDateAndCoverageBoundaries(t *testing.T) {
-	a := &App{Game: testGame(t, "genshin")}
+	a := &App{Game: testGame(t)}
 	result, err := a.resourceQuery("calendar.query", map[string]any{"date": "2020-09-28", "version": "1.0"})
 	if err != nil || result["total"].(int) != 1 || result["pools"].([]PoolInfo)[0].Characters5[0] != "温迪" {
 		t.Fatal(result, err)

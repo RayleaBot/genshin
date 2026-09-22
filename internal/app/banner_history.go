@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -21,28 +20,6 @@ type BannerAppearance struct {
 
 func resourceVersion(game Game) string { return game.Data.Resources.Version }
 
-// BannerSource reads a game's banners online, as ZZZ-Plugin reads
-// GachaClock, with the source's version.
-type BannerSource func(ctx context.Context) ([]PoolInfo, string, error)
-
-// bannerGame is the game with its banners from the plugin's online source
-// when it answers, else the bundled snapshot; the shared data is not changed.
-func (a *App) bannerGame() Game {
-	game := a.Game
-	if a.banners == nil || game.Data == nil {
-		return game
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	pools, version, err := a.banners(ctx)
-	if err != nil || len(pools) == 0 {
-		return game
-	}
-	data := *game.Data
-	data.Resources.Pools, data.Resources.Version = pools, version
-	game.Data = &data
-	return game
-}
 func allBannerNames(p PoolInfo, kind string) []string {
 	out := []string{}
 	if kind != "weapon" {
@@ -80,7 +57,7 @@ func (a *App) bannerQuery(input map[string]any) (map[string]any, error) {
 	if entry, ok := a.Catalog.Resolve(query, "", nil); query != "" && ok {
 		query = entry.Name
 	}
-	game := a.bannerGame()
+	game := a.Game
 	for _, p := range game.Data.Resources.Pools {
 		if q.Version != "" && p.Version != q.Version {
 			continue
@@ -158,13 +135,10 @@ func versionDraws(game Game, archive gacha.Archive) map[string]any {
 	return classifyVersionDraws(game, archive)
 }
 func classifyVersionDraws(g Game, archive gacha.Archive) map[string]any {
-	game, periods := g.ID, g.Data.Resources.Pools
+	periods := g.Data.Resources.Pools
 	groups := map[string]*VersionDrawCount{}
 	unclassified := 0
 	top := "5"
-	if game == "zzz" {
-		top = "4"
-	}
 	zone := time.FixedZone("archive", archive.Timezone*3600)
 	cn := time.FixedZone("UTC+8", 28800)
 	for _, record := range archive.Records {
@@ -176,7 +150,7 @@ func classifyVersionDraws(g Game, archive gacha.Archive) map[string]any {
 		stamp := when.In(cn).Format("2006-01-02 15:04:05")
 		found := map[string]PoolInfo{}
 		for _, p := range periods {
-			if game == "genshin" && (record.GachaType == "500") != (p.Kind == "chronicled") {
+			if (record.GachaType == "500") != (p.Kind == "chronicled") {
 				continue
 			}
 			if p.From != "" && stamp >= p.From && stamp <= p.To {

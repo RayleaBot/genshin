@@ -116,9 +116,6 @@ func (a *App) roleCardsQuery(ctx context.Context, client AccountsClient, choice 
 	return result, cards, err
 }
 func (a *App) cardsAction(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
-	if a.Game.ID != "genshin" {
-		return nil, gameError("operation_denied", "月谕圣牌仅适用于原神。")
-	}
 	if action == "cards.query" {
 		result, cards, err := a.roleCardsQuery(ctx, a.accountClient(event), Selection{asText(input["account_ref"]), asText(input["role_ref"])})
 		if err != nil {
@@ -153,9 +150,6 @@ func (a *App) cardsAction(ctx context.Context, event *rayleabot.EventContext, ac
 	return map[string]any{"items": items}, nil
 }
 func (a *App) cardsCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
-	if a.Game.ID != "genshin" {
-		return event.Result(map[string]any{"handled": false})
-	}
 	group := event.Event.Target.Type == "group"
 	if command == "role-cards-exchange" && !group {
 		return event.SendText("圣牌交换请在目标群操作。")

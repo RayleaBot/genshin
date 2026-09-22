@@ -6,12 +6,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"math"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type Reminder struct {
@@ -172,15 +173,8 @@ func (a *App) removeDelegatedTask(ctx context.Context, event *rayleabot.EventCon
 func finiteRange(v, low, high float64) bool {
 	return !math.IsNaN(v) && !math.IsInf(v, 0) && v >= low && v <= high
 }
-func stamina(game string, data map[string]any) (float64, float64, bool) {
+func stamina(data map[string]any) (float64, float64, bool) {
 	current, maxKey := "current_resin", "max_resin"
-	if game == "starrail" {
-		current, maxKey = "current_stamina", "max_stamina"
-	}
-	if game == "zzz" {
-		data = asObject(asObject(data["energy"])["progress"])
-		current, maxKey = "current", "max"
-	}
 	var c, m float64
 	if decodeObject(data[current], &c) != nil || decodeObject(data[maxKey], &m) != nil || !finiteRange(c, 0, 100000) || !finiteRange(m, 1, 100000) || c > m {
 		return 0, 0, false
@@ -237,7 +231,7 @@ func (s *ReminderStore) run(task *Reminder, now int64, query func(Reminder) (Que
 		}
 		return s.save(*task)
 	}
-	c, m, ok := stamina(game.ID, result.Data)
+	c, m, ok := stamina(result.Data)
 	if !ok {
 		task.LastCode = "plugin.game_note_invalid"
 		return s.save(*task)
@@ -277,7 +271,7 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 			params["write_confirmed"] = true
 		}
 		if task.Kind == "challenge" {
-			kind, ok := challengeKind(a.Game.ID, task.ChallengeKind)
+			kind, ok := challengeKind(task.ChallengeKind)
 			if !ok {
 				return result, gameError("input_invalid", "挑战任务玩法无效。")
 			}
@@ -306,7 +300,7 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 			if err = client.call(ctx, "execute", params, &result); err != nil {
 				return result, err
 			}
-			_, err = a.Monthly.Save(task.Provider, task.Selection, archive.Revision, a.Game.ID, result.Data, time.Now())
+			_, err = a.Monthly.Save(task.Provider, task.Selection, archive.Revision, result.Data, time.Now())
 			return result, err
 		}
 		err := client.call(ctx, "execute", params, &result)

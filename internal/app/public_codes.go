@@ -15,7 +15,7 @@ import (
 
 type PublicContentClient struct{ HTTP HTTPDoer }
 
-var publicHosts = []string{"bbs-api.miyoushe.com", "bbs-api.mihoyo.com", "bbs-api-static.miyoushe.com", "api-takumi.mihoyo.com", "api-takumi-static.mihoyo.com", "hk4e-api.mihoyo.com", "hkrpg-api.mihoyo.com", "hkrpg-api-static.mihoyo.com", "announcement-api.mihoyo.com", "announcement-static.mihoyo.com"}
+var publicHosts = []string{"bbs-api.miyoushe.com", "bbs-api.mihoyo.com", "bbs-api-static.miyoushe.com", "api-takumi.mihoyo.com", "api-takumi-static.mihoyo.com", "hk4e-api.mihoyo.com"}
 
 func (c PublicContentClient) get(ctx context.Context, address string, headers map[string]string) (map[string]any, error) {
 	u, err := url.Parse(address)
@@ -86,14 +86,8 @@ func extractPublicActs(value any) []string {
 	}
 	return out
 }
-func (c PublicContentClient) codes(ctx context.Context, game string) (map[string]any, error) {
+func (c PublicContentClient) codes(ctx context.Context) (map[string]any, error) {
 	gid, author := "2", "75276539"
-	if game == "starrail" {
-		gid, author = "6", "80823548"
-	}
-	if game == "zzz" {
-		gid, author = "8", "152039148"
-	}
 	nav, err := c.get(ctx, "https://bbs-api.miyoushe.com/apihub/api/home/new?gids="+gid+"&parts=1%2C3%2C4", nil)
 	if err != nil {
 		return nil, err
@@ -150,12 +144,6 @@ func (c PublicContentClient) codes(ctx context.Context, game string) (map[string
 			} else if stamp, ok := challengeNumber(v["to_get_time"]); ok && stamp > 1000000000 {
 				date := time.Unix(int64(stamp), 0).In(time.FixedZone("UTC+8", 28800))
 				days, hour := 3, 12
-				if game == "starrail" {
-					days, hour = 1, 23
-				}
-				if game == "zzz" {
-					days, hour = 2, 23
-				}
 				date = date.AddDate(0, 0, days)
 				minute, second := 0, 0
 				if hour == 23 {

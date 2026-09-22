@@ -10,8 +10,8 @@ import (
 )
 
 // TestLiveDownload downloads one real upstream archive, for example
-// ARTWORK_ARCHIVE=https://codeload.github.com/ZZZure/ZZZ-Plugin/tar.gz/HEAD
-// ARTWORK_INCLUDE=resources/ go test -tags manual_smoke ./artwork -run Live -v
+// ARTWORK_ARCHIVE=https://codeload.github.com/Nwflower/genshin-atlas/tar.gz/HEAD
+// ARTWORK_INCLUDE=path.json go test -tags manual_smoke ./artwork -run Live -v
 func TestLiveDownload(t *testing.T) {
 	archive := os.Getenv("ARTWORK_ARCHIVE")
 	if archive == "" {

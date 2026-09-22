@@ -36,10 +36,6 @@ type ImageContext struct {
 	// Word is the command word as sent, for images that read choices the
 	// query does not take, as 上期幽境单人.
 	Word string
-	// RankShown is whether the requester's UID shows in the group rankings
-	// the query feeds, for the note upstream ends a record with; nil outside a
-	// group or for a query that feeds none.
-	RankShown *bool
 	// Score runs the pinned upstream scoring on a panel, for images that show
 	// many characters' equipment scores, as 练度统计. It is nil when the game
 	// has no scoring.
@@ -216,7 +212,7 @@ func (a *App) imageContext(ctx context.Context) ImageContext {
 
 // featureImage draws a query result with the plugin's own template when the
 // plugin registered one for the operation.
-func (a *App) featureImage(ctx context.Context, client AccountsClient, choice Selection, operation, word string, input map[string]any, result QueryResult, shown *bool) *Image {
+func (a *App) featureImage(ctx context.Context, client AccountsClient, choice Selection, operation, word string, input map[string]any, result QueryResult) *Image {
 	build := a.images[operation]
 	if build == nil {
 		return nil
@@ -225,7 +221,7 @@ func (a *App) featureImage(ctx context.Context, client AccountsClient, choice Se
 	imageContext.Query = func(operation string, input map[string]any) (QueryResult, error) {
 		return client.Execute(ctx, choice, operation, input)
 	}
-	imageContext.Input, imageContext.Word, imageContext.RankShown = input, word, shown
+	imageContext.Input, imageContext.Word = input, word
 	image, ok := build(imageContext, result)
 	if !ok {
 		return nil

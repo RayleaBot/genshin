@@ -9,18 +9,18 @@ import (
 
 func TestCloudOCRURLAndGearProjection(t *testing.T) {
 	q := CloudInput{Mode: "ocr", Consent: true, ImageURL: "https://images.example.com/gear.png", Slot: 1, Forge: true}
-	route, body, err := cloudRequest("genshin", q)
+	route, body, err := cloudRequest(q)
 	if err != nil || route != "ocr/profilechange/gs" || body["forge"] != true {
 		t.Fatal(route, body, err)
 	}
 	for _, url := range []string{"http://example.com/a.png", "https://127.0.0.1/a.png", "https://user:pass@example.com/a.png", "https://example.com/a.png?authkey=secret", "https://localhost/a.png"} {
 		q.ImageURL = url
-		if _, _, err = cloudRequest("genshin", q); err == nil {
+		if _, _, err = cloudRequest(q); err == nil {
 			t.Fatal("invalid image URL accepted")
 		}
 	}
 	data := cloudObject(t, `{"retcode":100,"data":[{"data":{"name":"角斗士的留恋","star":5,"level":20,"mainId":13001,"attrIds":[501204]}},{"name":"角斗士的留恋","star":5,"level":20,"mainId":13001,"attrIds":[501204,501204],"token":"not-for-output"}]}`)
-	result, err := projectCloud(testGame(t, "genshin"), q, data)
+	result, err := projectCloud(testGame(t), q, data)
 	if err != nil || result.OCR == nil || result.OCR.Replacement == nil || result.OCR.NeedsIdentity {
 		t.Fatal(result, err)
 	}
@@ -32,7 +32,7 @@ func TestCloudOCRURLAndGearProjection(t *testing.T) {
 	}
 	raw := asObject(asList(data["data"])[1])
 	delete(raw, "name")
-	result, err = projectCloud(testGame(t, "genshin"), q, data)
+	result, err = projectCloud(testGame(t), q, data)
 	if err != nil || !result.OCR.NeedsIdentity {
 		t.Fatal("missing identity was invented", err)
 	}
@@ -53,7 +53,7 @@ func (c *ocrCaller) CallService(_ context.Context, req rayleabot.ServiceCallRequ
 }
 func TestCloudOCRUsesFreshAuthorizedPanelAndProducesCandidate(t *testing.T) {
 	raw := cloudObject(t, `{"name":"角斗士的留恋","star":5,"level":20,"mainId":13001,"attrIds":[501204,501204]}`)
-	a := App{Game: testGame(t, "genshin")}
+	a := App{Game: testGame(t)}
 	a.Cloud.jobs = map[string]*CloudJob{"ocr": {Ref: "ocr", State: "completed", game: "genshin", CloudResult: CloudResult{OCR: &CloudOCR{Slot: 1, replacement: raw}}}}
 	caller := &ocrCaller{}
 	client := AccountsClient{Game: "genshin", Caller: caller}

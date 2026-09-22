@@ -12,7 +12,7 @@ import (
 )
 
 func TestConditionScopeAndPresetRevision(t *testing.T) {
-	a := pluginApp(t, "genshin")
+	a := pluginApp(t)
 	for _, v := range []any{map[string]any{"bonuses": map[string]any{"atkPct": nil}}, map[string]any{"bonuses": map[string]any{"script": 1}}, map[string]any{"enemy_resistance": 101}, map[string]any{"team": []any{map[string]any{"character_id": "10000046"}}}, map[string]any{"team": []any{map[string]any{"character_id": "10000016"}, map[string]any{"character_id": "10000016"}}}} {
 		if _, err := a.validateConditions("10000046", v); err == nil {
 			t.Fatal("invalid condition accepted", v)
@@ -44,11 +44,11 @@ func TestConditionScopeAndPresetRevision(t *testing.T) {
 	}
 }
 func TestCustomConditionsUseBaseAttributePercentAcrossGames(t *testing.T) {
-	for _, spec := range []struct{ game, key, file, attr, base string }{{"genshin", "gs_10000046", "", "atk", "atkBase"}, {"starrail", "sr_1102", "", "atk", "atkBase"}, {"zzz", "zzz_1011", "", "ATK", "ATKBase"}} {
+	for _, spec := range []struct{ game, key, file, attr, base string }{{"genshin", "gs_10000046", "", "atk", "atkBase"}} {
 		t.Run(spec.game, func(t *testing.T) {
-			engine := calcEngine(t, spec.game)
+			engine := calcEngine(t)
 			metadata := engine.Metadata()
-			raw := pluginFile(t, spec.game, "internal/assets/testdata/calc-vectors.json")
+			raw := pluginFile(t, "internal/assets/testdata/calc-vectors.json")
 			var cases []struct {
 				Key   string
 				Input map[string]any

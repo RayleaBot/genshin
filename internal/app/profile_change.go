@@ -45,7 +45,6 @@ type PanelChange struct {
 	Level   int
 	Cons    *int
 	Talents map[string]int
-	Trees   []string
 	// Swap is the character whose panel wears the gear; Element picks the
 	// Traveler's.
 	Swap, Element string
@@ -59,16 +58,11 @@ var (
 	changeWeapon    = regexp.MustCompile(`^(?:等?级?([1-9][0-9])?级?)?\s*(?:([1-5一二三四五满])(精炼?|叠影?)|(精炼?|叠影?)([1-5一二三四五]))?\s*(?:等?级?([1-9][0-9])?级?)?\s*(.*)$`)
 	changeCons      = regexp.MustCompile(`([0-6零一二三四五六满])(命|魂|星魂)`)
 	changeTalentsGS = regexp.MustCompile(`(?:天赋|技能|行迹)((?:[1][0-5]|[1-9])[ ,]?)((?:[1][0-5]|[1-9])[ ,]?)([1][0-5]|[1-9])`)
-	changeTalentsSR = regexp.MustCompile(`(?:天赋|技能|行迹)((?:[1][0-5]|[1-9])[ ,]?)((?:[1][0-5]|[1-9])[ ,]?)((?:[1][0-5]|[1-9])[ ,]?)([1][0-5]|[1-9])`)
 	changeLevel     = regexp.MustCompile(`等级(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)(?:[^0-9]|$)|(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)级`)
 )
 
 // changeKeys are miao's words for the parts of a panel, by part.
-var changeKeys = map[string][][2]string{
-	"genshin": {{"artis", "圣遗物"}, {"arti1", "花,生之花"}, {"arti2", "毛,羽,羽毛,死之羽"}, {"arti3", "沙,沙漏,表,时之沙"}, {"arti4", "杯,杯子,空之杯"}, {"arti5", "头,冠,理之冠,礼冠,帽子,帽"}, {"weapon", "武器"}},
-	"starrail": {{"artis", "圣遗物,遗器"}, {"arti1", "头,帽子,头部"}, {"arti2", "手,手套,手部"}, {"arti3", "衣,衣服,甲,躯干"}, {"arti4", "鞋,靴,鞋子,靴子,脚,脚部"},
-		{"arti5", "球,位面球"}, {"arti6", "绳,线,链接绳,连接绳"}, {"weapon", "武器,光锥"}},
-}
+var changeKeys = [][2]string{{"artis", "圣遗物"}, {"arti1", "花,生之花"}, {"arti2", "毛,羽,羽毛,死之羽"}, {"arti3", "沙,沙漏,表,时之沙"}, {"arti4", "杯,杯子,空之杯"}, {"arti5", "头,冠,理之冠,礼冠,帽子,帽"}, {"weapon", "武器"}}
 
 // changeDigits reads a count written in digits or Chinese numerals.
 func changeDigits(value string) int {
@@ -97,11 +91,11 @@ func setNames(catalog Catalog) map[string]string {
 
 // parsePanelChange reads a 面板换装 word; false when it names no character
 // or no change.
-func parsePanelChange(game Game, catalog Catalog, aliases map[string]string, text string) (PanelChange, bool) {
+func parsePanelChange(catalog Catalog, aliases map[string]string, text string) (PanelChange, bool) {
 	if !changeWord.MatchString(text) {
 		return PanelChange{}, false
 	}
-	msg := strings.ReplaceAll(changeUID.ReplaceAllString(strings.ToLower(text), ""), "星铁", "")
+	msg := changeUID.ReplaceAllString(strings.ToLower(text), "")
 	main := changeMain.FindStringSubmatch(msg)
 	if main == nil || main[2] == "" {
 		return PanelChange{}, false
@@ -113,7 +107,7 @@ func parsePanelChange(game Game, catalog Catalog, aliases map[string]string, tex
 	change := PanelChange{CharacterID: character.ID, UID: cmp.Or(main[1], main[4]), Pieces: map[int]changeSource{}}
 	keys := map[string]string{}
 	words := []string{}
-	for _, item := range changeKeys[game.ID] {
+	for _, item := range changeKeys {
 		for _, word := range strings.Split(item[1], ",") {
 			keys[word] = item[0]
 			words = append(words, regexp.QuoteMeta(word))
@@ -155,28 +149,10 @@ func parsePanelChange(game Game, catalog Catalog, aliases map[string]string, tex
 				continue
 			}
 		}
-		// Sets: 绝缘4, 魔女2+宗室2, 星铁 with a planar set.
+		// Sets: 绝缘4, 魔女2+宗室2.
 		if match := setWord.FindStringSubmatch(txt); match != nil && sets[match[1]] != "" {
-			if game.ID == "genshin" {
-				change.Sets = []string{sets[match[1]], cmp.Or(sets[match[2]], sets[match[1]])}
-			} else {
-				chosen := make([]string, 3)
-				for _, name := range match[1:4] {
-					set := sets[name]
-					if set == "" {
-						continue
-					}
-					if pieces := catalog.ArtifactPieces[set]; len(pieces) > 0 && pieces[0] != "" {
-						chosen[map[bool]int{true: 1, false: 0}[chosen[0] != ""]] = set
-					} else {
-						chosen[2] = set
-					}
-				}
-				if chosen[0] != "" && chosen[1] == "" {
-					chosen[1] = chosen[0]
-				}
-				change.Sets = chosen
-			}
+			change.Sets = []string{sets[match[1]], cmp.Or(sets[match[2]], sets[match[1]])}
+
 			changed = true
 			continue
 		}
@@ -214,15 +190,7 @@ func parsePanelChange(game Game, catalog Catalog, aliases map[string]string, tex
 			txt = strings.Replace(txt, cons[0], "", 1)
 			changed = true
 		}
-		if game.ID == "starrail" && strings.Contains(txt, "满行迹") {
-			change.Trees = []string{"101", "102", "103", "201", "202", "203", "204", "205", "206", "207", "208", "209", "210", "301", "302"}
-			txt = strings.Replace(txt, "满行迹", "", 1)
-			changed = true
-		}
 		talents, order := changeTalentsGS, "aeq"
-		if game.ID == "starrail" {
-			talents, order = changeTalentsSR, "aetq"
-		}
 		if match := talents.FindStringSubmatch(txt); match != nil {
 			change.Talents = map[string]int{}
 			for index, key := range order {
@@ -275,11 +243,11 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 		entry, _ := a.Catalog.Get(id)
 		element = entry.Element
 	}
-	record, err := findReferenceCharacter(a.Game.Calc, a.Game.ID, CharacterPanel{ID: id, Element: element})
+	record, err := findReferenceCharacter(a.Game.Calc, CharacterPanel{ID: id, Element: element})
 	if err != nil {
 		return CharacterPanel{}, err
 	}
-	gs := a.Game.ID == "genshin"
+	gs := true
 	panel := CharacterPanel{ID: id, Level: cmp.Or(change.Level, source.Level, 90), Element: record.Element, Source: "change", RankKnown: true, WeaponKnown: true, EquipmentKnown: true,
 		Stats: []PanelStat{}, Equipment: []PanelEquipment{}, Skills: []PanelSkill{}, Ranks: []PanelSkill{}}
 	if entry, ok := a.Catalog.Get(id); ok {
@@ -353,29 +321,16 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 			original = map[string]int{"a": 6, "e": 8, "t": 8, "q": 8}
 		}
 		if hasSource {
-			sourceRecord, err := findReferenceCharacter(a.Game.Calc, a.Game.ID, source)
+			sourceRecord, err := findReferenceCharacter(a.Game.Calc, source)
 			if err == nil {
 				original = map[string]int{}
-				for key, level := range PanelTalents(a.Game.ID, source, sourceRecord) {
+				for key, level := range PanelTalents(source, sourceRecord) {
 					original[key] = level.Original
 				}
 			}
 		}
 		for key, level := range original {
-			talents[key] = level + talentBonus(a.Game.ID, record, key, panel.Rank)
-		}
-	}
-	// Traces: 满行迹, or the kept panel's.
-	trees := []string{}
-	if change.Trees != nil {
-		for _, suffix := range change.Trees {
-			trees = append(trees, record.ID+suffix)
-		}
-	} else if hasSource {
-		for _, skill := range source.Skills {
-			if skill.Active && skill.PointType != 2 && skill.ID != "" {
-				trees = append(trees, RecordSkillID(a.Game.ID, source, record, skill))
-			}
+			talents[key] = level + talentBonus(record, key, panel.Rank)
 		}
 	}
 	// Artifacts: another character's, then single pieces, then the sets.
@@ -416,19 +371,20 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 			panel.Equipment = append(panel.Equipment, pieces[slot])
 		}
 	}
-	return a.computedPanel(ctx, record, panel, weapon, talents, trees)
+	return a.computedPanel(ctx, record, panel, weapon, talents)
 }
 
 // computedPanel fills in a panel's properties, weapon stats, skills and
 // constellations from its parts, as miao's Attr does: the character's level,
-// promotion and rank, the weapon, the talent levels with their bonuses, the
-// traces and the equipment already on the panel.
-func (a *App) computedPanel(ctx context.Context, record reference.Character, panel CharacterPanel, weapon PanelEquipment, talents map[string]int, trees []string) (CharacterPanel, error) {
-	gear, err := buildGearSet(a.Game.ID, panel)
+// promotion and rank, the weapon, the talent levels with their bonuses and
+// the equipment already on the panel.
+func (a *App) computedPanel(ctx context.Context, record reference.Character, panel CharacterPanel, weapon PanelEquipment, talents map[string]int) (CharacterPanel, error) {
+	gear, err := buildGearSet(panel)
 	if err != nil {
 		return CharacterPanel{}, err
 	}
-	input := map[string]any{"level": panel.Level, "promote": panel.Promote, "rank": panel.Rank, "talents": talents, "trees": trees, "equipment": gear,
+	// The miao runner reads traces, which Genshin does not have.
+	input := map[string]any{"level": panel.Level, "promote": panel.Promote, "rank": panel.Rank, "talents": talents, "trees": []string{}, "equipment": gear,
 		"weapon": BuildWeapon{ID: weapon.ID, Level: weapon.Level, Promote: weapon.Promote, Refinement: weapon.Refinement}}
 	raw, err := a.Game.Calc.Change(ctx, record, input)
 	var result struct {
@@ -441,12 +397,12 @@ func (a *App) computedPanel(ctx context.Context, record reference.Character, pan
 		return CharacterPanel{}, buildUnavailable("reference_calculation")
 	}
 	panel.Promote, weapon.Promote = &result.Promote, &result.WeaponPromote
-	panel.Stats = changedStats(a.Game.ID, record.Element, result.Attributes)
-	weapon.Main, weapon.Sub = changedWeaponStats(a.Game.ID, result.WeaponAttrs)
+	panel.Stats = changedStats(record.Element, result.Attributes)
+	weapon.Main, weapon.Sub = changedWeaponStats(result.WeaponAttrs)
 	if weapon.ID != "" {
 		panel.Weapon = &weapon
 	}
-	panel.Skills = changedSkills(a.Game.ID, record, talents, trees, panel.Rank)
+	panel.Skills = changedSkills(record, talents, panel.Rank)
 	constellations := asObject(record.Data["cons"])
 	for index := 1; index <= 6; index++ {
 		panel.Ranks = append(panel.Ranks, PanelSkill{Name: asText(asObject(constellations[strconv.Itoa(index)])["name"]), Active: index <= panel.Rank})
@@ -456,11 +412,10 @@ func (a *App) computedPanel(ctx context.Context, record reference.Character, pan
 
 // talentBonus is the levels a constellation or eidolon adds to a talent, as
 // miao counts them from talentCons.
-func talentBonus(game string, record reference.Character, key string, rank int) int {
+func talentBonus(record reference.Character, key string, rank int) int {
 	step := map[string]int{"a": 1, "e": 2, "q": 2, "t": 2, "me": 1, "mt": 1, "xe": 1}[key]
-	if game == "genshin" {
-		step = 3
-	}
+	step = 3
+
 	bonus := 0
 	switch need := asObject(record.Data["talentCons"])[key].(type) {
 	case float64:
@@ -478,7 +433,7 @@ func talentBonus(game string, record reference.Character, key string, rank int) 
 }
 
 // changedStats writes calculated properties as the official panel lists them.
-func changedStats(game, element string, attrs map[string]float64) []PanelStat {
+func changedStats(element string, attrs map[string]float64) []PanelStat {
 	flat := func(v float64) string { return strconv.FormatFloat(math.Round(v), 'f', 0, 64) }
 	percent := func(v float64) string { return strconv.FormatFloat(v, 'f', 1, 64) + "%" }
 	stat := func(id, key string, value, base float64, pct bool) PanelStat {
@@ -487,49 +442,25 @@ func changedStats(game, element string, attrs map[string]float64) []PanelStat {
 		}
 		return PanelStat{ID: id, Key: key, Value: flat(value), Base: flat(base), Added: flat(value - base)}
 	}
-	if game == "genshin" {
-		stats := []PanelStat{stat("2000", "", attrs["hp"], attrs["hpBase"], false), stat("2001", "", attrs["atk"], attrs["atkBase"], false), stat("2002", "", attrs["def"], attrs["defBase"], false),
-			stat("28", "mastery", attrs["mastery"], 0, false), stat("20", "cpct", attrs["cpct"], 5, true), stat("22", "cdmg", attrs["cdmg"], 50, true),
-			stat("23", "recharge", attrs["recharge"], 100, true), stat("26", "heal", attrs["heal"], 0, true), stat("30", "phy", attrs["phy"], 0, true)}
-		for key, id := range map[string]string{"pyro": "40", "electro": "41", "hydro": "42", "dendro": "43", "anemo": "44", "geo": "45", "cryo": "46"} {
-			value := 0.0
-			if key == canonicalBuildElement(element) {
-				value = attrs["dmg"]
-			}
-			stats = append(stats, stat(id, key, value, 0, true))
-		}
-		return stats
-	}
-	speed := stat("4", "", attrs["speed"], attrs["speedBase"], false)
-	speed.Value = strconv.FormatFloat(math.Floor(attrs["speed"]*10+1e-6)/10, 'f', -1, 64)
-	// miao counts Star Rail energy regeneration without its base 100%.
-	stats := []PanelStat{stat("1", "", attrs["hp"], attrs["hpBase"], false), stat("2", "", attrs["atk"], attrs["atkBase"], false), stat("3", "", attrs["def"], attrs["defBase"], false), speed,
-		stat("5", "", attrs["cpct"], 5, true), stat("6", "", attrs["cdmg"], 50, true), stat("7", "", attrs["heal"], 0, true), stat("9", "", attrs["recharge"]+100, 100, true),
-		stat("10", "", attrs["effPct"], 0, true), stat("11", "", attrs["effDef"], 0, true), stat("58", "", attrs["stance"], 0, true)}
-	for key, id := range map[string]string{"physical": "12", "fire": "14", "ice": "16", "lightning": "18", "wind": "20", "quantum": "22", "imaginary": "24"} {
+	stats := []PanelStat{stat("2000", "", attrs["hp"], attrs["hpBase"], false), stat("2001", "", attrs["atk"], attrs["atkBase"], false), stat("2002", "", attrs["def"], attrs["defBase"], false),
+		stat("28", "mastery", attrs["mastery"], 0, false), stat("20", "cpct", attrs["cpct"], 5, true), stat("22", "cdmg", attrs["cdmg"], 50, true),
+		stat("23", "recharge", attrs["recharge"], 100, true), stat("26", "heal", attrs["heal"], 0, true), stat("30", "phy", attrs["phy"], 0, true)}
+	for key, id := range map[string]string{"pyro": "40", "electro": "41", "hydro": "42", "dendro": "43", "anemo": "44", "geo": "45", "cryo": "46"} {
 		value := 0.0
-		if normalizedElement(element) == key || canonicalBuildElement(element) == canonicalBuildElement(key) {
+		if key == canonicalBuildElement(element) {
 			value = attrs["dmg"]
 		}
-		stats = append(stats, stat(id, "", value, 0, true))
+		stats = append(stats, stat(id, key, value, 0, true))
 	}
-	slices.SortFunc(stats, func(a, b PanelStat) int { x, _ := strconv.Atoi(a.ID); y, _ := strconv.Atoi(b.ID); return x - y })
 	return stats
 }
 
 // changedWeaponStats writes a weapon's calculated base and bonus.
-func changedWeaponStats(game string, attrs map[string]any) ([]PanelStat, []PanelStat) {
+func changedWeaponStats(attrs map[string]any) ([]PanelStat, []PanelStat) {
 	if attrs == nil {
 		return []PanelStat{}, []PanelStat{}
 	}
 	number := func(value any) float64 { n, _ := value.(float64); return n }
-	if game != "genshin" {
-		main := []PanelStat{}
-		for _, key := range []string{"hp", "atk", "def"} {
-			main = append(main, PanelStat{ID: key, Key: key, Value: strconv.FormatFloat(math.Floor(number(attrs[key])+1e-6), 'f', 0, 64)})
-		}
-		return main, []PanelStat{}
-	}
 	main := []PanelStat{{ID: "4", Name: "基础攻击力", Value: strconv.FormatFloat(math.Round(number(attrs["atkBase"])), 'f', 0, 64)}}
 	bonus := asObject(attrs["attr"])
 	key := strings.TrimSuffix(asText(bonus["key"]), "Pct")
@@ -544,9 +475,9 @@ func changedWeaponStats(game string, attrs map[string]any) ([]PanelStat, []Panel
 	return main, []PanelStat{{ID: key, Key: key, Value: text}}
 }
 
-// changedSkills gives the changed panel's talents and traces the shape the
-// panel images and calculations read.
-func changedSkills(game string, record reference.Character, talents map[string]int, trees []string, rank int) []PanelSkill {
+// changedSkills gives the changed panel's talents the shape the panel images
+// and calculations read.
+func changedSkills(record reference.Character, talents map[string]int, rank int) []PanelSkill {
 	skills := []PanelSkill{}
 	ids := map[string]string{}
 	for id, key := range asObject(record.Data["talentId"]) {
@@ -554,24 +485,14 @@ func changedSkills(game string, record reference.Character, talents map[string]i
 			ids[asText(key)] = id
 		}
 	}
-	kinds := map[string]string{"a": "普攻", "e": "战技", "q": "终结技", "t": "天赋", "z": "秘技", "xe": "欢愉技", "me": "忆灵技", "mt": "忆灵天赋"}
 	keys := []string{"a", "e", "q"}
-	if game != "genshin" {
-		keys = []string{"a", "e", "q", "t", "xe", "me", "mt"}
-	}
 	for _, key := range keys {
 		level, ok := talents[key]
 		if !ok {
 			continue
 		}
-		skill := PanelSkill{HasSkillType: true, SkillType: 1, ID: ids[key], Level: level, ExtraLevel: talentBonus(game, record, key, rank), Active: true, Name: asText(asObject(asObject(record.Data["talent"])[key])["name"])}
-		if game != "genshin" {
-			skill = PanelSkill{Kind: kinds[key], PointType: 2, ID: ids[key], Level: level, ExtraLevel: talentBonus(game, record, key, rank), Active: true, Name: kinds[key]}
-		}
+		skill := PanelSkill{HasSkillType: true, SkillType: 1, ID: ids[key], Level: level, ExtraLevel: talentBonus(record, key, rank), Active: true, Name: asText(asObject(asObject(record.Data["talent"])[key])["name"])}
 		skills = append(skills, skill)
-	}
-	for _, tree := range trees {
-		skills = append(skills, PanelSkill{PointType: 1, ID: tree, Level: 1, Active: true, Name: "行迹 " + tree})
 	}
 	return skills
 }
@@ -582,7 +503,7 @@ func changedSkills(game string, record reference.Character, talents map[string]i
 // its OCR reads on the panel. Words it cannot read are left to other plugins.
 func (a *App) panelChangeCommand(ctx context.Context, event *rayleabot.EventContext) error {
 	text := strings.TrimSpace(event.Event.Command() + " " + strings.Join(event.Event.Args(), " "))
-	change, ok := parsePanelChange(a.Game, a.Catalog, a.aliasMap(event), text)
+	change, ok := parsePanelChange(a.Catalog, a.aliasMap(event), text)
 	var images []string
 	if change.CharacterID != "" {
 		images = messageImages(ctx, event)

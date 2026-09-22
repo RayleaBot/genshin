@@ -55,8 +55,8 @@ const rankLength = 15
 var (
 	rankListWord   = regexp.MustCompile(`排名|排行|列表`)
 	rankMarkWord   = regexp.MustCompile(`分|圣遗物|遗器|评分|ACE`)
-	rankStrip      = regexp.MustCompile(`#|星铁|最强|最高分|第一|词条|双爆|双暴|极限|最高|最多|最牛|圣遗物|遗器|评分|群内|群|排名|排行|面板|面版|详情|榜`)
-	rankResetStrip = regexp.MustCompile(`#|星铁|重置|重设|排名|排行|群|群内|面板|详情|面版`)
+	rankStrip      = regexp.MustCompile(`#|最强|最高分|第一|词条|双爆|双暴|极限|最高|最多|最牛|圣遗物|评分|群内|群|排名|排行|面板|面版|详情|榜`)
+	rankResetStrip = regexp.MustCompile(`#|重置|重设|排名|排行|群|群内|面板|详情|面版`)
 )
 
 // rankMode is the ranking a command word asks for, as miao's groupRank reads
@@ -227,11 +227,6 @@ func (a *App) rankCommand(ctx context.Context, event *rayleabot.EventContext, co
 		return a.rankSwitch(event, scope, word)
 	}
 	list, mode := rankListWord.MatchString(word), rankMode(word)
-	if a.Game.ID == "zzz" {
-		// ZZZ-Plugin has no panel ranking; this plugin's 排行 lists
-		// equipment scores.
-		mode = "mark"
-	}
 	name := strings.TrimSpace(rankStrip.ReplaceAllString(word, ""))
 	if name == "" {
 		name = strings.Join(args, " ")

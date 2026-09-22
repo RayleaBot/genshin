@@ -85,9 +85,8 @@ func plainGameText(value string) string {
 }
 
 var gsStatKeys = map[string]string{"2": "hpPlus", "3": "hp", "5": "atkPlus", "6": "atk", "8": "defPlus", "9": "def", "20": "cpct", "22": "cdmg", "23": "recharge", "26": "heal", "28": "mastery", "30": "phy", "40": "pyro", "41": "electro", "42": "hydro", "43": "dendro", "44": "anemo", "45": "geo", "46": "cryo"}
-var srStatKeys = map[string]string{"1": "hpPlus", "2": "atkPlus", "3": "defPlus", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "12": "physical", "14": "fire", "16": "ice", "18": "lightning", "20": "wind", "22": "quantum", "24": "imaginary", "27": "hp", "29": "atk", "31": "def", "32": "hpPlus", "33": "atkPlus", "34": "defPlus", "51": "speed", "52": "cpct", "53": "cdmg", "54": "recharge", "55": "heal", "56": "effPct", "57": "effDef", "58": "stance", "59": "stance"}
 
-func panelStats(game string, raw []any, metadata map[string]any, defaultValue string) []PanelStat {
+func panelStats(raw []any, metadata map[string]any, defaultValue string) []PanelStat {
 	result := []PanelStat{}
 	for _, value := range raw {
 		item := asObject(value)
@@ -107,21 +106,8 @@ func panelStats(game string, raw []any, metadata map[string]any, defaultValue st
 			continue
 		}
 		key := id
-		if game == "genshin" {
-			key = gsStatKeys[id]
-		}
-		if game == "starrail" {
-			key = srStatKeys[id]
-			// The record API has used both ID families for flat and percent
-			// relic stats. The explicit unit keeps both representations correct.
-			baseKey := strings.TrimSuffix(key, "Plus")
-			if baseKey == "hp" || baseKey == "atk" || baseKey == "def" {
-				key = baseKey
-				if !strings.HasSuffix(strings.TrimSpace(display), "%") {
-					key += "Plus"
-				}
-			}
-		}
+		key = gsStatKeys[id]
+
 		result = append(result, PanelStat{ID: id, Key: key, Name: plainGameText(name), Value: display, Base: asText(item["base"]), Added: asText(item["add"]), Times: number(item["times"])})
 	}
 	return result
@@ -133,12 +119,9 @@ func oneStat(value any) []any {
 	return nil
 }
 
-func NormalizePanels(game string, result QueryResult, catalog Catalog) []CharacterPanel {
+func NormalizePanels(result QueryResult, catalog Catalog) []CharacterPanel {
 	data := result.Data
 	metadata := asObject(data["property_map"])
-	if game == "starrail" {
-		metadata = asObject(data["property_info"])
-	}
 	list := asList(data["list"])
 	if list == nil {
 		list = asList(data["avatar_list"])
@@ -167,37 +150,19 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 		}
 		panel := CharacterPanel{ID: id, Name: plainGameText(name), Level: number(base["level"]), Rank: number(base["rank"]), Element: asText(base["element"]), Source: "mihoyo", Stats: []PanelStat{}, Equipment: []PanelEquipment{}, Skills: []PanelSkill{}, Ranks: []PanelSkill{}, Official: item}
 		_, panel.EquipmentKnown = item["relics"]
-		if game == "starrail" {
-			_, known := item["ornaments"]
-			panel.EquipmentKnown = panel.EquipmentKnown && known
-		}
 		if value, exists := base["promote_level"]; exists {
 			n := number(value)
 			panel.Promote = &n
 		}
-		if game == "genshin" {
-			panel.Rank = number(base["actived_constellation_num"])
-			_, panel.RankKnown = base["actived_constellation_num"]
-		} else {
-			_, panel.RankKnown = base["rank"]
-		}
+		panel.Rank = number(base["actived_constellation_num"])
+		_, panel.RankKnown = base["actived_constellation_num"]
+
 		if panel.Element == "" && hasEntry {
 			panel.Element = entry.Element
 		}
-		if game == "zzz" {
-			panel.Profession = number(item["avatar_profession"])
-			_, panel.EquipmentKnown = item["equip"]
-			if v, ok := item["sub_element_type"]; ok {
-				n := number(v)
-				panel.SubElement = &n
-			}
-			if element := map[int]string{200: "physical", 201: "fire", 202: "ice", 203: "lightning", 204: "wind", 205: "ether", 300: "lumiflux"}[number(item["element_type"])]; element != "" {
-				panel.Element = element
-			}
-		}
 		seen := map[string]bool{}
 		for _, field := range []string{"base_properties", "extra_properties", "element_properties", "properties"} {
-			for _, stat := range panelStats(game, asList(item[field]), metadata, "final") {
+			for _, stat := range panelStats(asList(item[field]), metadata, "final") {
 				if !seen[stat.ID] {
 					panel.Stats = append(panel.Stats, stat)
 					seen[stat.ID] = true
@@ -206,10 +171,6 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 		}
 		weapon := asObject(item["weapon"])
 		_, panel.WeaponKnown = item["weapon"]
-		if game == "starrail" {
-			weapon = asObject(item["equip"])
-			_, panel.WeaponKnown = item["equip"]
-		}
 		if weapon == nil {
 			weapon = asObject(base["weapon"])
 			if _, ok := base["weapon"]; ok {
@@ -222,24 +183,11 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 				n := number(value)
 				w.Promote = &n
 			}
-			if game == "starrail" {
-				w.Refinement = number(weapon["rank"])
-			}
-			if game == "zzz" {
-				w.Refinement = number(weapon["star"])
-			}
-			w.Main = panelStats(game, oneStat(weapon["main_property"]), metadata, "final")
-			w.Sub = panelStats(game, oneStat(weapon["sub_property"]), metadata, "final")
-			if game == "zzz" {
-				w.Main = panelStats(game, asList(weapon["main_properties"]), metadata, "base")
-				w.Sub = panelStats(game, asList(weapon["properties"]), metadata, "base")
-			}
+			w.Main = panelStats(oneStat(weapon["main_property"]), metadata, "final")
+			w.Sub = panelStats(oneStat(weapon["sub_property"]), metadata, "final")
 			panel.Weapon = &w
 		}
 		gearFields := []string{"relics", "ornaments"}
-		if game == "zzz" {
-			gearFields = []string{"equip"}
-		}
 		for _, field := range gearFields {
 			for _, raw := range asList(item[field]) {
 				gear := asObject(raw)
@@ -250,22 +198,11 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 						equipment.SetName = catalog.ArtifactSets[equipment.Name]
 					}
 				}
-				equipment.Main = panelStats(game, oneStat(gear["main_property"]), metadata, "value")
+				equipment.Main = panelStats(oneStat(gear["main_property"]), metadata, "value")
 				subKey := "sub_property_list"
-				if game == "starrail" {
-					subKey = "properties"
-				}
-				equipment.Sub = panelStats(game, asList(gear[subKey]), metadata, "value")
+				equipment.Sub = panelStats(asList(gear[subKey]), metadata, "value")
 				_, subPresent := gear[subKey]
 				equipment.Complete = subPresent && len(equipment.Main) > 0
-				if game == "zzz" {
-					equipment.Slot = number(gear["equipment_type"])
-					equipment.SetName = asText(asObject(gear["equip_suit"])["name"])
-					equipment.Main = panelStats(game, asList(gear["main_properties"]), metadata, "base")
-					equipment.Sub = panelStats(game, asList(gear["properties"]), metadata, "base")
-					_, subPresent = gear["properties"]
-					equipment.Complete = subPresent && len(equipment.Main) > 0
-				}
 				panel.Equipment = append(panel.Equipment, equipment)
 			}
 		}
@@ -287,7 +224,7 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 				}
 			}
 			if name == "" {
-				name = fmtSkillLabel(game, skill, i)
+				name = fmtSkillLabel(i)
 			}
 			active := true
 			for _, key := range []string{"is_unlock", "is_activated"} {
@@ -299,15 +236,13 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 			panel.Skills = append(panel.Skills, PanelSkill{HasSkillType: hasSkillType, Kind: firstText(skill, "remake"), PointType: number(skill["point_type"]), SkillType: number(skill["skill_type"]), ID: firstText(skill, "skill_id", "point_id", "id"), ExtraLevel: number(skill["extra_level"]), Name: plainGameText(name), Level: number(skill["level"]), Active: active, Description: plainGameText(description)})
 		}
 		ranks := asList(item["ranks"])
-		if game == "genshin" {
-			ranks = asList(item["constellations"])
-		}
+		ranks = asList(item["constellations"])
+
 		for _, raw := range ranks {
 			rank := asObject(raw)
 			active, _ := rank["is_unlocked"].(bool)
-			if game == "genshin" {
-				active, _ = rank["is_actived"].(bool)
-			}
+			active, _ = rank["is_actived"].(bool)
+
 			panel.Ranks = append(panel.Ranks, PanelSkill{Name: plainGameText(asText(rank["name"])), Active: active, Description: plainGameText(firstText(rank, "desc", "effect"))})
 		}
 		if plan := asObject(item["equip_plan_info"]); plan != nil {
@@ -320,10 +255,7 @@ func NormalizePanels(game string, result QueryResult, catalog Catalog) []Charact
 	}
 	return panels
 }
-func fmtSkillLabel(game string, item map[string]any, index int) string {
-	if game == "starrail" {
-		return "行迹 " + firstText(item, "point_id")
-	}
+func fmtSkillLabel(index int) string {
 	return "技能 " + strconv.Itoa(index+1)
 }
 
@@ -342,7 +274,7 @@ func PanelView(game Game, panels []CharacterPanel, uid string) View {
 	}
 	p := panels[0]
 	v.Title = p.Name + " · 角色面板"
-	v.Rows = append(v.Rows, Row{Label: "等级", Value: strconv.Itoa(p.Level)}, Row{Label: map[string]string{"genshin": "命之座", "starrail": "星魂", "zzz": "意象影画"}[game.ID], Value: strconv.Itoa(p.Rank)})
+	v.Rows = append(v.Rows, Row{Label: "等级", Value: strconv.Itoa(p.Level)}, Row{Label: "命之座", Value: strconv.Itoa(p.Rank)})
 	rows := []Row{}
 	for _, stat := range p.Stats {
 		rows = append(rows, Row{Label: stat.Name, Value: stat.Value})
@@ -354,7 +286,7 @@ func PanelView(game Game, panels []CharacterPanel, uid string) View {
 		for _, stat := range append(append([]PanelStat{}, w.Main...), w.Sub...) {
 			rows = append(rows, Row{Label: stat.Name, Value: stat.Value})
 		}
-		v.Sections = append(v.Sections, Section{Title: map[string]string{"genshin": "武器", "starrail": "光锥", "zzz": "音擎"}[game.ID], Rows: rows})
+		v.Sections = append(v.Sections, Section{Title: "武器", Rows: rows})
 	}
 	for _, equipment := range p.Equipment {
 		rows = []Row{{Label: "等级", Value: strconv.Itoa(equipment.Level)}}
@@ -378,7 +310,7 @@ func PanelView(game Game, panels []CharacterPanel, uid string) View {
 		rows = append(rows, Row{Label: skill.Name, Value: status})
 	}
 	if len(rows) > 0 {
-		v.Sections = append(v.Sections, Section{Title: "技能与行迹", Rows: rows})
+		v.Sections = append(v.Sections, Section{Title: "天赋", Rows: rows})
 	}
 	rows = []Row{}
 	for _, rank := range p.Ranks {
@@ -389,7 +321,7 @@ func PanelView(game Game, panels []CharacterPanel, uid string) View {
 		rows = append(rows, Row{Label: rank.Name, Value: status})
 	}
 	if len(rows) > 0 {
-		v.Sections = append(v.Sections, Section{Title: "命座 / 星魂 / 影画", Rows: rows})
+		v.Sections = append(v.Sections, Section{Title: "命座", Rows: rows})
 	}
 	if p.OfficialScore != "" {
 		v.Rows = append(v.Rows, Row{Label: "官方配装评分", Value: p.OfficialScore})

@@ -167,27 +167,27 @@ func TestFetchDownloadsOnDemandFilesOnce(t *testing.T) {
 		_, _ = w.Write([]byte("png"))
 	}))
 	defer server.Close()
-	store := &Store{Root: t.TempDir(), Sources: []Source{{ID: "zzzerouid", Name: "绝区零角色图", Mirrors: []string{server.URL + "/first/", server.URL + "/second/"}}}}
-	path, ok := store.Fetch(t.Context(), "zzzerouid", "role/IconRole01.png")
-	if !ok || path != "assets/zzzerouid/role/IconRole01.png" || hits.Load() != 2 {
+	store := &Store{Root: t.TempDir(), Sources: []Source{{ID: "mihoyo", Name: "官方图片缓存", Mirrors: []string{server.URL + "/first/", server.URL + "/second/"}}}}
+	path, ok := store.Fetch(t.Context(), "mihoyo", "role/IconRole01.png")
+	if !ok || path != "assets/mihoyo/role/IconRole01.png" || hits.Load() != 2 {
 		t.Fatalf("Fetch = %q %v after %d requests", path, ok, hits.Load())
 	}
-	if _, ok := store.Fetch(t.Context(), "zzzerouid", "role/IconRole01.png"); !ok || hits.Load() != 2 {
+	if _, ok := store.Fetch(t.Context(), "mihoyo", "role/IconRole01.png"); !ok || hits.Load() != 2 {
 		t.Fatalf("cached file fetched again: %d requests", hits.Load())
 	}
 	// A missing file is not asked for again right away.
-	if _, ok := store.Fetch(t.Context(), "zzzerouid", "role/IconRole99.png"); ok {
+	if _, ok := store.Fetch(t.Context(), "mihoyo", "role/IconRole99.png"); ok {
 		t.Fatal("missing file reported present")
 	}
 	before := hits.Load()
-	if _, ok := store.Fetch(t.Context(), "zzzerouid", "role/IconRole99.png"); ok || hits.Load() != before {
+	if _, ok := store.Fetch(t.Context(), "mihoyo", "role/IconRole99.png"); ok || hits.Load() != before {
 		t.Fatalf("paused file requested again: %d -> %d", before, hits.Load())
 	}
 	status := store.Statuses()[0]
 	if status.State != "on_demand" || status.Files != 1 {
 		t.Fatalf("status = %+v", status)
 	}
-	if _, err := store.Start("zzzerouid"); err == nil {
+	if _, err := store.Start("mihoyo"); err == nil {
 		t.Fatal("on-demand source started a download")
 	}
 }

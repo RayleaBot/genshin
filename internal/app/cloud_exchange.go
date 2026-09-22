@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"io"
 	"strconv"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type CloudExchangeInfo struct {
@@ -15,11 +16,11 @@ type CloudExchangeInfo struct {
 	Direction  string `json:"direction"`
 }
 
-func cloudExchangeRequest(game string, input CloudInput) (string, map[string]any, error) {
+func cloudExchangeRequest(input CloudInput) (string, map[string]any, error) {
 	if !uidPattern.MatchString(input.UID) {
 		return "", nil, gameError("input_invalid", "交换需要有效 UID。")
 	}
-	body := map[string]any{"version": "0.1.0", "uid": input.UID, "type": cloudGame(game)}
+	body := map[string]any{"version": "0.1.0", "uid": input.UID, "type": arkGame}
 	if input.Mode == "exchange_download" {
 		return "panel/download", body, nil
 	}
@@ -60,7 +61,7 @@ func cloudExchangeResult(game Game, input CloudInput, result map[string]any) (Cl
 	if err != nil {
 		return CloudResult{}, err
 	}
-	avatars, err := cleanCloudPlayer(game.ID, input.UID, data)
+	avatars, err := cleanCloudPlayer(input.UID, data)
 	if err != nil {
 		return CloudResult{}, err
 	}
@@ -166,7 +167,7 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 		if err != nil {
 			return nil, err
 		}
-		avatars, err := cleanCloudPlayer(a.Game.ID, role.UID, data)
+		avatars, err := cleanCloudPlayer(role.UID, data)
 		if err != nil {
 			return nil, err
 		}

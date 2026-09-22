@@ -25,7 +25,6 @@ func Profile(files fs.FS) reference.Profile {
 			{Files: runtime, Path: "common.js"},
 			{Files: files, Path: "game.js"},
 		},
-		Runner:      reference.Script{Files: runtime, Path: "runner.js"},
-		PassWeapons: true,
+		Runner: reference.Script{Files: runtime, Path: "runner.js"},
 	}
 }

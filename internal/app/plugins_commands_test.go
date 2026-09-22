@@ -117,96 +117,9 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"喵喵别名删除", "alias-remove", nil},
 			{"喵喵别名列表", "alias-list", nil},
 		},
-		"starrail": {
-			{"希儿面板", "character", []string{"希儿"}},
-			{"面板", "panel-list", nil},
-			{"更新面板", "panel-refresh", nil},
-			{"mys更新面板", "panel-refresh-account", nil},
-			{"遗器列表", "artifact-list", nil},
-			{"希儿换满命换满行迹", "talent-wiki", []string{"希儿换满命换满"}},
-			{"希儿换满命", "panel-change", nil},
-			{"圣遗物列表100000001", "artifact-list", []string{"100000001"}},
-			{"希儿遗器", "score", []string{"希儿"}},
-			{"希儿伤害", "build", []string{"希儿"}},
-			{"上期忘却之庭", "challenge", []string{"上期"}},
-			{"上期模拟宇宙", "rogue", []string{"上期"}},
-			{"差分宇宙", "divergent", nil},
-			{"常规演算二", "divergent-normal", nil},
-			{"上周差分宇宙记录", "divergent-week", nil},
-			{"周期演算", "divergent-cycle", nil},
-			{"星琼统计", "monthly-history", nil},
-			{"希儿行迹", "talent-wiki", []string{"希儿"}},
-			{"希儿遗器排名", "rank", nil},
-			{"最强希儿", "rank-top", nil},
-			{"今年星琼统计", "monthly-history", nil},
-			{"跃迁记录", "gacha", nil},
-			{"十连光锥", "simulation", nil},
-			{"更新跃迁记录", "gacha-background", nil},
-			{"帮助", "help", nil},
-			{"刷新行迹", "panel-refresh-account", nil},
-			{"角色分析", "gacha", nil},
-			{"光锥记录", "gacha", nil},
-			{"抽卡统计", "gacha", nil},
-			{"版本统计", "gacha-versions", nil},
-			{"up统计", "gacha-versions", nil},
-			{"更新图像", "artwork", nil},
-			{"克拉拉养成75", "growth", []string{"克拉拉", "75"}},
-			{"抽卡链接", "gacha-link", nil},
-			{"希儿参考面板", "ref-panel", []string{"希儿"}},
-			{"参考面板帮助", "ref-panel-help", nil},
-			{"攻略", "path-guides", nil},
-			{"希儿攻略", "guides", []string{"希儿"}},
-			{"深渊攻略", "abyss-guide", nil},
-			{"强度榜", "tier-list", nil},
-			{"面板帮助", "panel-help", nil},
-			{"预估", "estimate", nil},
-			{"星琼盘点", "estimate", nil},
-			{"公告2", "news", []string{"2"}},
-			{"喵喵别名星铁设置", "alias-set", nil},
-			{"设置希儿别名", "alias-add", []string{"希儿"}},
-			{"删除别名鸭鸭", "alias-remove", []string{"鸭鸭"}},
-			{"喵喵别名删除", "alias-remove", nil},
-			{"希儿昵称", "aliases", []string{"希儿"}},
-			{"喵喵别名帮助", "alias-help", nil},
-		},
-		"zzz": {
-			{"艾莲面板", "character", []string{"艾莲"}},
-			{"面板", "panel-list", nil},
-			{"面板列表", "panel-list", nil},
-			{"更新面板", "panel-refresh", nil},
-			{"更新展柜面板", "panel-refresh", nil},
-			{"面板刷新", "panel-refresh", nil},
-			{"上期式舆防卫战", "challenge", []string{"上期"}},
-			{"艾莲伤害", "build", []string{"艾莲"}},
-			{"2.0卡池", "banner-current", []string{"2.0"}},
-			{"卡池", "banner-current", nil},
-			{"艾莲复刻记录", "banner-history", []string{"艾莲"}},
-			{"迷宫记录", "zenkov_detail", nil},
-			{"零号空洞", "hollow-zero", nil},
-			{"深渊排名", "query-rank", nil},
-			{"艾莲技能", "talent-wiki", []string{"艾莲"}},
-			{"艾莲技能12.12.10.12.12.6", "talent-wiki", []string{"艾莲"}},
-			{"艾莲影画", "talent-wiki", []string{"艾莲"}},
-			{"危局绝境排名", "query-rank", nil},
-			{"爬塔S2排名", "query-rank", nil},
-			{"鏖战试炼：荣耀排名", "query-rank", nil},
-			{"爬塔排名", "query-rank-help", nil},
-			{"隐藏深渊排名", "query-rank-switch", nil},
-			{"下载全部资源", "artwork", nil},
-			{"获取抽卡链接", "gacha-link", nil},
-			{"显示排名", "query-rank-switch", nil},
-			{"苗圃", "hollow_zero", nil},
-			{"抽卡", "gacha", nil},
-			{"帮助", "help", nil},
-			{"菲林预估", "estimate", nil},
-			{"资讯列表", "info", []string{"列表"}},
-			{"添加艾莲别名鲨鲨", "alias-set", []string{"艾莲", "鲨鲨"}},
-			{"删除别名鲨鲨", "alias-remove", []string{"鲨鲨"}},
-			{"艾莲别名", "aliases", []string{"艾莲"}},
-		},
 	}
 	for game, list := range cases {
-		manifest, err := pluginmeta.Read(pluginFile(t, game, "info.json"))
+		manifest, err := pluginmeta.Read(pluginFile(t, "info.json"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -229,37 +142,18 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 // A hint or static picture answers a command by ID, so each must name one
 // the manifest has.
 func TestShippedHintsNameManifestCommands(t *testing.T) {
-	for _, game := range []string{"genshin", "starrail", "zzz"} {
-		manifest, err := pluginmeta.Read(pluginFile(t, game, "info.json"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		var data Game
-		if err := json.Unmarshal(pluginFile(t, game, "internal/assets/game.json"), &data); err != nil {
-			t.Fatal(err)
-		}
-		ids := slices.AppendSeq(slices.Collect(maps.Keys(data.Hints)), maps.Keys(data.Pictures.Static))
-		for _, id := range ids {
-			if !slices.ContainsFunc(manifest.Commands, func(command pluginmeta.Command) bool { return command.ID == id }) {
-				t.Errorf("%s answer %s names no command", game, id)
-			}
-		}
-	}
-}
-
-// ZZZ-Plugin names the tower seasons 爬塔S1–S4; each word picks its own
-// season and nothing else.
-func TestShippedTowerRankingsFollowTheirSeason(t *testing.T) {
-	a := &App{Game: Game{}}
-	if err := json.Unmarshal(pluginFile(t, "zzz", "internal/assets/game.json"), &a.Game); err != nil {
+	manifest, err := pluginmeta.Read(pluginFile(t, "info.json"))
+	if err != nil {
 		t.Fatal(err)
 	}
-	for word, name := range map[string]string{"爬塔S1排名": "爬塔S1", "爬塔s2排名": "爬塔S2", "爬塔S3群排名": "爬塔S3", "爬塔 S4排名": "爬塔S4", "拟真鏖战试炼排名": "爬塔S1", "鏖战试炼：末路排名": "爬塔S2"} {
-		if rank, ok := a.queryRankType(word); !ok || rank.Name != name {
-			t.Errorf("%s: %+v %v", word, rank, ok)
-		}
+	var data Game
+	if err := json.Unmarshal(pluginFile(t, "internal/assets/game.json"), &data); err != nil {
+		t.Fatal(err)
 	}
-	if rank, ok := a.queryRankType("爬塔1排名"); ok {
-		t.Errorf("a season without S matched %s", rank.Name)
+	ids := slices.AppendSeq(slices.Collect(maps.Keys(data.Hints)), maps.Keys(data.Pictures.Static))
+	for _, id := range ids {
+		if !slices.ContainsFunc(manifest.Commands, func(command pluginmeta.Command) bool { return command.ID == id }) {
+			t.Errorf("answer %s names no command", id)
+		}
 	}
 }

@@ -15,10 +15,10 @@ import (
 
 // gachaWords are stripped from the command word before picking the pool, as
 // upstream's getPool does.
-var gachaWords = regexp.MustCompile(`#|抽卡|记录|祈愿|分析|池|原神|星铁|崩坏星穹铁道|铁道`)
+var gachaWords = regexp.MustCompile(`#|抽卡|记录|祈愿|分析|池|原神`)
 
 // standardFiveStars never count as the rate-up in upstream's checkIsUp.
-var standardFiveStars = []string{"莫娜", "七七", "迪卢克", "琴", "姬子", "杰帕德", "彦卿", "白露", "瓦尔特", "克拉拉", "布洛妮娅"}
+var standardFiveStars = []string{"莫娜", "七七", "迪卢克", "琴"}
 
 // rateUpPeriods are the standard five-stars that were once a rate-up; upstream
 // counts them as rate-up only inside these periods (UTC+8).
@@ -27,13 +27,6 @@ var rateUpPeriods = map[string][][2]string{
 	"提纳里":   {{"2022-08-24 06:00:00", "2022-09-09 17:59:59"}},
 	"迪希雅":   {{"2023-03-01 06:00:00", "2023-03-21 17:59:59"}},
 	"梦见月瑞希": {{"2025-02-12 06:00:00", "2025-03-04 17:59:59"}},
-	"希儿":    {{"2023-04-26 06:00:00", "2023-05-17 17:59:59"}, {"2023-10-27 12:00:00", "2023-11-14 14:59:59"}},
-	"刃":     {{"2023-07-19 06:00:00", "2023-08-09 11:59:59"}, {"2023-12-27 06:00:00", "2024-01-17 11:59:59"}},
-	"符玄":    {{"2023-09-20 12:00:00", "2023-10-10 14:59:59"}, {"2024-05-29 12:00:00", "2024-06-18 14:59:59"}},
-	"银狼": {{"2023-06-07 06:00:00", "2023-06-28 11:59:59"}, {"2023-12-06 12:00:00", "2023-12-26 14:59:59"},
-		{"2025-02-05 12:00:00", "2025-02-25 14:59:59"}, {"2025-09-02 12:00:00", "2025-09-23 14:59:59"}},
-	"银枝": {{"2023-12-06 12:00:00", "2023-12-26 14:59:59"}, {"2024-07-10 12:00:00", "2024-07-31 14:59:59"}},
-	"云璃": {{"2024-07-31 06:00:00", "2024-08-21 11:59:59"}, {"2025-02-26 06:00:00", "2025-03-19 11:59:59"}},
 }
 
 func rateUp(record gacha.Record) bool {
@@ -144,7 +137,7 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.ImageResources, pool, poolName string) (map[string]any, bool) {
 	records := []gacha.Record{}
 	for _, record := range image.Archive.Records {
-		if gacha.Pool("genshin", record.GachaType) == pool {
+		if gacha.Pool(record.GachaType) == pool {
 			records = append(records, record)
 		}
 	}

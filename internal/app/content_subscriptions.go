@@ -6,13 +6,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 )
 
 type ContentSubscription struct {
@@ -142,7 +143,7 @@ func (s *ContentSubscriptions) Tick(ctx context.Context, ref string, now int64, 
 func contentKindLabel(kind string) string {
 	return map[string]string{"news": "公告", "info": "资讯", "events": "活动", "expiry": "到期"}[kind]
 }
-func (a *App) subscriptionManage(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
+func (a *App) subscriptionManage(action string, input map[string]any) (map[string]any, error) {
 	if action == "content.subscription.list" {
 		items, err := a.Subscriptions.List()
 		return map[string]any{"items": items}, err
@@ -259,9 +260,9 @@ func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.Event
 			}
 		}
 		if task.Kind == "expiry" {
-			return a.Content.calendar(ctx, a.Game.ID)
+			return a.Content.calendar(ctx)
 		}
-		return a.Content.posts(ctx, a.Game.ID, ContentQuery{Kind: "news", Type: map[string]int{"news": 1, "events": 2, "info": 3}[task.Kind]})
+		return a.Content.posts(ctx, ContentQuery{Kind: "news", Type: map[string]int{"news": 1, "events": 2, "info": 3}[task.Kind]})
 	}, func(task ContentSubscription, text string) error {
 		found := false
 		for _, bot := range event.Bots {

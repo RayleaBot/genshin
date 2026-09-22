@@ -29,7 +29,7 @@ func (c *detailCaller) CallService(_ context.Context, req rayleabot.ServiceCallR
 
 func TestCloudArchiveSanitizesAndPreservesMiaoBusinessFields(t *testing.T) {
 	raw := cloudObject(t, `{"uid":"100000001","cookie":"discard-root","avatars":{"10000046":{"id":10000046,"name":"胡桃","cons":0,"_time":"2026-09-01 12:00:00","_source":"mys","stoken":"discard-avatar","weapon":{"name":"护摩之杖","level":90,"affix":1,"cookie_token":"discard-weapon"},"talent":{"a":10,"e":{"level":10,"cookie":"discard-talent"}},"artis":{"1":{"name":"角斗士的留恋","level":20,"mainId":13001,"star":5,"attrIds":[501204],"cookie":"discard-gear"}}}}}`)
-	clean, err := cleanCloudPlayer("genshin", "100000001", raw)
+	clean, err := cleanCloudPlayer("100000001", raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,15 +37,12 @@ func TestCloudArchiveSanitizesAndPreservesMiaoBusinessFields(t *testing.T) {
 	if strings.Contains(string(encoded), "discard-") || !strings.Contains(string(encoded), `"_source":"share"`) || !strings.Contains(string(encoded), `"cons":0`) {
 		t.Fatal("credential metadata retained or zero lost")
 	}
-	if _, err = cleanCloudPlayer("starrail", "100000001", raw); err == nil {
-		t.Fatal("wrong game accepted")
-	}
-	if _, err = cleanCloudPlayer("genshin", "100000002", raw); err == nil {
+	if _, err = cleanCloudPlayer("100000002", raw); err == nil {
 		t.Fatal("wrong UID accepted")
 	}
 }
 func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
-	a := App{Game: testGame(t, "genshin"), CloudArchive: &CloudArchiveStore{Directory: filepath.Join(t.TempDir(), "exchange")}}
+	a := App{Game: testGame(t), CloudArchive: &CloudArchiveStore{Directory: filepath.Join(t.TempDir(), "exchange")}}
 	defer a.Close()
 	role := Role{Ref: "role", Game: "genshin", UID: "100000001", Region: "cn_gf01"}
 	caller := &detailCaller{role: role}
@@ -110,7 +107,7 @@ func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
 }
 func TestCloudExchangeDownloadKeepsRawDataOutOfResultAndUploadConsent(t *testing.T) {
 	q := CloudInput{Mode: "exchange_download", UID: "100000001", Consent: true}
-	result, err := projectCloud(testGame(t, "genshin"), q, cloudObject(t, `{"retcode":100,"data":{"uid":"100000001","avatars":{"10000046":{"id":10000046,"level":90,"cookie":"not-kept"}}}}`))
+	result, err := projectCloud(testGame(t), q, cloudObject(t, `{"retcode":100,"data":{"uid":"100000001","avatars":{"10000046":{"id":10000046,"level":90,"cookie":"not-kept"}}}}`))
 	if err != nil || result.Exchange.Characters != 1 || len(result.exchange) == 0 {
 		t.Fatal(result, err)
 	}
@@ -119,15 +116,15 @@ func TestCloudExchangeDownloadKeepsRawDataOutOfResultAndUploadConsent(t *testing
 		t.Fatal("raw exchange leaked in public result")
 	}
 	q.Mode = "exchange_upload"
-	if _, _, err = cloudRequest("genshin", q); err == nil {
+	if _, _, err = cloudRequest(q); err == nil {
 		t.Fatal("arbitrary caller upload accepted without owned archive")
 	}
 	q.exchangeData = string(result.exchange)
-	if route, body, err := cloudRequest("genshin", q); err != nil || route != "panel/upload" || body["type"] != "gs" {
+	if route, body, err := cloudRequest(q); err != nil || route != "panel/upload" || body["type"] != "gs" {
 		t.Fatal(body, err)
 	}
 	q.Consent = false
-	if _, _, err = cloudRequest("genshin", q); err == nil {
+	if _, _, err = cloudRequest(q); err == nil {
 		t.Fatal("upload without consent")
 	}
 }

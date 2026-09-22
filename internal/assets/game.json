@@ -242,11 +242,7 @@
     "static": {
       "panel-help": {
         "source": "miao-plugin",
-        "parts": [
-          {
-            "path": "resources/character/imgs/help.jpg"
-          }
-        ]
+        "path": "resources/character/imgs/help.jpg"
       }
     }
   },

@@ -144,7 +144,7 @@ func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventCo
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	avatars, err := cleanCloudPlayer(a.Game.ID, owner.UID, data)
+	avatars, err := cleanCloudPlayer(owner.UID, data)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
@@ -175,7 +175,6 @@ func (a *App) cloudAvatarPanel(ctx context.Context, raw json.RawMessage) (Charac
 		Promote *int           `json:"promote"`
 		Cons    int            `json:"cons"`
 		Talent  map[string]int `json:"talent"`
-		Trees   []string       `json:"trees"`
 		Weapon  *struct {
 			ID      int    `json:"id"`
 			Name    string `json:"name"`
@@ -189,7 +188,7 @@ func (a *App) cloudAvatarPanel(ctx context.Context, raw json.RawMessage) (Charac
 		return CharacterPanel{}, gameError("cloud_invalid", "面板文件的角色数据无法读取。")
 	}
 	id := strconv.Itoa(avatar.ID)
-	record, err := findReferenceCharacter(a.Game.Calc, a.Game.ID, CharacterPanel{ID: id, Element: avatar.Elem})
+	record, err := findReferenceCharacter(a.Game.Calc, CharacterPanel{ID: id, Element: avatar.Elem})
 	if err != nil {
 		return CharacterPanel{}, err
 	}
@@ -207,9 +206,9 @@ func (a *App) cloudAvatarPanel(ctx context.Context, raw json.RawMessage) (Charac
 	}
 	weapon := PanelEquipment{Main: []PanelStat{}, Sub: []PanelStat{}, Complete: true}
 	if avatar.Weapon != nil {
-		// Genshin Impact player data names the weapon; Star Rail gives its ID.
+		// Player data names the weapon.
 		for _, item := range a.Game.Calc.Metadata().Weapons {
-			if item.Game == cloudGame(a.Game.ID) && (avatar.Weapon.ID != 0 && item.ID == strconv.Itoa(avatar.Weapon.ID) || avatar.Weapon.Name != "" && item.Name == avatar.Weapon.Name) {
+			if avatar.Weapon.ID != 0 && item.ID == strconv.Itoa(avatar.Weapon.ID) || avatar.Weapon.Name != "" && item.Name == avatar.Weapon.Name {
 				weapon.ID, weapon.Name = item.ID, item.Name
 			}
 		}
@@ -220,9 +219,9 @@ func (a *App) cloudAvatarPanel(ctx context.Context, raw json.RawMessage) (Charac
 	}
 	talents := map[string]int{}
 	for key, level := range avatar.Talent {
-		talents[key] = level + talentBonus(a.Game.ID, record, key, panel.Rank)
+		talents[key] = level + talentBonus(record, key, panel.Rank)
 	}
-	return a.computedPanel(ctx, record, panel, weapon, talents, avatar.Trees)
+	return a.computedPanel(ctx, record, panel, weapon, talents)
 }
 
 func cmpOr(value, fallback string) string {

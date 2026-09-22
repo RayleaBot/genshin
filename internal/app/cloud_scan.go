@@ -13,7 +13,7 @@ import (
 
 // ark-plugin reads artifact and relic screenshots sent in chat with its OCR:
 // 面板换装 takes the pieces read from the attached screenshots, and
-// ark重塑识别 (重投 in Star Rail) finds the reforged piece among the kept
+// ark重塑识别 finds the reforged piece among the kept
 // panels and shows the panel wearing its new substats.
 
 // scannedGear is one piece the OCR read; Slot is 0 when the answer does not
@@ -57,7 +57,7 @@ func (a *App) scanGear(ctx context.Context, image string, forge bool) ([]scanned
 	}
 	ctx, cancel := context.WithTimeout(ctx, 25*time.Second)
 	defer cancel()
-	decoded, err := a.Cloud.request(ctx, "ocr/profilechange/"+cloudGame(a.Game.ID), map[string]any{"version": "0.1.0", "image": image, "forge": forge})
+	decoded, err := a.Cloud.request(ctx, "ocr/profilechange/"+arkGame, map[string]any{"version": "0.1.0", "image": image, "forge": forge})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (a *App) scannedPieces(ctx context.Context, images []string) (map[int]Panel
 		}
 	}
 	if len(pieces) == 0 {
-		return nil, gameError("cloud_invalid", "未能从截图识别出"+a.gearWord()+"。")
+		return nil, gameError("cloud_invalid", "未能从截图识别出圣遗物。")
 	}
 	return pieces, nil
 }
@@ -117,17 +117,9 @@ func readGear(game Game, gear scannedGear) *PanelEquipment {
 	return nil
 }
 
-func (a *App) gearWord() string {
-	if a.Game.ID == "starrail" {
-		return "遗器"
-	}
-	return "圣遗物"
-}
-
 // sameGear tells whether a kept piece is the one read from a screenshot:
 // the same substats with the same values, as far as the game shows them.
-// Like ark-plugin, Star Rail's speed may be a few rolls apart.
-func sameGear(game string, kept, read PanelEquipment) bool {
+func sameGear(kept, read PanelEquipment) bool {
 	if len(kept.Sub) != len(read.Sub) {
 		return false
 	}
@@ -145,9 +137,6 @@ func sameGear(game string, kept, read PanelEquipment) bool {
 		tolerance := 1.01
 		if strings.HasSuffix(strings.TrimSpace(stat.Value), "%") {
 			tolerance = 0.11
-		}
-		if game == "starrail" && stat.Key == "speed" {
-			tolerance = 2
 		}
 		if math.Abs(value-want) > tolerance {
 			return false
@@ -174,17 +163,17 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 	if err != nil || owner.UID == "" {
 		return event.SendText("请先绑定UID")
 	}
-	word := map[bool]string{true: "重投", false: "重塑"}[a.Game.ID == "starrail"]
+	word := "重塑"
 	images := messageImages(ctx, event)
 	if len(images) == 0 {
-		return event.SendText("请发送" + a.gearWord() + word + "图片")
+		return event.SendText("请发送圣遗物" + word + "图片")
 	}
 	gears, err := a.scanGear(ctx, images[0], true)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
 	if len(gears) != 2 {
-		return event.SendText("未能从截图识别出" + a.gearWord() + "的前后两件。")
+		return event.SendText("未能从截图识别出圣遗物的前后两件。")
 	}
 	before, after := gears[0], gears[1]
 	saved, err := a.Profiles.Read(owner.UID)
@@ -192,11 +181,11 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 		return event.SendText(friendlyError(err))
 	}
 	if len(saved.Panels) == 0 {
-		return event.SendText("未找到UID:" + owner.UID + "的" + a.Game.Name + "本地数据，请确保面板中包含此" + a.gearWord())
+		return event.SendText("未找到UID:" + owner.UID + "的" + a.Game.Name + "本地数据，请确保面板中包含此圣遗物")
 	}
 	original := readGear(a.Game, before)
 	if original == nil {
-		return event.SendText("未能解释截图中的原" + a.gearWord() + "。")
+		return event.SendText("未能解释截图中的原圣遗物。")
 	}
 	// A match with the same main stat first, as ark-plugin prefers.
 	ids := []string{}
@@ -207,7 +196,7 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 	wearer, slot, best := "", 0, false
 	for _, id := range ids {
 		for _, piece := range saved.Panels[id].panel().Equipment {
-			if piece.Slot != original.Slot || !sameGear(a.Game.ID, piece, *original) {
+			if piece.Slot != original.Slot || !sameGear(piece, *original) {
 				continue
 			}
 			if wearer == "" || !best && mainKey(piece) == mainKey(*original) {
@@ -216,7 +205,7 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 		}
 	}
 	if wearer == "" {
-		return event.SendText("未在本地数据中找到匹配的圣遗物/遗器")
+		return event.SendText("未在本地数据中找到匹配的圣遗物")
 	}
 	// The reforged piece keeps what the answer leaves out of the original.
 	for _, key := range []string{"name", "id", "star"} {
@@ -227,12 +216,12 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 	after.Slot = slot
 	reforged := readGear(a.Game, after)
 	if reforged == nil {
-		return event.SendText("未能解释截图中" + word + "后的" + a.gearWord() + "。")
+		return event.SendText("未能解释截图中" + word + "后的圣遗物。")
 	}
 	panel, err := a.changedPanel(ctx, owner.UID, PanelChange{CharacterID: wearer, Pieces: map[int]changeSource{}, Scanned: map[int]PanelEquipment{slot: *reforged}})
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	_ = event.SendText("找到匹配" + a.gearWord() + "，正在生成" + word + "面板...")
+	_ = event.SendText("找到匹配圣遗物，正在生成" + word + "面板...")
 	return a.sendView(ctx, event, a.fullPanelView(ctx, event, panel, owner.UID, false, "ark"+word+"识别"))
 }

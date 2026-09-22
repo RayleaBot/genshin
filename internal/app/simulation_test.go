@@ -26,13 +26,13 @@ func TestSimulationReferenceProbabilityVectors(t *testing.T) {
 		t.Fatal("bad vectors")
 	}
 	for _, c := range cases {
-		if actual := simulationProbability(c.Game, c.Kind, c.Five, c.Weekly); actual != c.Expected {
+		if actual := simulationProbability(c.Kind, c.Five, c.Weekly); actual != c.Expected {
 			t.Fatalf("%s/%s five=%d week=%d: %d != %d", c.Game, c.Kind, c.Five, c.Weekly, actual, c.Expected)
 		}
 	}
 }
 func TestSimulationQuotaReplayResetAndBusinessDay(t *testing.T) {
-	s := &SimulationStore{Game: "genshin", Deck: testGame(t, "genshin").Data.Simulation, Directory: t.TempDir(), Random: func(n int) int { return n - 1 }}
+	s := &SimulationStore{Game: "genshin", Deck: testGame(t).Data.Simulation, Directory: t.TempDir(), Random: func(n int) int { return n - 1 }}
 	now := time.Date(2026, 9, 19, 19, 59, 0, 0, time.UTC)
 	if _, err := s.Action("a", "simulation.configure", map[string]any{"daily_limit": 10}, now); err != nil {
 		t.Fatal(err)
@@ -63,7 +63,7 @@ func TestSimulationQuotaReplayResetAndBusinessDay(t *testing.T) {
 	}
 }
 func TestSimulationConcurrentAdmissionDoesNotPartiallySpend(t *testing.T) {
-	s := &SimulationStore{Game: "starrail", Deck: testGame(t, "starrail").Data.Simulation, Directory: t.TempDir(), Random: func(n int) int { return n - 1 }}
+	s := &SimulationStore{Game: "genshin", Deck: testGame(t).Data.Simulation, Directory: t.TempDir(), Random: func(n int) int { return n - 1 }}
 	now := time.Now()
 	_, _ = s.Action("a", "simulation.configure", map[string]any{"daily_limit": 10}, now)
 	var wg sync.WaitGroup
@@ -85,7 +85,7 @@ func TestSimulationConcurrentAdmissionDoesNotPartiallySpend(t *testing.T) {
 	}
 }
 func TestSimulationFateAndPoolStateStayIndependent(t *testing.T) {
-	deck := *testGame(t, "genshin").Data.Simulation
+	deck := *testGame(t).Data.Simulation
 	state := newSimulationState(deck)
 	s := &SimulationStore{Game: "genshin", Deck: &deck, Random: func(n int) int { return n - 1 }}
 	selection := state.Selections["weapon"]
@@ -138,15 +138,11 @@ func TestSimulationLimitTextFollowsUpstream(t *testing.T) {
 	}
 	status := map[string]any{"history": history, "weekly_top": 3}
 	// Yunzai counts the weapon pool apart and lists every five-star today.
-	if got := simulationLimitText("genshin", "一个很长的群名片名字", "character", status, now); got != "一个很长的...\n今日五星：雷电将军(73)\n护摩之杖(60)\n本周：3个五星" {
+	if got := simulationLimitText("一个很长的群名片名字", "character", status, now); got != "一个很长的...\n今日五星：雷电将军(73)\n护摩之杖(60)\n本周：3个五星" {
 		t.Errorf("genshin = %q", got)
 	}
 	status = map[string]any{"history": history[2:3], "weekly_top": 0}
-	if got := simulationLimitText("genshin", "旅行者", "standard", status, now); got != "旅行者\n今日已抽，累计1抽无五星" {
+	if got := simulationLimitText("旅行者", "standard", status, now); got != "旅行者\n今日已抽，累计1抽无五星" {
 		t.Errorf("genshin without five-stars = %q", got)
-	}
-	status = map[string]any{"history": history, "weekly_top": 3}
-	if got := simulationLimitText("starrail", "开拓者", "weapon", status, now); got != "今日抽已抽2抽，其中1个五星，明日再来吧" {
-		t.Errorf("starrail = %q", got)
 	}
 }

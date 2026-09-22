@@ -5,9 +5,6 @@ import (
 )
 
 func (a *App) blueprintAction(ctx context.Context, client AccountsClient, action string, input map[string]any) (map[string]any, error) {
-	if a.Game.ID != "genshin" {
-		return nil, gameError("operation_denied", "尘歌壶功能仅适用于原神。")
-	}
 	params := map[string]any{}
 	operation := "genshin.blueprint_read"
 	title := "尘歌壶摹本摆设"

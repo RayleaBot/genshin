@@ -114,31 +114,3 @@ func TestSyncFailureCancelAndDeletionPreserveArchives(t *testing.T) {
 		})
 	}
 }
-func TestSyncKeepsOfficialUTCAndDistinctZZZReturnPools(t *testing.T) {
-	store := &Store{Directory: t.TempDir(), Game: "zzz"}
-	jobs := &Syncs{}
-	info, err := jobs.Start(store, SyncChoice{"account", "role"}, "100000001", "prod_gf_cn", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	done := finishSync(t, store, jobs, info, func(_ context.Context, pool, end string, page int) (RemotePage, error) {
-		result := RemotePage{Records: []Record{}, Timezone: 0, Language: "zh-cn", NextID: end}
-		if pool == "2001" || pool == "12001" {
-			record := syncRecord()
-			record.UIGFType = ""
-			record.Rank = "4"
-			record.GachaType = "2"
-			if pool == "12001" {
-				record.GachaType = "102"
-				record.ID = "101"
-			}
-			result.Records = []Record{record}
-			result.NextID = record.ID
-		}
-		return result, nil
-	})
-	archive, err := store.Read("100000001", "prod_gf_cn")
-	if err != nil || archive.Timezone != 0 || done.Result.Total != 2 || len(Summarize("zzz", archive)) != 2 {
-		t.Fatal("UTC or independent pools lost")
-	}
-}

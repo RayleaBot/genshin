@@ -109,9 +109,6 @@ func pairStatisticsTeams(teams []PublicTeam, weights map[string]float64, fallbac
 }
 
 func (a *App) statisticsTeams(ctx context.Context, event *rayleabot.EventContext, input map[string]any) (map[string]any, error) {
-	if a.Game.ID != "genshin" {
-		return nil, gameError("operation_denied", "此配队来源仅适用于原神。")
-	}
 	job, err := a.ContentJobs.Poll(asText(input["ref"]), false)
 	if err != nil {
 		return nil, err

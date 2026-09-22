@@ -75,7 +75,7 @@ func (c Catalog) statIdentity(name string) string {
 	return ""
 }
 func (a *App) publicStatistics(ctx context.Context, q ContentQuery) (map[string]any, error) {
-	if a.Game.ID != "genshin" || !slices.Contains([]string{"ownership", "abyss", "stygian"}, q.Source) {
+	if !slices.Contains([]string{"ownership", "abyss", "stygian"}, q.Source) {
 		return nil, gameError("operation_denied", "此参考统计仅适用于原神。")
 	}
 	data, err := a.Content.statsRaw(ctx, q.Source)
@@ -158,8 +158,8 @@ func (a *App) publicStatistics(ctx context.Context, q ContentQuery) (map[string]
 	}
 	return map[string]any{"rows": rows, "teams": teams, "meta": meta, "source": q.Source, "fetched_at_ms": time.Now().UnixMilli(), "note": "来源为样本统计，不代表全体玩家；命座分布是持有者中的比例，持有率来自独立样本，缺失值保持未知。"}, nil
 }
-func (c PublicContentClient) estimate(ctx context.Context, game string) (map[string]any, error) {
-	keyword := map[string]string{"genshin": "原石统计汇总", "starrail": "星琼统计汇总", "zzz": "菲林统计汇总"}[game]
+func (c PublicContentClient) estimate(ctx context.Context) (map[string]any, error) {
+	keyword := "原石统计汇总"
 	data, err := c.get(ctx, "https://bbs-api.miyoushe.com/painter/api/user_instant/search/list?uid=137101761&size=20&offset=0&sort_type=2&keyword="+url.QueryEscape(keyword), nil)
 	if err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func (c PublicContentClient) estimate(ctx context.Context, game string) (map[str
 		if post := asObject(m["post"]); post != nil {
 			m = post
 		}
-		p, err := normalizePublicPost(game, m, false)
+		p, err := normalizePublicPost(m, false)
 		if err != nil {
 			return nil, err
 		}

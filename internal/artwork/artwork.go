@@ -37,7 +37,7 @@ const (
 // the Extensions are kept, at their repository-relative paths.
 //
 // A source with Mirrors is fetched file by file instead, the first time a
-// reply needs a file, as ZZZ-Plugin does with its image mirrors.
+// reply needs a file, as upstream's pages load official images.
 type Source struct {
 	ID         string   `json:"id"`
 	Name       string   `json:"name"`

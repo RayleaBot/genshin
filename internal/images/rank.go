@@ -66,7 +66,7 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 				icons[key] = path + "cons-" + strconv.Itoa(cons) + ".webp"
 			}
 		}
-		levels := app.PanelTalents("genshin", *entry.Panel, record)
+		levels := app.PanelTalents(*entry.Panel, record)
 		talents := []any{}
 		for _, key := range []string{"a", "e", "q"} {
 			level := levels[key]

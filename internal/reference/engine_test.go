@@ -19,10 +19,9 @@ func syntheticProfile() Profile {
 		"runner.js":          {Data: []byte(`function runBuild(character,weapons,input){return {name:character.name,count:shared.count,weapons:weapons.length,value:input.value,lodash:typeof _.cloneDeep}}`)},
 	}
 	return Profile{
-		Files:       files,
-		Prelude:     []Script{Lodash(), {Files: files, Path: "prelude.js"}},
-		Runner:      Script{Files: files, Path: "runner.js"},
-		PassWeapons: true,
+		Files:   files,
+		Prelude: []Script{Lodash(), {Files: files, Path: "prelude.js"}},
+		Runner:  Script{Files: files, Path: "runner.js"},
 	}
 }
 

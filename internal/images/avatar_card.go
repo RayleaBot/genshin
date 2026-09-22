@@ -37,7 +37,7 @@ func newAvatarCards(context app.ImageContext, resources *app.ImageResources, ids
 			list = append(list, id)
 		}
 		if result, err := context.Query("genshin.character", map[string]any{"character_ids": list}); err == nil {
-			for _, panel := range app.NormalizePanels("genshin", result, context.Catalog) {
+			for _, panel := range app.NormalizePanels(result, context.Catalog) {
 				cards.panels[panel.ID] = panel
 			}
 		}
@@ -71,7 +71,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 	}
 	card := c.base(id)
 	card["level"], card["cons"] = panel.Level, panel.Rank
-	levels := app.PanelTalents("genshin", panel, c.records[id])
+	levels := app.PanelTalents(panel, c.records[id])
 	talents := []any{}
 	for _, key := range []string{"a", "e", "q"} {
 		level := levels[key]

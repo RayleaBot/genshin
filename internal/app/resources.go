@@ -85,16 +85,13 @@ type GameResources struct {
 
 func (a *App) resourceQuery(action string, input map[string]any) (map[string]any, error) {
 	data := a.Game.Data.Resources
-	if action == "calendar.query" {
-		data = a.bannerGame().Data.Resources
-	}
 	if action == "materials.query" {
 		var q struct {
 			Query   string `json:"query"`
 			Weekday int    `json:"weekday"`
 			Offset  int    `json:"offset"`
 		}
-		if decodeObject(input, &q) != nil || len(q.Query) > 128 || q.Offset < 0 || q.Weekday < 0 || q.Weekday > 7 || a.Game.ID != "genshin" && q.Weekday != 0 {
+		if decodeObject(input, &q) != nil || len(q.Query) > 128 || q.Offset < 0 || q.Weekday < 0 || q.Weekday > 7 {
 			return nil, gameError("input_invalid", "材料筛选条件无效。")
 		}
 		matches := []MaterialInfo{}

@@ -2,15 +2,16 @@ package app
 
 import (
 	"context"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"strings"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-func privateCloudPanelRequest(game string, input CloudInput) (string, map[string]any, error) {
+func privateCloudPanelRequest(input CloudInput) (string, map[string]any, error) {
 	if input.owner == nil || input.owner.SourceProtocol != "onebot11" || input.owner.SourceAdapter == "" || input.owner.BotID == "" || !cloudQQPattern.MatchString(input.owner.ActorID) || !uidPattern.MatchString(input.UID) || !input.Consent {
 		return "", nil, gameError("input_invalid", "长期云面板读取需要本人 OneBot11 私聊身份、UID 和明确同意。")
 	}
-	return "panel/data", map[string]any{"version": "0.1.0", "uid": input.UID, "type": cloudGame(game), "qq": input.owner.ActorID}, nil
+	return "panel/data", map[string]any{"version": "0.1.0", "uid": input.UID, "type": arkGame, "qq": input.owner.ActorID}, nil
 }
 func (c *CloudClient) pollPrivatePanel(game string, owner Subject, cancel bool) (CloudJob, error) {
 	c.mu.Lock()
@@ -23,8 +24,8 @@ func (c *CloudClient) pollPrivatePanel(game string, owner Subject, cancel bool) 
 	return CloudJob{}, gameError("cloud_missing", "没有有效的本人云面板任务。")
 }
 func (a *App) privateCloudPanelCommand(ctx context.Context, event *rayleabot.EventContext, args []string) error {
-	if (a.Game.ID != "genshin" && a.Game.ID != "starrail") || event.Event.EventType != "message.private" || event.Event.SourceProtocol != "onebot11" {
-		return event.SendText("长期云面板仅支持原神/星铁 OneBot11 本人私聊；需要先完成 ark 的 UID 签名验证。")
+	if event.Event.EventType != "message.private" || event.Event.SourceProtocol != "onebot11" {
+		return event.SendText("长期云面板仅支持 OneBot11 本人私聊；需要先完成 ark 的 UID 签名验证。")
 	}
 	owner := Subject{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, BotID: event.Bot.ID, ActorID: event.Event.Actor.ID}
 	if len(args) == 1 && strings.Contains("|进度|取消|保存|", "|"+args[0]+"|") {
@@ -57,7 +58,7 @@ func (a *App) privateCloudPanelCommand(ctx context.Context, event *rayleabot.Eve
 			if err != nil {
 				return event.SendText(friendlyError(err))
 			}
-			avatars, err := cleanCloudPlayer(a.Game.ID, role.UID, data)
+			avatars, err := cleanCloudPlayer(role.UID, data)
 			if err != nil {
 				return event.SendText(friendlyError(err))
 			}

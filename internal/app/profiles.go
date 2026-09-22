@@ -24,12 +24,6 @@ import (
 // PanelSettings are a game's 更新面板 rules and upstream's wording for its
 // replies.
 type PanelSettings struct {
-	// RefreshWithAccount refreshes a user's own UID from the account, as
-	// ZZZ-Plugin does unless the word names the showcase (展柜); otherwise
-	// 更新面板 reads the showcase and 米游社更新面板 the account. A game that
-	// refreshes from the account does not read the showcase for a panel that
-	// is not kept yet.
-	RefreshWithAccount bool `json:"refresh_with_account"`
 	// Cooldown is the wait in seconds between two refreshes of a UID.
 	Cooldown int `json:"cooldown"`
 	// Replies are upstream's replies by key: failed, unreachable, empty,
@@ -265,14 +259,6 @@ func (a *App) refreshShowcase(ctx context.Context, event *rayleabot.EventContext
 // accountPanels reads every character of the user's own UID from the
 // account's official data, fifty characters a request.
 func (a *App) accountPanels(ctx context.Context, client AccountsClient, choice Selection) ([]CharacterPanel, error) {
-	if a.Game.ID == "starrail" {
-		// Star Rail's official panel answers every character at once.
-		result, err := client.Execute(ctx, choice, "starrail.character", map[string]any{})
-		if err != nil {
-			return nil, err
-		}
-		return NormalizePanels(a.Game.ID, result, a.Catalog), nil
-	}
 	listed, err := client.Execute(ctx, choice, a.Game.ID+".characters", map[string]any{})
 	if err != nil {
 		return nil, err
@@ -290,16 +276,13 @@ func (a *App) accountPanels(ctx context.Context, client AccountsClient, choice S
 		}
 	}
 	key := "character_ids"
-	if a.Game.ID == "zzz" {
-		key = "id_list"
-	}
 	panels := []CharacterPanel{}
 	for batch := range slices.Chunk(ids, 50) {
 		result, err := client.Execute(ctx, choice, a.Game.ID+".character", map[string]any{key: batch})
 		if err != nil {
 			return nil, err
 		}
-		panels = append(panels, NormalizePanels(a.Game.ID, result, a.Catalog)...)
+		panels = append(panels, NormalizePanels(result, a.Catalog)...)
 	}
 	return panels, nil
 }
@@ -323,7 +306,7 @@ func (a *App) characterPanel(ctx context.Context, event *rayleabot.EventContext,
 			return panel, nil
 		}
 	}
-	if !a.Game.Panels.RefreshWithAccount && a.showcase.Parse != nil {
+	if a.showcase.Parse != nil {
 		saved, _, err = a.refreshShowcase(ctx, event, owner.UID)
 		if err != nil {
 			return CharacterPanel{}, gameError("panel_missing", a.showcaseReply(err, owner.UID))
@@ -377,7 +360,8 @@ func (a *App) panelCommand(ctx context.Context, event *rayleabot.EventContext, c
 		}
 		return a.sendPanelList(ctx, event, saved, nil, saved.Service)
 	}
-	account := command == "panel-refresh-account" || a.Game.Panels.RefreshWithAccount && owner.Owned && !strings.Contains(event.Event.Command(), "展柜")
+	// 更新面板 reads the showcase, 米游社更新面板 the account.
+	account := command == "panel-refresh-account"
 	if command == "panel-refresh-account" && !owner.Owned {
 		_, err := a.panelOwner(ctx, event, "")
 		if err == nil {

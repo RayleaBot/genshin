@@ -8,7 +8,7 @@ import (
 )
 
 func TestOfficialCloudRollRestorationAndPercentAliases(t *testing.T) {
-	genshin := testGame(t, "genshin")
+	genshin := testGame(t)
 	rolls, err := cloudRolls(genshin, 5, PanelStat{Key: "cpct", Value: "7.8%"}, 1)
 	if err != nil || len(rolls) != 2 {
 		t.Fatal(rolls, err)
@@ -23,14 +23,6 @@ func TestOfficialCloudRollRestorationAndPercentAliases(t *testing.T) {
 	if _, err = cloudRolls(genshin, 5, PanelStat{Key: "cpct", Value: "1000%"}, 1); err == nil {
 		t.Fatal("unrepresentable stat exported")
 	}
-	rolls, err = cloudRolls(testGame(t, "starrail"), 5, PanelStat{Key: "cpct", Value: "6.48%"}, 2)
-	if err != nil || len(rolls) != 1 {
-		t.Fatal(rolls, err)
-	}
-	stats := panelStats("starrail", []any{map[string]any{"property_type": 32, "value": "43.2%"}, map[string]any{"property_type": 32, "value": "705"}, map[string]any{"property_type": 27, "value": "705"}, map[string]any{"property_type": 27, "value": "43.2%"}}, nil, "value")
-	if stats[0].Key != "hp" || stats[1].Key != "hpPlus" || stats[2].Key != "hpPlus" || stats[3].Key != "hp" {
-		t.Fatal("flat and percent aliases mixed", stats)
-	}
 }
 func TestOfficialCloudCaptureKeepsOriginalTalentAndWeaponIdentity(t *testing.T) {
 	caller := &ocrCaller{}
@@ -39,10 +31,10 @@ func TestOfficialCloudCaptureKeepsOriginalTalentAndWeaponIdentity(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	panel := NormalizePanels("genshin", result, Catalog{})[0]
+	panel := NormalizePanels(result, Catalog{})[0]
 	panel.Rank = 6
 	rawPanel := asObject(asList(result.Data["list"])[0])
-	id, raw, err := officialCloudAvatar(t.Context(), testGame(t, "genshin"), panel, rawPanel)
+	id, raw, err := officialCloudAvatar(t.Context(), testGame(t), panel, rawPanel)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,14 +45,14 @@ func TestOfficialCloudCaptureKeepsOriginalTalentAndWeaponIdentity(t *testing.T) 
 	}
 }
 func TestCloudCapturePromotionResolutionUsesPinnedBaseAttributes(t *testing.T) {
-	for _, spec := range []struct{ game, key string }{{"genshin", "gs_10000046"}, {"starrail", "sr_1102"}} {
-		key, engine := spec.key, calcEngine(t, spec.game)
+	for _, spec := range []struct{ game, key string }{{"genshin", "gs_10000046"}} {
+		key, engine := spec.key, calcEngine(t)
 		metadata := engine.Metadata()
 		var cases []struct {
 			Key   string
 			Input BuildProfile
 		}
-		if err := json.Unmarshal(pluginFile(t, spec.game, "internal/assets/testdata/calc-vectors.json"), &cases); err != nil {
+		if err := json.Unmarshal(pluginFile(t, "internal/assets/testdata/calc-vectors.json"), &cases); err != nil {
 			t.Fatal(err)
 		}
 		var profile BuildProfile
@@ -93,8 +85,8 @@ func TestImportedCloudAvatarBecomesAPanel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	game := testGame(t, "genshin")
-	panel := NormalizePanels("genshin", result, Catalog{})[0]
+	game := testGame(t)
+	panel := NormalizePanels(result, Catalog{})[0]
 	panel.Rank = 6
 	_, raw, err := officialCloudAvatar(t.Context(), game, panel, asObject(asList(result.Data["list"])[0]))
 	if err != nil {

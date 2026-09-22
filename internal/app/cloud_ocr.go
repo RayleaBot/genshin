@@ -19,18 +19,15 @@ type CloudOCR struct {
 	replacement   map[string]any
 }
 
-func cloudOCRRequest(game string, input CloudInput) (string, map[string]any, error) {
+func cloudOCRRequest(input CloudInput) (string, map[string]any, error) {
 	maxSlot := 5
-	if game == "starrail" {
-		maxSlot = 6
-	}
 	if input.Slot < 1 || input.Slot > maxSlot {
 		return "", nil, gameError("input_invalid", "请选择装备部位并提供公开 HTTPS 图片地址，不含账号认证或片段。")
 	}
 	if err := checkOCRImage(input.ImageURL); err != nil {
 		return "", nil, err
 	}
-	return "ocr/profilechange/" + cloudGame(game), map[string]any{"version": "0.1.0", "image": input.ImageURL, "forge": input.Forge}, nil
+	return "ocr/profilechange/" + arkGame, map[string]any{"version": "0.1.0", "image": input.ImageURL, "forge": input.Forge}, nil
 }
 
 // checkOCRImage accepts a public HTTPS image address without credentials.
@@ -176,15 +173,15 @@ func (a *App) compareCloudOCR(ctx context.Context, client AccountsClient, input 
 	if after == nil {
 		return nil, gameError("cloud_invalid", "装备名称、品质或词条不完整，不能进行可靠的换装试算。")
 	}
-	record, err := findBuildCharacter(a.Game.Calc, a.Game.ID, panel)
+	record, err := findBuildCharacter(a.Game.Calc, panel)
 	if err != nil {
 		return nil, err
 	}
-	profile, err := buildProfile(a.Game.Calc, a.Game.ID, panel, record)
+	profile, err := buildProfile(panel, record)
 	if err != nil {
 		return nil, err
 	}
-	replacement, err := buildGearSet(a.Game.ID, CharacterPanel{EquipmentKnown: true, Equipment: []PanelEquipment{*after}})
+	replacement, err := buildGearSet(CharacterPanel{EquipmentKnown: true, Equipment: []PanelEquipment{*after}})
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +197,7 @@ func (a *App) compareCloudOCR(ctx context.Context, client AccountsClient, input 
 	if err != nil {
 		return nil, err
 	}
-	applyBuildIdentity(&result, panel, record)
+	applyBuildIdentity(&result, panel)
 	view := cloudBuildComparisonView(a.Game, result)
 	view.Note += " 将 OCR 新装备放入所选角色部位的模拟；截图旧装备不自动视为此角色当前装备。"
 	return map[string]any{"build": result, "view": view, "replacement": after}, nil

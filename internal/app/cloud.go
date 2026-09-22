@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"io"
 	"math"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type CloudInput struct {
@@ -117,8 +118,8 @@ func (c *CloudClient) Close() {
 	}
 	c.jobs = nil
 }
-func cloudRequest(game string, input CloudInput) (string, map[string]any, error) {
-	if game != "genshin" && game != "starrail" || !input.Consent {
+func cloudRequest(input CloudInput) (string, map[string]any, error) {
+	if !input.Consent {
 		return "", nil, gameError("cloud_consent_required", "请确认将查询参数发送给 ark 云服务。")
 	}
 	if input.Authenticated && input.proxy == nil {
@@ -126,18 +127,18 @@ func cloudRequest(game string, input CloudInput) (string, map[string]any, error)
 	}
 	body := map[string]any{"version": "0.1.0"}
 	if input.Mode == "private_panel" {
-		return privateCloudPanelRequest(game, input)
+		return privateCloudPanelRequest(input)
 	}
 	if strings.HasPrefix(input.Mode, "verify_") {
-		return cloudVerifyRequest(game, input)
+		return cloudVerifyRequest(input)
 	}
 	if input.Mode == "exchange_upload" || input.Mode == "exchange_download" {
-		return cloudExchangeRequest(game, input)
+		return cloudExchangeRequest(input)
 	}
 	if input.Mode == "ocr" {
-		return cloudOCRRequest(game, input)
+		return cloudOCRRequest(input)
 	}
-	if route, body, handled, err := extendedCloudRequest(game, input); handled {
+	if route, body, handled, err := extendedCloudRequest(input); handled {
 		return route, body, err
 	}
 	if input.Mode == "usage" {
@@ -147,7 +148,7 @@ func cloudRequest(game string, input CloudInput) (string, map[string]any, error)
 		if !uidPattern.MatchString(input.UID) {
 			return "", nil, gameError("input_invalid", "请输入公开游戏 UID。")
 		}
-		return "panel/download", map[string]any{"version": "0.1.0", "uid": input.UID, "type": cloudGame(game)}, nil
+		return "panel/download", map[string]any{"version": "0.1.0", "uid": input.UID, "type": arkGame}, nil
 	}
 	id, err := strconv.Atoi(input.CharacterID)
 	if err != nil || id < 1 || id > 1000000000 {
@@ -156,7 +157,7 @@ func cloudRequest(game string, input CloudInput) (string, map[string]any, error)
 	body["id"] = id
 	switch input.Mode {
 	case "custom":
-		return customCloudRequest(game, input, id)
+		return customCloudRequest(input, id)
 	case "rank":
 		if !uidPattern.MatchString(input.UID) {
 			return "", nil, gameError("input_invalid", "请输入公开游戏 UID。")
@@ -202,7 +203,7 @@ func (c *CloudClient) Start(game Game, input CloudInput) (CloudJob, error) {
 	if input.Mode == "rank_panel" {
 		route, body, input, err = c.rankPanelRequest(game.ID, input)
 	} else {
-		route, body, err = cloudRequest(game.ID, input)
+		route, body, err = cloudRequest(input)
 	}
 	if err != nil {
 		return CloudJob{}, err
@@ -319,13 +320,6 @@ func (c *CloudClient) pollLocked(ref string, cancel bool, owner *Subject) (Cloud
 	}
 	return *job, nil
 }
-func (c *CloudClient) fetch(ctx context.Context, game Game, input CloudInput, route string, body map[string]any) (View, error) {
-	result, err := c.fetchResult(ctx, game, input, route, body)
-	if err != nil {
-		return View{}, err
-	}
-	return *result.View, nil
-}
 
 type cloudProxy func(ctx context.Context, route string, body map[string]any) (any, error)
 
@@ -374,7 +368,7 @@ func (c *CloudClient) request(ctx context.Context, route string, body map[string
 }
 func (c *CloudClient) fetchResult(ctx context.Context, game Game, input CloudInput, route string, body map[string]any) (CloudResult, error) {
 	if input.Mode == "akasha_stygian" {
-		return c.akashaStygian(ctx, game, input)
+		return c.akashaStygian(ctx, input)
 	}
 	var decoded any
 	var err error
@@ -598,7 +592,7 @@ func (a *App) cloudAction(ctx context.Context, event *rayleabot.EventContext, ac
 		return a.compareCloudOCR(ctx, a.accountClient(event), input)
 	}
 	if action == "cloud.filter_schema" {
-		return map[string]any{"fields": cloudFilterSchema(a.Game.ID)}, nil
+		return map[string]any{"fields": cloudFilterSchema()}, nil
 	}
 	if action == "cloud.start" {
 		var q CloudInput

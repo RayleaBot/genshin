@@ -10,7 +10,7 @@ import (
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-// ListedPiece is one piece of equipment on 圣遗物列表 or 遗器列表, with the
+// ListedPiece is one piece of equipment on 圣遗物列表, with the
 // scored panel it is worn on.
 type ListedPiece struct {
 	Panel     CharacterPanel
@@ -19,7 +19,7 @@ type ListedPiece struct {
 	Score     float64
 }
 
-// ArtifactListImage is 圣遗物列表 or 遗器列表 for a UID.
+// ArtifactListImage is 圣遗物列表 for a UID.
 type ArtifactListImage struct {
 	UID    string
 	Pieces []ListedPiece
@@ -71,10 +71,7 @@ func (a *App) artifactList(ctx context.Context, event *rayleabot.EventContext, a
 		}()
 	}
 	group.Wait()
-	name := map[string]string{"starrail": "遗器"}[a.Game.ID]
-	if name == "" {
-		name = "圣遗物"
-	}
+	name := "圣遗物"
 	if len(pieces) == 0 {
 		return event.SendText("请先获取角色面板数据后再查看" + name + "列表...")
 	}

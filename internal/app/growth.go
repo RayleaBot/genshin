@@ -28,15 +28,12 @@ type GrowthPlan struct {
 	Skills        []GrowthSkill `json:"skills"`
 }
 
-func prepareGrowth(game, id string, data map[string]any) (GrowthPlan, error) {
+func prepareGrowth(id string, data map[string]any) (GrowthPlan, error) {
 	avatar := asObject(data["avatar"])
 	if avatar == nil {
 		return GrowthPlan{}, gameError("growth_unavailable", "官方未提供此角色的养成详情。")
 	}
 	maxLevel := 90
-	if game == "starrail" {
-		maxLevel = 80
-	}
 	plan := GrowthPlan{CharacterID: id, Name: firstText(avatar, "name", "item_name"), Current: number(firstText(avatar, "level_current", "cur_level", "avatar_level")), Max: number(avatar["max_level"]), Skills: []GrowthSkill{}}
 	if plan.Current == 0 {
 		plan.Current = number(data["level"])
@@ -72,14 +69,14 @@ func prepareGrowth(game, id string, data map[string]any) (GrowthPlan, error) {
 	for _, raw := range skills {
 		s := asObject(raw)
 		skill := GrowthSkill{ID: number(firstText(s, "group_id", "point_id", "id")), Name: firstText(s, "name", "item_name"), Current: number(firstText(s, "level_current", "cur_level")), Max: number(s["max_level"])}
-		if game == "genshin" && skill.Max == 1 {
+		if skill.Max == 1 {
 			continue
 		}
 		if skill.ID <= 0 || skill.Current < 0 || skill.Max < 1 || skill.Max < skill.Current {
 			return plan, gameError("growth_unavailable", "技能养成详情暂不兼容。")
 		}
 		if skill.Name == "" {
-			skill.Name = "技能/行迹 " + strconv.Itoa(skill.ID)
+			skill.Name = "天赋 " + strconv.Itoa(skill.ID)
 		}
 		skill.Target = skill.Current
 		plan.Skills = append(plan.Skills, skill)
@@ -90,9 +87,6 @@ func prepareGrowth(game, id string, data map[string]any) (GrowthPlan, error) {
 	return plan, nil
 }
 func (a *App) growthAction(ctx context.Context, client AccountsClient, action string, input map[string]any) (map[string]any, error) {
-	if a.Game.ID != "genshin" && a.Game.ID != "starrail" {
-		return nil, gameError("operation_denied", "此游戏尚未接入官方养成计算器。")
-	}
 	choice := Selection{AccountRef: asText(input["account_ref"]), RoleRef: asText(input["role_ref"])}
 	id := asText(input["character_id"])
 	if action == "growth.prepare" {
@@ -100,7 +94,7 @@ func (a *App) growthAction(ctx context.Context, client AccountsClient, action st
 		if err != nil {
 			return nil, err
 		}
-		plan, err := prepareGrowth(a.Game.ID, id, result.Data)
+		plan, err := prepareGrowth(id, result.Data)
 		return map[string]any{"plan": plan}, err
 	}
 	if action != "growth.compute" {
@@ -169,13 +163,8 @@ func growthView(game Game, plan GrowthPlan, result QueryResult) View {
 			}
 		}
 	}
-	if game.ID == "genshin" {
-		collect(result.Data["overall_material_consume"], 0)
-	} else {
-		for _, key := range []string{"avatar_consume", "equipment_consume", "skill_consume"} {
-			collect(result.Data[key], 0)
-		}
-	}
+	collect(result.Data["overall_material_consume"], 0)
+
 	keys := make([]string, 0, len(totals))
 	for id := range totals {
 		keys = append(keys, id)

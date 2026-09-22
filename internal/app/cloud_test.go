@@ -14,7 +14,7 @@ type cloudDoer func(*http.Request) (*http.Response, error)
 
 func (f cloudDoer) Do(r *http.Request) (*http.Response, error) { return f(r) }
 func TestCloudRequiresConsentAndUsesOnlyFixedPublicParameters(t *testing.T) {
-	if _, _, err := cloudRequest("genshin", CloudInput{Mode: "usage"}); err == nil {
+	if _, _, err := cloudRequest(CloudInput{Mode: "usage"}); err == nil {
 		t.Fatal("cloud enabled without consent")
 	}
 	client := CloudClient{HTTP: cloudDoer(func(req *http.Request) (*http.Response, error) {
@@ -64,15 +64,5 @@ func TestCloudCancellationDiscardsLateResults(t *testing.T) {
 	}
 	if _, err = client.Poll(job.Ref, false); err == nil {
 		t.Fatal("canceled result retained")
-	}
-}
-
-func TestCloudDistributionAcceptsCurrentMultipleScoreLists(t *testing.T) {
-	client := CloudClient{HTTP: cloudDoer(func(*http.Request) (*http.Response, error) {
-		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`[{"retcode":100,"data":{"name":"方案一","total":10,"scores":["1","2"]}},{"retcode":100,"data":{"name":"方案二","total":20,"scores":["3"]}}]`))}, nil
-	})}
-	view, err := client.fetch(t.Context(), Game{ID: "genshin"}, CloudInput{Mode: "distribution"}, "rank/specific", map[string]any{})
-	if err != nil || len(view.Sections) != 4 {
-		t.Fatal(view, err)
 	}
 }

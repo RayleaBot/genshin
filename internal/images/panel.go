@@ -95,7 +95,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 			talentIcon[key] = characterPath + "icons/talent-" + key + ".webp"
 		}
 	}
-	levels := app.PanelTalents("genshin", panel, record)
+	levels := app.PanelTalents(panel, record)
 	talents := []any{}
 	for _, key := range []string{"a", "e", "q"} {
 		level := levels[key]

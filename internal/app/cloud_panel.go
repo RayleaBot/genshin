@@ -89,14 +89,10 @@ func cloudPanelResult(game Game, input CloudInput, result map[string]any) (Cloud
 	names := map[string]string{}
 	weapons := map[string]string{}
 	for _, ch := range metadata.Characters {
-		if ch.Game == cloudGame(game.ID) {
-			names[ch.ID] = ch.Name
-		}
+		names[ch.ID] = ch.Name
 	}
 	for _, w := range metadata.Weapons {
-		if w.Game == cloudGame(game.ID) {
-			weapons[w.ID] = w.Name
-		}
+		weapons[w.ID] = w.Name
 	}
 	panels := []CloudPanel{}
 	seen := map[string]bool{}
@@ -114,7 +110,7 @@ func cloudPanelResult(game Game, input CloudInput, result map[string]any) (Cloud
 		if name == "" {
 			name = "角色 " + id
 		}
-		v := View{Title: name + " · 云面板", Subtitle: "UID " + input.UID, Rows: cloudNumericRows(avatar, "level", "等级", "promote", "突破", "cons", "命座 / 星魂"), Note: "第三方保存的历史面板，仅作资料查看；缺少字段不补零，不代替本人官方实时面板。装备词条按固定 miao 资料解释。"}
+		v := View{Title: name + " · 云面板", Subtitle: "UID " + input.UID, Rows: cloudNumericRows(avatar, "level", "等级", "promote", "突破", "cons", "命座"), Note: "第三方保存的历史面板，仅作资料查看；缺少字段不补零，不代替本人官方实时面板。装备词条按固定 miao 资料解释。"}
 		w := asObject(avatar["weapon"])
 		if w != nil {
 			weapon := weapons[asText(w["id"])]
@@ -145,7 +141,7 @@ func cloudPanelResult(game Game, input CloudInput, result map[string]any) (Cloud
 			v.Sections = append(v.Sections, Section{Title: "装备词条", Text: "此云面板未提供完整装备词条。"})
 		}
 		for slot := 1; slot <= 6; slot++ {
-			if game.ID == "genshin" && slot == 6 {
+			if slot == 6 {
 				break
 			}
 			gear := asObject(artis[strconv.Itoa(slot)])
@@ -172,11 +168,8 @@ func decodeCloudGear(g Game, slot int, gear map[string]any) (Section, *PanelEqui
 	if g.Data == nil || g.Data.CloudGear == nil {
 		return Section{Text: "装备解释资料不可用。"}, nil
 	}
-	game, d := g.ID, *g.Data.CloudGear
+	d := *g.Data.CloudGear
 	key := asText(gear["name"])
-	if game == "starrail" {
-		key = asText(gear["id"])
-	}
 	item, known := d.Items[key]
 	title := item.Name
 	if title == "" {
@@ -190,10 +183,9 @@ func decodeCloudGear(g Game, slot int, gear map[string]any) (Section, *PanelEqui
 	section.Rows = append(section.Rows, Row{Label: "套装", Value: item.Set})
 	level, levelOK := cloudInteger(gear["level"], 0, 20)
 	star := item.Star
-	if game == "genshin" {
-		star, _ = cloudInteger(gear["star"], 1, 5)
-	}
-	if !levelOK || star < 1 || star > 5 || (game == "genshin" && level > map[int]int{1: 4, 2: 4, 3: 12, 4: 16, 5: 20}[star]) || (game == "starrail" && (star < 2 || level > 3*star)) {
+	star, _ = cloudInteger(gear["star"], 1, 5)
+
+	if !levelOK || star < 1 || star > 5 || (level > map[int]int{1: 4, 2: 4, 3: 12, 4: 16, 5: 20}[star]) {
 		section.Text = "装备等级或星级资料缺失，暂不能解释词条。"
 		return section, nil
 	}
@@ -208,55 +200,31 @@ func decodeCloudGear(g Game, slot int, gear map[string]any) (Section, *PanelEqui
 		validSub = false
 		subs = nil
 	}
-	if game == "genshin" {
-		mainKey = d.MainIDMap[mainID]
-		attrKey := mainKey
-		if slices.Contains([]string{"pyro", "hydro", "cryo", "electro", "anemo", "geo", "dendro"}, mainKey) {
-			attrKey = "dmg"
-		}
-		attr, ok := d.AttrMap[attrKey]
-		validMain = ok && mainKey != ""
-		factor := 1.0
-		if strings.HasSuffix(mainKey, "Plus") {
-			factor = 2
-		}
-		mainValue = attr.Value * (1.2 + 0.34*float64(level)) * factor * map[int]float64{1: .21, 2: .36, 3: .6, 4: .9, 5: 1}[star]
-		for _, raw := range subs {
-			attr, ok := d.AttrIDMap[asText(raw)]
-			if !ok {
-				validSub = false
-				continue
-			}
-			factor := 1.0
-			if d.AttrMap[attr.Key].Format == "pct" {
-				factor = 100
-			}
-			values[attr.Key] += attr.Value * factor
-		}
-	} else {
-		mainKey = d.Meta.MainIdx[strconv.Itoa(slot)][mainID]
-		table := d.Meta.StarData[strconv.Itoa(star)]
-		attr, ok := table.Main[mainKey]
-		validMain = ok
-		mainValue = attr.Base + attr.Step*float64(level)
-		for _, raw := range subs {
-			obj := asObject(raw)
-			if text, ok := raw.(string); ok {
-				parts := strings.Split(text, ",")
-				if len(parts) == 3 {
-					obj = map[string]any{"id": parts[0], "count": parts[1], "step": parts[2]}
-				}
-			}
-			attr, ok := table.Sub[asText(obj["id"])]
-			count, cOK := cloudInteger(obj["count"], 1, 6)
-			step, sOK := cloudInteger(obj["step"], 0, 12)
-			if !ok || !cOK || !sOK || step > count*2 {
-				validSub = false
-				continue
-			}
-			values[attr.Key] += attr.Base*float64(count) + attr.Step*float64(step)
-		}
+	mainKey = d.MainIDMap[mainID]
+	attrKey := mainKey
+	if slices.Contains([]string{"pyro", "hydro", "cryo", "electro", "anemo", "geo", "dendro"}, mainKey) {
+		attrKey = "dmg"
 	}
+	attr, ok := d.AttrMap[attrKey]
+	validMain = ok && mainKey != ""
+	factor := 1.0
+	if strings.HasSuffix(mainKey, "Plus") {
+		factor = 2
+	}
+	mainValue = attr.Value * (1.2 + 0.34*float64(level)) * factor * map[int]float64{1: .21, 2: .36, 3: .6, 4: .9, 5: 1}[star]
+	for _, raw := range subs {
+		attr, ok := d.AttrIDMap[asText(raw)]
+		if !ok {
+			validSub = false
+			continue
+		}
+		factor := 1.0
+		if d.AttrMap[attr.Key].Format == "pct" {
+			factor = 100
+		}
+		values[attr.Key] += attr.Value * factor
+	}
+
 	if validMain {
 		section.Rows = append(section.Rows, cloudStatRow(d, mainKey, mainValue, "主词条 · "))
 	} else {

@@ -158,9 +158,6 @@ func mergeBilling(old, next []BillingRow) ([]BillingRow, error) {
 	return out, nil
 }
 func (a *App) billingManage(ctx context.Context, client AccountsClient, action string, input map[string]any) (map[string]any, error) {
-	if a.Game.ID == "zzz" {
-		return nil, gameError("operation_denied", "当前参考没有此游戏的客服资产记录。")
-	}
 	if strings.HasPrefix(action, "billing.sync.") && action != "billing.sync.start" {
 		a.BillingJobs.mu.Lock()
 		defer a.BillingJobs.mu.Unlock()
@@ -219,7 +216,7 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 		}
 		nextCursor := asText(result.Data["next_end_id"])
 		nextPage := number(result.Data["next_page"])
-		if more && (a.Game.ID == "genshin" && (nextCursor == "" || nextCursor == j.cursor) || a.Game.ID == "starrail" && nextPage <= j.page) {
+		if more && (nextCursor == "" || nextCursor == j.cursor) {
 			return nil, gameError("billing_invalid", "官方分页未向前推进。")
 		}
 		if !more {
@@ -258,7 +255,7 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 	if direction == "" {
 		direction = "all"
 	}
-	if !validBillingCategory(a.Game.ID, category) || !slices.Contains([]string{"all", "produce", "consume"}, direction) {
+	if !validBillingCategory(category) || !slices.Contains([]string{"all", "produce", "consume"}, direction) {
 		return nil, gameError("input_invalid", "请选择资产类别及方向。")
 	}
 	role, err := authorizeCloudRole(ctx, client, choice)

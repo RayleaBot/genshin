@@ -139,7 +139,7 @@ func (a *App) cloudTransferAction(ctx context.Context, client AccountsClient, ac
 		if t.Export || q.Offset > len(t.Items) || q.Offset >= t.Expected {
 			return nil, gameError("input_invalid", "交换传输顺序无效。")
 		}
-		id, raw, err := cleanCloudAvatar(a.Game.ID, input["avatar"])
+		id, raw, err := cleanCloudAvatar(input["avatar"])
 		if err != nil {
 			return nil, err
 		}

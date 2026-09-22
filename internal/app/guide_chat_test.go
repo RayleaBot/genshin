@@ -16,30 +16,16 @@ func guidePost(t *testing.T, raw string) map[string]any {
 func TestGuidePostImageFollowsEachUpstream(t *testing.T) {
 	// 原神 takes the largest image, the later one on a tie.
 	post := guidePost(t, `{"post":{"subject":"【原神】珊瑚宫心海攻略"},"image_list":[{"url":"https://upload-bbs.miyoushe.com/a.png","size":"10"},{"url":"https://upload-bbs.miyoushe.com/b.png","size":"30"},{"url":"https://upload-bbs.miyoushe.com/c.png","size":"30"}]}`)
-	if got := guidePostImage("genshin", "1", "珊瑚宫心海", post); got != "https://upload-bbs.miyoushe.com/c.png" {
+	if got := guidePostImage("1", "珊瑚宫心海", post); got != "https://upload-bbs.miyoushe.com/c.png" {
 		t.Fatal(got)
 	}
-	if got := guidePostImage("genshin", "1", "胡桃", post); got != "" {
+	if got := guidePostImage("1", "胡桃", post); got != "" {
 		t.Fatal("another character's post matched")
 	}
 	// Source 4 names each character's image inside one post.
 	post = guidePost(t, `{"post":{"subject":"常驻角色","structured_content":"【胡桃】…image\":\"77\""},"image_list":[{"url":"https://upload-bbs.miyoushe.com/other.png","image_id":"76"},{"url":"https://upload-bbs.miyoushe.com/hutao.png","image_id":"77"}]}`)
-	if got := guidePostImage("genshin", "4", "胡桃", post); got != "https://upload-bbs.miyoushe.com/hutao.png" {
+	if got := guidePostImage("4", "胡桃", post); got != "https://upload-bbs.miyoushe.com/hutao.png" {
 		t.Fatal(got)
-	}
-	// 星铁 takes the tallest image; a Trailblazer path matches both words.
-	post = guidePost(t, `{"post":{"subject":"开拓者（存护）一图流"},"image_list":[{"url":"https://upload-bbs.miyoushe.com/a.png","height":"900"},{"url":"https://upload-bbs.miyoushe.com/b.png","height":"900"}]}`)
-	if got := guidePostImage("starrail", "1", "开拓者·存护", post); got != "https://upload-bbs.miyoushe.com/a.png" {
-		t.Fatal(got)
-	}
-	// 绝区零 ignores 【…本…】 tags and GIFs.
-	post = guidePost(t, `{"post":{"subject":"【2.0版本】星见雅攻略"},"image_list":[{"url":"https://upload-bbs.miyoushe.com/a.gif","size":"99","format":"gif"},{"url":"https://upload-bbs.miyoushe.com/b.png","size":"5","format":"png"}]}`)
-	if got := guidePostImage("zzz", "1", "星见雅", post); got != "https://upload-bbs.miyoushe.com/b.png" {
-		t.Fatal(got)
-	}
-	post = guidePost(t, `{"post":{"subject":"【本期深渊】星见雅"},"image_list":[{"url":"https://upload-bbs.miyoushe.com/b.png","size":"5"}]}`)
-	if got := guidePostImage("zzz", "1", "本期", post); got != "" {
-		t.Fatal("a book tag matched")
 	}
 }
 
