@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
@@ -16,8 +16,8 @@ func TestRoleExploreFollowsYunzai(t *testing.T) {
 		"world_explorations":[{"id":6,"name":"层岩巨渊","exploration_percentage":1000,"offerings":[{"name":"流明石触媒","level":10}]},
 			{"id":7,"name":"层岩巨渊·地下矿区","exploration_percentage":987},{"id":1,"name":"蒙德","exploration_percentage":1000,"level":8},
 			{"id":99,"name":"很长很长的新地区名字","exploration_percentage":250}]}`)
-	context := gamekit.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC), Word: "探索"}
-	image, ok := images.Profile(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	context := app.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC), Word: "探索"}
+	image, ok := images.Profile(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok || image.Template != "role-explore" {
 		t.Fatalf("image = %v", image)
 	}
@@ -40,7 +40,7 @@ func TestRoleExploreFollowsYunzai(t *testing.T) {
 	if name := areas[0].(map[string]any)["lines"].([]any)[0].(map[string]any)["name"]; name != "很长很..." {
 		t.Errorf("long name = %v", name)
 	}
-	if image, _ := images.Profile(gamekit.ImageContext{Word: "角色卡片"}, gamekit.QueryResult{Data: data}); image.Template != "role-card" {
+	if image, _ := images.Profile(app.ImageContext{Word: "角色卡片"}, app.QueryResult{Data: data}); image.Template != "role-card" {
 		t.Errorf("角色卡片 drew %s", image.Template)
 	}
 }

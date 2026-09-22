@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/artwork"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/artwork"
 )
 
 func TestCharacterTalentReadsMiaoData(t *testing.T) {
@@ -26,9 +26,9 @@ func TestCharacterTalentReadsMiaoData(t *testing.T) {
 	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	context := gamekit.ImageContext{Artwork: &artwork.Store{Root: root}}
-	entry := gamekit.Entry{ID: "10000046", Name: "胡桃", Kind: "character"}
-	image, ok := Entry(context, gamekit.EntryImage{Command: "talent-wiki", Word: "胡桃天赋", Entry: entry})
+	context := app.ImageContext{Artwork: &artwork.Store{Root: root}}
+	entry := app.Entry{ID: "10000046", Name: "胡桃", Kind: "character"}
+	image, ok := Entry(context, app.EntryImage{Command: "talent-wiki", Word: "胡桃天赋", Entry: entry})
 	if !ok || image.Data["name"] != "雪霁梅香·胡桃" || image.Data["desc"] != "往生堂<b>堂主</b>x" {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -42,7 +42,7 @@ func TestCharacterTalentReadsMiaoData(t *testing.T) {
 	if attack["desc"] != "<h3>普通攻击</h3>进行至多六段的连续枪击。<br><h3>重击</h3>消耗体力。" || len(row) != 8 || row[0] != "6" || row[7] != "13" || len(attack["shared"].([]any)) != 1 {
 		t.Errorf("attack = %v", attack)
 	}
-	image, _ = Entry(context, gamekit.EntryImage{Command: "talent-wiki", Word: "胡桃命座", Entry: entry})
+	image, _ = Entry(context, app.EntryImage{Command: "talent-wiki", Word: "胡桃命座", Entry: entry})
 	constellations := image.Data["constellations"].([]any)
 	if len(constellations) != 2 || constellations[0].(map[string]any)["desc"] != `<span style="color:#FFD780FF">蝶引来生</span>` {
 		t.Errorf("constellations = %v", constellations)

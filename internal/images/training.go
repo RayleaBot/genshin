@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // trainingLevels is miao's talent colour step for each original level.
@@ -65,13 +65,13 @@ func talentBook(book string) (int, string) {
 // talent mode: the weekly boss material and talent book in place of the
 // weapon and artifacts, today's books highlighted (the day turns at 04:00),
 // with miao's star, element and weekday filters from the command word.
-func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["list"].([]any)
 	if len(list) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	talent := strings.Contains(context.Word, "天赋") || strings.Contains(context.Word, "技能")
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range trainingArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -129,10 +129,10 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 			level, original := any("-"), 1
 			if index < len(levels) {
 				talent := levels[index].(map[string]any)
-				level, original = talent["level"], gamekit.Int(talent["original"])
+				level, original = talent["level"], app.Int(talent["original"])
 			}
 			talents = append(talents, map[string]any{"level": level, "class": trainingLevels[min(max(original, 0), 10)],
-				"plus": gamekit.Int(level) > original})
+				"plus": app.Int(level) > original})
 		}
 		row := map[string]any{"no": len(rows) + 1, "star": item.star, "face": card["face"], "name": card["abbr"], "level": item.level, "cons": item.cons, "fetter": fetter, "talents": talents}
 		if weapon, _ := card["weapon"].(map[string]any); weapon != nil && item.panel != nil && item.panel.Weapon != nil {
@@ -145,7 +145,7 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 				}
 			}
 			row["weapon"] = map[string]any{"star": weapon["star"], "level": weapon["level"], "icon": weapon["icon"], "affix": weapon["affix"],
-				"badge": gamekit.Int(weapon["affix"]) + 1, "name": name}
+				"badge": app.Int(weapon["affix"]) + 1, "name": name}
 		}
 		row["artis"] = card["artis"]
 		if talent {
@@ -170,7 +170,7 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 		}
 		rows = append(rows, row)
 	}
-	return gamekit.Image{Template: "training", Data: map[string]any{
+	return app.Image{Template: "training", Data: map[string]any{
 		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"), "talent": talent,
 	}, Resources: resources.List}, true
 }

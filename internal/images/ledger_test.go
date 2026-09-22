@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
 func TestLedgerFollowsYunzai(t *testing.T) {
 	data := decode(t, `{"data_month":9,"month_data":{"current_primogems":12345,"current_mora":2345678,"last_primogems":8000,"last_mora":900,
 		"group_by":[{"action_id":1,"action":"冒险奖励","num":9000,"percent":75},{"action_id":3,"action":"每日奖励","num":2800,"percent":23},{"action_id":6,"action":"活动奖励","num":200,"percent":2}]}}`)
-	context := gamekit.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}
-	image, ok := images.Ledger(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	context := app.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}
+	image, ok := images.Ledger(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok {
 		t.Fatal("ledger")
 	}

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // ledgerCountArtwork maps the images the ledger-count page names to Yunzai's
@@ -34,7 +34,7 @@ type ledgerMonth struct {
 // and every source as a ring with its legend. Upstream draws both charts with
 // G2Plot; this draws them as SVG. Upstream picks the best mora month by
 // comparing thousands as text; this compares the amounts.
-func LedgerCount(context gamekit.ImageContext, stats gamekit.MonthlyStats) (gamekit.Image, bool) {
+func LedgerCount(context app.ImageContext, stats app.MonthlyStats) (app.Image, bool) {
 	now := context.Now.In(chinaTime)
 	year := 0
 	switch {
@@ -68,10 +68,10 @@ func LedgerCount(context gamekit.ImageContext, stats gamekit.MonthlyStats) (game
 		}
 		groups, _ := data["group_by"].([]any)
 		month, _ := strconv.Atoi(key[5:])
-		months = append(months, ledgerMonth{month: month, primogems: gamekit.Int(data["current_primogems"]), mora: gamekit.Int(data["current_mora"]), groups: groups})
+		months = append(months, ledgerMonth{month: month, primogems: app.Int(data["current_primogems"]), mora: app.Int(data["current_mora"]), groups: groups})
 	}
 	if len(months) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	total, mora := 0, 0
 	best, bestMora := months[0], months[0]
@@ -87,12 +87,12 @@ func LedgerCount(context gamekit.ImageContext, stats gamekit.MonthlyStats) (game
 		}
 		for _, raw := range month.groups {
 			group, _ := raw.(map[string]any)
-			action := gamekit.Text(group["action"])
+			action := app.Text(group["action"])
 			if byAction[action] == nil {
-				byAction[action] = &ledgerSource{action: action, color: ledgerColor(gamekit.Int(group["action_id"]))}
+				byAction[action] = &ledgerSource{action: action, color: ledgerColor(app.Int(group["action_id"]))}
 				sources = append(sources, byAction[action])
 			}
-			byAction[action].num += gamekit.Int(group["num"])
+			byAction[action].num += app.Int(group["num"])
 		}
 	}
 	return ledgerCountImage(context, stats, year, months, sources, map[string]any{
@@ -110,8 +110,8 @@ type ledgerSource struct {
 
 // ledgerCountImage lays out the charts: the months oldest first as columns,
 // the sources largest first, on first-seen order for ties, as the ring.
-func ledgerCountImage(context gamekit.ImageContext, stats gamekit.MonthlyStats, year int, months []ledgerMonth, sources []*ledgerSource, data map[string]any) gamekit.Image {
-	resources := &gamekit.ImageResources{Context: context}
+func ledgerCountImage(context app.ImageContext, stats app.MonthlyStats, year int, months []ledgerMonth, sources []*ledgerSource, data map[string]any) app.Image {
+	resources := &app.ImageResources{Context: context}
 	for _, item := range ledgerCountArtwork {
 		resources.Artwork(item[0], "yunzai-genshin", item[1])
 	}
@@ -142,9 +142,9 @@ func ledgerCountImage(context gamekit.ImageContext, stats gamekit.MonthlyStats, 
 		yearText = strconv.Itoa(year) + "年-"
 	}
 	data["uid"], data["year_text"], data["top"], data["legend"], data["sum"] = stats.Role.UID, yearText, top, legend, strconv.Itoa(sum)
-	data["columns"] = gamekit.G2Column(labels, values, 470, 300, [4]float64{40, 10, 30, 52})
-	data["ring"] = gamekit.G2Ring(amounts, colors, 160, 150, 140, 98)
+	data["columns"] = app.G2Column(labels, values, 470, 300, [4]float64{40, 10, 30, 52})
+	data["ring"] = app.G2Ring(amounts, colors, 160, 150, 140, 98)
 	// Upstream notes it shows only twelve months once that many are saved.
 	data["more"] = year == 0 && len(stats.Months) >= 12
-	return gamekit.Image{Template: "ledger-count", Data: data, Resources: resources.List}
+	return app.Image{Template: "ledger-count", Data: data, Resources: resources.List}
 }

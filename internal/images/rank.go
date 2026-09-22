@@ -5,7 +5,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // rankArtwork maps the images named in the converted stylesheets (miao's
@@ -29,11 +29,11 @@ var rankArtwork = [][2]string{
 // (or, listing every character's best, the character), the member's avatar,
 // constellation, name and UID, talents, weapon, artifact sets with their score
 // and grade, and the default detail's damage.
-func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, bool) {
+func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(rank.Entries) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range rankArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -62,11 +62,11 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 		icons := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp", "e": path + "talent-e.webp", "q": path + "talent-q.webp"}
 		talentCons, _ := record.Data["talentCons"].(map[string]any)
 		for _, key := range []string{"e", "q"} {
-			if cons := gamekit.Int(talentCons[key]); cons > 0 {
+			if cons := app.Int(talentCons[key]); cons > 0 {
 				icons[key] = path + "cons-" + strconv.Itoa(cons) + ".webp"
 			}
 		}
-		levels := gamekit.PanelTalents("genshin", *entry.Panel, record)
+		levels := app.PanelTalents("genshin", *entry.Panel, record)
 		talents := []any{}
 		for _, key := range []string{"a", "e", "q"} {
 			level := levels[key]
@@ -82,7 +82,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 			row["weapon"] = map[string]any{"icon": info["icon"], "star": info["star"], "name": label, "affix": weapon.Refinement, "badge": weapon.Refinement + 1, "level": weapon.Level}
 		}
 		sets := card["artis"].([]any)
-		row["sets"], row["set_count"], row["set_name"] = sets[:min(2, len(sets))], min(2, len(sets)), gamekit.RankSetName(context.Catalog, *entry.Panel)
+		row["sets"], row["set_count"], row["set_name"] = sets[:min(2, len(sets))], min(2, len(sets)), app.RankSetName(context.Catalog, *entry.Panel)
 		grade := entry.Grade
 		if grade == "" {
 			grade = "D"
@@ -93,7 +93,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 			if value == "" {
 				value = miaoComma(entry.Damage.Value, 1)
 			}
-			row["damage"] = map[string]any{"title": gamekit.RankDamageTitle(entry.Damage.Title), "value": value}
+			row["damage"] = map[string]any{"title": app.RankDamageTitle(entry.Damage.Title), "value": value}
 		}
 		rows = append(rows, row)
 	}
@@ -106,5 +106,5 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 	}
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
 	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "since": since, "hash": context.Game.Prefix, "rows": rows}
-	return gamekit.Image{Template: "rank", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "rank", Data: data, Resources: resources.List}, true
 }

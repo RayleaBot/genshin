@@ -7,17 +7,17 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // Abyss draws the Spiral Abyss the way Yunzai's html/abyss/abyss does: the
 // period, deepest floor and stars of floors 9 to 12, the most used
 // characters, and the five battle records with their characters.
-func Abyss(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Abyss(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	data := result.Data
 	// Upstream answers in text while the period has no battles or ranks yet.
-	if damage, _ := data["damage_rank"].([]any); gamekit.Int(data["total_battle_times"]) <= 0 || len(damage) == 0 {
-		return gamekit.Image{}, false
+	if damage, _ := data["damage_rank"].([]any); app.Int(data["total_battle_times"]) <= 0 || len(damage) == 0 {
+		return app.Image{}, false
 	}
 	names := characterNames(context)
 	resources := []rayleabot.RenderImageResource{}
@@ -34,29 +34,29 @@ func Abyss(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 	}
 	portraits := map[string]string{}
 	portrait := func(id, kind string) string {
-		resource := kind + "-" + gamekit.Text(id)
+		resource := kind + "-" + app.Text(id)
 		if known, seen := portraits[resource]; seen {
 			return known
 		}
-		name := names[gamekit.Text(id)]
+		name := names[app.Text(id)]
 		if name == "" || !add(resource, "miao-plugin", "resources/meta-gs/character/"+name+"/imgs/"+kind+".webp") {
 			resource = ""
 		}
-		portraits[kind+"-"+gamekit.Text(id)] = resource
+		portraits[kind+"-"+app.Text(id)] = resource
 		return resource
 	}
 
-	start := time.Unix(int64(gamekit.Int(data["start_time"])), 0).In(chinaTime)
+	start := time.Unix(int64(app.Int(data["start_time"])), 0).In(chinaTime)
 	stars := []string{}
 	total := 0
 	floors, _ := data["floors"].([]any)
 	for _, raw := range floors {
 		floor, _ := raw.(map[string]any)
-		if gamekit.Int(floor["index"]) < 9 {
+		if app.Int(floor["index"]) < 9 {
 			continue
 		}
-		total += gamekit.Int(floor["star"])
-		stars = append(stars, gamekit.Text(floor["star"]))
+		total += app.Int(floor["star"])
+		stars = append(stars, app.Text(floor["star"]))
 	}
 
 	ranks := map[string]any{}
@@ -65,7 +65,7 @@ func Abyss(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 		id, value := "10000007", 0
 		if len(list) > 0 {
 			first, _ := list[0].(map[string]any)
-			id, value = gamekit.Text(first["avatar_id"]), gamekit.Int(first["value"])
+			id, value = app.Text(first["avatar_id"]), app.Int(first["value"])
 		}
 		num := strconv.Itoa(value)
 		if value > 1000 {
@@ -77,19 +77,19 @@ func Abyss(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 	reveals, _ := data["reveal_rank"].([]any)
 	for _, raw := range reveals {
 		reveal, _ := raw.(map[string]any)
-		id := gamekit.Text(reveal["avatar_id"])
+		id := app.Text(reveal["avatar_id"])
 		// Upstream shows the badge only when the entry carries "life".
-		used = append(used, map[string]any{"life": gamekit.Int(reveal["life"]), "rarity": gamekit.Int(reveal["rarity"]), "icon": portrait(id, "face"), "value": gamekit.Int(reveal["value"])})
+		used = append(used, map[string]any{"life": app.Int(reveal["life"]), "rarity": app.Int(reveal["rarity"]), "icon": portrait(id, "face"), "value": app.Int(reveal["value"])})
 	}
-	return gamekit.Image{Template: "abyss", Data: map[string]any{
+	return app.Image{Template: "abyss", Data: map[string]any{
 		"uid": result.Role.UID, "time": strconv.Itoa(int(start.Month())) + "月",
-		"max_floor": gamekit.Text(data["max_floor"]), "total_star": strconv.Itoa(total) + "（" + strings.Join(stars, "-") + "）",
-		"list": used, "total_battle_times": gamekit.Int(data["total_battle_times"]), "ranks": ranks,
+		"max_floor": app.Text(data["max_floor"]), "total_star": strconv.Itoa(total) + "（" + strings.Join(stars, "-") + "）",
+		"list": used, "total_battle_times": app.Int(data["total_battle_times"]), "ranks": ranks,
 	}, Resources: resources}, true
 }
 
 // characterNames maps character IDs to the names miao keeps its images under.
-func characterNames(context gamekit.ImageContext) map[string]string {
+func characterNames(context app.ImageContext) map[string]string {
 	names := map[string]string{}
 	if context.Game.Calc == nil {
 		return names

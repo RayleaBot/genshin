@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 // panelListArtwork maps the images named in the converted stylesheets (miao's
@@ -27,11 +27,11 @@ var panelListArtwork = [][2]string{
 // character/profile-list does: each kept character's face with its
 // constellation, the characters the refresh updated marked and listed first,
 // the UID's places in the group's ranking, and the update service.
-func PanelList(context gamekit.ImageContext, list gamekit.PanelListImage) (gamekit.Image, bool) {
+func PanelList(context app.ImageContext, list app.PanelListImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(list.Panels) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range panelListArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -46,7 +46,7 @@ func PanelList(context gamekit.ImageContext, list gamekit.PanelListImage) (gamek
 				record = candidate
 			}
 		}
-		star := gamekit.Int(record.Data["star"])
+		star := app.Int(record.Data["star"])
 		if star != 4 {
 			star = 5
 		}
@@ -80,5 +80,5 @@ func PanelList(context gamekit.ImageContext, list gamekit.PanelListImage) (gamek
 	if list.Profiles.RefreshedAtMS > 0 {
 		data["update_time"] = time.UnixMilli(list.Profiles.RefreshedAtMS).In(chinaTime).Format("01-02 15:04")
 	}
-	return gamekit.Image{Template: "panel-list", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "panel-list", Data: data, Resources: resources.List}, true
 }

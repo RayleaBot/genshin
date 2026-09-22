@@ -3,8 +3,8 @@ package images
 import (
 	"strconv"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 // avatarCards builds miao's common avatar-card for the requester's own
@@ -12,15 +12,15 @@ import (
 // their crown and bonus marks, the weapon with its refinement and the
 // artifact sets. Characters the query does not return are left out.
 type avatarCards struct {
-	catalog   gamekit.Catalog
-	resources *gamekit.ImageResources
+	catalog   app.Catalog
+	resources *app.ImageResources
 	records   map[string]reference.Character
 	weapons   map[string]reference.Weapon
-	panels    map[string]gamekit.CharacterPanel
+	panels    map[string]app.CharacterPanel
 }
 
-func newAvatarCards(context gamekit.ImageContext, resources *gamekit.ImageResources, ids []string) *avatarCards {
-	cards := &avatarCards{catalog: context.Catalog, resources: resources, records: map[string]reference.Character{}, weapons: map[string]reference.Weapon{}, panels: map[string]gamekit.CharacterPanel{}}
+func newAvatarCards(context app.ImageContext, resources *app.ImageResources, ids []string) *avatarCards {
+	cards := &avatarCards{catalog: context.Catalog, resources: resources, records: map[string]reference.Character{}, weapons: map[string]reference.Weapon{}, panels: map[string]app.CharacterPanel{}}
 	if context.Game.Calc != nil {
 		metadata := context.Game.Calc.Metadata()
 		for _, record := range metadata.Characters {
@@ -37,7 +37,7 @@ func newAvatarCards(context gamekit.ImageContext, resources *gamekit.ImageResour
 			list = append(list, id)
 		}
 		if result, err := context.Query("genshin.character", map[string]any{"character_ids": list}); err == nil {
-			for _, panel := range gamekit.NormalizePanels("genshin", result, context.Catalog) {
+			for _, panel := range app.NormalizePanels("genshin", result, context.Catalog) {
 				cards.panels[panel.ID] = panel
 			}
 		}
@@ -53,7 +53,7 @@ func (c *avatarCards) miao(name string) string {
 // base is what every card shows, from the character's catalog record.
 func (c *avatarCards) base(id string) map[string]any {
 	record := c.records[id]
-	star := gamekit.Int(record.Data["star"])
+	star := app.Int(record.Data["star"])
 	if star != 4 {
 		star = 5
 	}
@@ -71,7 +71,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 	}
 	card := c.base(id)
 	card["level"], card["cons"] = panel.Level, panel.Rank
-	levels := gamekit.PanelTalents("genshin", panel, c.records[id])
+	levels := app.PanelTalents("genshin", panel, c.records[id])
 	talents := []any{}
 	for _, key := range []string{"a", "e", "q"} {
 		level := levels[key]
@@ -88,7 +88,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 			badge++
 		}
 		card["weapon"] = map[string]any{"icon": c.miao("resources/meta-gs/weapon/" + entry.Type + "/" + entry.Name + "/icon.webp"),
-			"star": gamekit.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge, "level": weapon.Level}
+			"star": app.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge, "level": weapon.Level}
 	}
 	// miao shows each set worn as two or four pieces, by its flower (or its
 	// circlet when the set has no flower).

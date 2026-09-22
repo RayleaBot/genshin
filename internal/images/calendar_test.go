@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // The expected words are what moment's zh-cn humanize() prints.
@@ -42,15 +42,15 @@ func TestCalendarTimesFollowMiao(t *testing.T) {
 }
 
 func TestCalendarTalentsOfTheDay(t *testing.T) {
-	catalog := gamekit.Catalog{Entries: []gamekit.Entry{
+	catalog := app.Catalog{Entries: []app.Entry{
 		{ID: "10000014", Name: "芭芭拉", Kind: "character", Rarity: 4, Materials: map[string]string{"天赋材料": "「自由」的哲学", "周本材料": "北风之环"}},
 		{ID: "10000030", Name: "钟离", Kind: "character", Rarity: 5, Materials: map[string]string{"天赋材料": "「黄金」的哲学", "周本材料": "北风之环"}},
 		{ID: "10000031", Name: "菲谢尔", Kind: "character", Rarity: 4, Materials: map[string]string{"天赋材料": "「自由」的哲学", "周本材料": "北风之环"}},
 		{ID: "10000041", Name: "莫娜", Kind: "character", Rarity: 5, Materials: map[string]string{"天赋材料": "「自由」的哲学", "周本材料": "北风之环"}},
 	}}
 	// Monday 03:00 still counts as Sunday, when every book is farmable.
-	sunday := calendarTalents(gamekit.ImageContext{Catalog: catalog}, &gamekit.ImageResources{}, time.Date(2026, 9, 21, 3, 0, 0, 0, chinaTime))
-	monday := calendarTalents(gamekit.ImageContext{Catalog: catalog}, &gamekit.ImageResources{}, time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime))
+	sunday := calendarTalents(app.ImageContext{Catalog: catalog}, &app.ImageResources{}, time.Date(2026, 9, 21, 3, 0, 0, 0, chinaTime))
+	monday := calendarTalents(app.ImageContext{Catalog: catalog}, &app.ImageResources{}, time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime))
 	if len(sunday) != 23 || len(monday) != 8 {
 		t.Fatalf("books: sunday %d, monday %d", len(sunday), len(monday))
 	}

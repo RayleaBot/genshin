@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 func TestAbyssFollowsYunzai(t *testing.T) {
@@ -22,7 +22,7 @@ func TestAbyssFollowsYunzai(t *testing.T) {
 		"normal_skill_rank": rank("10000046", 30), "energy_skill_rank": rank("10000046", 12),
 		"reveal_rank": []any{map[string]any{"avatar_id": json.Number("10000089"), "rarity": json.Number("5"), "value": json.Number("8")}},
 	}
-	image, ok := Abyss(gamekit.ImageContext{}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := Abyss(app.ImageContext{}, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok {
 		t.Fatal("abyss")
 	}
@@ -37,7 +37,7 @@ func TestAbyssFollowsYunzai(t *testing.T) {
 		t.Errorf("used = %v", used)
 	}
 	delete(data, "damage_rank")
-	if _, ok := Abyss(gamekit.ImageContext{}, gamekit.QueryResult{Data: data}); ok {
+	if _, ok := Abyss(app.ImageContext{}, app.QueryResult{Data: data}); ok {
 		t.Error("a period without ranks should answer in text like upstream")
 	}
 }

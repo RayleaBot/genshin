@@ -4,30 +4,30 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/assets"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
 func TestPanelFollowsMiaoRules(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	var image gamekit.PanelImage
-	for _, record := range app.Game.Calc.Metadata().Characters {
+	var image app.PanelImage
+	for _, record := range application.Game.Calc.Metadata().Characters {
 		if record.Key == "gs_10000046" {
 			image.Record = record
 		}
 	}
-	image.Panel = gamekit.CharacterPanel{ID: "10000046", Level: 90, Rank: 2, Element: "pyro",
-		Weapon: &gamekit.PanelEquipment{ID: "13501", Name: "护摩之杖", Level: 90, Refinement: 2, Main: []gamekit.PanelStat{{Value: "608"}}, Sub: []gamekit.PanelStat{{Key: "cdmg", Value: "66.2%"}}},
-		Stats:  []gamekit.PanelStat{{ID: "2000", Value: "35012", Base: "15552", Added: "19460"}},
-		Skills: []gamekit.PanelSkill{{ID: "10461", SkillType: 1, Level: 10}, {ID: "10462", SkillType: 1, Level: 12, ExtraLevel: 3}, {ID: "10463", SkillType: 1, Level: 9}},
+	image.Panel = app.CharacterPanel{ID: "10000046", Level: 90, Rank: 2, Element: "pyro",
+		Weapon: &app.PanelEquipment{ID: "13501", Name: "护摩之杖", Level: 90, Refinement: 2, Main: []app.PanelStat{{Value: "608"}}, Sub: []app.PanelStat{{Key: "cdmg", Value: "66.2%"}}},
+		Stats:  []app.PanelStat{{ID: "2000", Value: "35012", Base: "15552", Added: "19460"}},
+		Skills: []app.PanelSkill{{ID: "10461", SkillType: 1, Level: 10}, {ID: "10462", SkillType: 1, Level: 12, ExtraLevel: 3}, {ID: "10463", SkillType: 1, Level: 9}},
 	}
-	game := app.Game
+	game := application.Game
 	game.Prefix = "#"
-	drawn, ok := images.Panel(gamekit.ImageContext{Game: game, Now: time.Now()}, image)
+	drawn, ok := images.Panel(app.ImageContext{Game: game, Now: time.Now()}, image)
 	if !ok || drawn.Template != "panel" {
 		t.Fatalf("drawn = %+v", drawn)
 	}
@@ -56,7 +56,7 @@ func TestPanelFollowsMiaoRules(t *testing.T) {
 	if drawn.Data["artifact_hint"] != "#胡桃圣遗物" || len(drawn.Resources) != 0 {
 		t.Errorf("hint %v, resources without artwork %v", drawn.Data["artifact_hint"], drawn.Resources)
 	}
-	if _, ok := images.Panel(gamekit.ImageContext{Game: game}, gamekit.PanelImage{}); ok {
+	if _, ok := images.Panel(app.ImageContext{Game: game}, app.PanelImage{}); ok {
 		t.Error("a panel without a calculation record should keep the summary card")
 	}
 }

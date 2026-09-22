@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 var (
@@ -21,14 +21,14 @@ var (
 // them), the monster, the strongest hit and highest total damage, and the
 // monster's traits. The command word picks the period and single or
 // cooperative mode; without a mode the better record wins, as upstream.
-func HardChallenge(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func HardChallenge(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	periods, _ := result.Data["data"].([]any)
 	index := 0
 	if strings.Contains(context.Word, "上期") {
 		index = 1
 	}
 	if index >= len(periods) {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	period, _ := periods[index].(map[string]any)
 	single, _ := period["single"].(map[string]any)
@@ -38,7 +38,7 @@ func HardChallenge(context gamekit.ImageContext, result gamekit.QueryResult) (ga
 			return 0
 		}
 		best, _ := mode["best"].(map[string]any)
-		return gamekit.Int(best["difficulty"])*1000 - gamekit.Int(best["second"])
+		return app.Int(best["difficulty"])*1000 - app.Int(best["second"])
 	}
 	var mode map[string]any
 	switch word := context.Word; {
@@ -53,10 +53,10 @@ func HardChallenge(context gamekit.ImageContext, result gamekit.QueryResult) (ga
 	}
 	// Upstream answers in text while the chosen record is empty.
 	if has, _ := mode["has_data"].(bool); !has {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range hardArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -67,7 +67,7 @@ func HardChallenge(context gamekit.ImageContext, result gamekit.QueryResult) (ga
 		teams, _ := challenge["teams"].([]any)
 		for _, rawAvatar := range teams {
 			avatar, _ := rawAvatar.(map[string]any)
-			ids = append(ids, gamekit.Text(avatar["avatar_id"]))
+			ids = append(ids, app.Text(avatar["avatar_id"]))
 		}
 	}
 	cards := newAvatarCards(context, resources, ids)
@@ -77,16 +77,16 @@ func HardChallenge(context gamekit.ImageContext, result gamekit.QueryResult) (ga
 			list, _ := popularity.Data["avatar_list"].([]any)
 			for _, raw := range list {
 				avatar, _ := raw.(map[string]any)
-				popular[gamekit.Text(avatar["avatar_id"])] = true
+				popular[app.Text(avatar["avatar_id"])] = true
 			}
 		}
 	}
 	// miao guesses a cooperative teammate's character when the requester has
 	// none at that level or constellation.
 	card := func(avatar map[string]any) map[string]any {
-		id, level, cons := gamekit.Text(avatar["avatar_id"]), gamekit.Int(avatar["level"]), gamekit.Int(avatar["rank"])
+		id, level, cons := app.Text(avatar["avatar_id"]), app.Int(avatar["level"]), app.Int(avatar["rank"])
 		result, ok := cards.own(id)
-		if !ok || gamekit.Int(result["cons"]) < cons || gamekit.Int(result["level"]) < level {
+		if !ok || app.Int(result["cons"]) < cons || app.Int(result["level"]) < level {
 			result = cards.guest(id, level, cons)
 		}
 		result["popular"] = popular[id]
@@ -105,40 +105,40 @@ func HardChallenge(context gamekit.ImageContext, result gamekit.QueryResult) (ga
 			if types := hardCardTypes[len(teams)]; position < len(types) {
 				entry["type"] = types[position]
 			}
-			faces[gamekit.Text(avatar["avatar_id"])] = gamekit.Text(entry["face"])
+			faces[app.Text(avatar["avatar_id"])] = app.Text(entry["face"])
 			team = append(team, entry)
 		}
 		best := []any{}
 		list, _ := challenge["best_avatar"].([]any)
 		for _, rawBest := range list {
 			avatar, _ := rawBest.(map[string]any)
-			id := gamekit.Text(avatar["avatar_id"])
+			id := app.Text(avatar["avatar_id"])
 			face, seen := faces[id]
 			if !seen {
-				face = gamekit.Text(cards.base(id)["face"])
+				face = app.Text(cards.base(id)["face"])
 			}
-			best = append(best, map[string]any{"face": face, "dps": gamekit.Text(avatar["dps"])})
+			best = append(best, map[string]any{"face": face, "dps": app.Text(avatar["dps"])})
 		}
 		monster, _ := challenge["monster"].(map[string]any)
 		traits := []any{}
 		descs, _ := monster["desc"].([]any)
 		for _, rawDesc := range descs {
-			if desc := gamekit.Text(rawDesc); desc != "" {
+			if desc := app.Text(rawDesc); desc != "" {
 				traits = append(traits, hardTrait(desc))
 			}
 		}
-		battles = append(battles, map[string]any{"name": gamekit.Text(challenge["name"]), "second": gamekit.Text(challenge["second"]), "team": team,
-			"monster": map[string]any{"level": gamekit.Text(monster["level"]), "icon": resources.URL("mihoyo", monster["icon"]), "traits": traits}, "best": best})
+		battles = append(battles, map[string]any{"name": app.Text(challenge["name"]), "second": app.Text(challenge["second"]), "team": team,
+			"monster": map[string]any{"level": app.Text(monster["level"]), "icon": resources.URL("mihoyo", monster["icon"]), "traits": traits}, "best": best})
 	}
 	stat, _ := mode["best"].(map[string]any)
 	schedule, _ := period["schedule"].(map[string]any)
 	moment := func(value any) string {
-		return time.Unix(int64(gamekit.Int(value)), 0).In(chinaTime).Format("01-02 15:04:05")
+		return time.Unix(int64(app.Int(value)), 0).In(chinaTime).Format("01-02 15:04:05")
 	}
-	difficulty := gamekit.Int(stat["difficulty"])
-	return gamekit.Image{Template: "hard-challenge", Data: map[string]any{
+	difficulty := app.Int(stat["difficulty"])
+	return app.Image{Template: "hard-challenge", Data: map[string]any{
 		"uid": result.Role.UID, "begin": moment(schedule["start_time"]), "end": moment(schedule["end_time"]),
-		"difficulty": difficulty, "difficulty_name": hardDifficulties[difficulty], "second": gamekit.Text(stat["second"]), "battles": battles,
+		"difficulty": difficulty, "difficulty_name": hardDifficulties[difficulty], "second": app.Text(stat["second"]), "battles": battles,
 	}, Resources: resources.List}, true
 }
 

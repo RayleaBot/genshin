@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // trialArtwork maps the fonts and background Yunzai's html/gacha/gacha-trial
@@ -33,8 +33,8 @@ var trialElements = map[string]string{"火": "pyro", "水": "hydro", "风": "ane
 var trialWeaponTypes = []string{"sword", "claymore", "polearm", "catalyst", "bow"}
 
 type trialItem struct {
-	draw     gamekit.SimulationDraw
-	entry    gamekit.Entry
+	draw     app.SimulationDraw
+	entry    app.Entry
 	weapon   bool
 	have     bool
 	image    string
@@ -47,11 +47,11 @@ type trialItem struct {
 // into and five-stars the pulls they took. Unless the ten hold four
 // five-stars, the corners show the requester, the last five-star listed or the
 // pity count, and the featured character or the weapon's Epitomized Path.
-func GachaTrial(context gamekit.ImageContext, trial gamekit.SimulationImage) (gamekit.Image, bool) {
+func GachaTrial(context app.ImageContext, trial app.SimulationImage) (app.Image, bool) {
 	if context.Artwork == nil || len(trial.Draws) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range trialArtwork {
 		resources.Artwork(item[0], "yunzai-genshin", item[1])
 	}
@@ -149,12 +149,12 @@ func GachaTrial(context gamekit.ImageContext, trial gamekit.SimulationImage) (ga
 			data["bing"] = trialShortName(target, true)
 		}
 	}
-	return gamekit.Image{Template: "gacha-trial", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "gacha-trial", Data: data, Resources: resources.List}, true
 }
 
 // trialShortName is Yunzai's shortName: miao's abbreviation, which for
 // weapons applies only to names over four characters.
-func trialShortName(entry gamekit.Entry, weapon bool) string {
+func trialShortName(entry app.Entry, weapon bool) string {
 	if entry.Abbr == "" || weapon && utf8.RuneCountInString(entry.Name) <= 4 {
 		return entry.Name
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 func TestCombatFollowsYunzai(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCombatFollowsYunzai(t *testing.T) {
 		"stat":   map[string]any{"difficulty_id": json.Number("4"), "max_round_id": json.Number("10"), "heraldry": json.Number("3"), "get_medal_round_list": []any{json.Number("1"), json.Number("0")}, "coin_num": json.Number("22"), "avatar_bonus_num": json.Number("6"), "rent_cnt": json.Number("3")},
 		"detail": map[string]any{"rounds_data": []any{round("1", true, "3"), round("2", false, "1")}},
 	}}}
-	image, ok := Combat(gamekit.ImageContext{}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001", Nickname: "旅行者", Level: 60}, Data: data})
+	image, ok := Combat(app.ImageContext{}, app.QueryResult{Role: app.Role{UID: "100000001", Nickname: "旅行者", Level: 60}, Data: data})
 	if !ok || image.Data["difficulty"] != "卓越" || image.Data["max_round"] != "10" || image.Data["heraldry"] != "3" {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -35,7 +35,7 @@ func TestCombatFollowsYunzai(t *testing.T) {
 		t.Errorf("buffs = %v", buffs)
 	}
 	data["has_detail_data"] = "false"
-	if _, ok := Combat(gamekit.ImageContext{}, gamekit.QueryResult{Data: data}); ok {
+	if _, ok := Combat(app.ImageContext{}, app.QueryResult{Data: data}); ok {
 		t.Error("a season without detail should answer in text like upstream")
 	}
 }

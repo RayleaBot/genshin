@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // roleAreas are Yunzai's names for the exploration areas, by ID.
@@ -28,10 +28,10 @@ var roleElements = map[string]string{"Pyro": "火", "Hydro": "水", "Anemo": "�
 // roleAreaName is Yunzai's name for an area, or the official one cut to six
 // characters as lodash.truncate does.
 func roleAreaName(area map[string]any) string {
-	if name := roleAreas[gamekit.Int(area["id"])]; name != "" {
+	if name := roleAreas[app.Int(area["id"])]; name != "" {
 		return name
 	}
-	name := []rune(gamekit.Text(area["name"]))
+	name := []rune(app.Text(area["name"]))
 	if len(name) > 6 {
 		return string(name[:3]) + "..."
 	}
@@ -47,22 +47,22 @@ func roleExplorations(data map[string]any) []map[string]any {
 			areas = append(areas, area)
 		}
 	}
-	slices.SortStableFunc(areas, func(a, b map[string]any) int { return gamekit.Int(b["id"]) - gamekit.Int(a["id"]) })
+	slices.SortStableFunc(areas, func(a, b map[string]any) int { return app.Int(b["id"]) - app.Int(a["id"]) })
 	return areas
 }
 
 func rolePercent(area map[string]any) string {
-	return strconv.FormatFloat(float64(gamekit.Int(area["exploration_percentage"]))/10, 'f', -1, 64) + "%"
+	return strconv.FormatFloat(float64(app.Int(area["exploration_percentage"]))/10, 'f', -1, 64) + "%"
 }
 
 func roleChests(stats map[string]any) int {
-	return gamekit.Int(stats["precious_chest_number"]) + gamekit.Int(stats["luxurious_chest_number"]) + gamekit.Int(stats["exquisite_chest_number"]) +
-		gamekit.Int(stats["common_chest_number"]) + gamekit.Int(stats["magic_chest_number"])
+	return app.Int(stats["precious_chest_number"]) + app.Int(stats["luxurious_chest_number"]) + app.Int(stats["exquisite_chest_number"]) +
+		app.Int(stats["common_chest_number"]) + app.Int(stats["magic_chest_number"])
 }
 
 // Profile draws the account summary with Yunzai's player pages: 角色卡片 and
 // 角色3 draw html/player/role-card, the other words html/player/role-explore.
-func Profile(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Profile(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	if strings.Contains(context.Word, "角色") {
 		return RoleCard(context, result)
 	}
@@ -75,18 +75,18 @@ func Profile(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.
 // then the Oculi and domains, and the first eight characters with their
 // constellations and levels. Upstream strips the UID from the group card; the
 // card here is the one the host passes.
-func RoleCard(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func RoleCard(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	stats, _ := result.Data["stats"].(map[string]any)
 	if stats == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	role, _ := result.Data["role"].(map[string]any)
 	item := func(label string, value any) map[string]any {
-		return map[string]any{"label": label, "num": gamekit.Text(value)}
+		return map[string]any{"label": label, "num": app.Text(value)}
 	}
 	lines := []any{
 		[]any{item("活跃天数", stats["active_day_number"]), item("成就", stats["achievement_number"]), item("角色数", stats["avatar_number"]),
-			item("等级", gamekit.Int(role["level"])), item("总宝箱", roleChests(stats))},
+			item("等级", app.Int(role["level"])), item("总宝箱", roleChests(stats))},
 		[]any{item("华丽宝箱", stats["luxurious_chest_number"]), item("珍贵宝箱", stats["precious_chest_number"]), item("精致宝箱", stats["exquisite_chest_number"]),
 			item("普通宝箱", stats["common_chest_number"]), item("奇馈宝箱", stats["magic_chest_number"]), item("传送点", stats["way_point_number"])},
 	}
@@ -103,7 +103,7 @@ func RoleCard(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 		rest = append(rest, item(oculus[0], stats[oculus[1]]))
 	}
 	lines = append(lines, first, rest[:5])
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	resources.Artwork("tttgbnumber", "yunzai-genshin", "resources/font/tttgbnumber.ttf")
 	resources.Artwork("img-roleCard-bg1", "yunzai-genshin", "resources/img/roleCard/bg1.jpg")
 	resources.Artwork("genshin-logo", "yunzai-genshin", "resources/img/other/原神.png")
@@ -114,17 +114,17 @@ func RoleCard(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 			break
 		}
 		avatar, _ := raw.(map[string]any)
-		name := gamekit.Text(avatar["name"])
-		switch gamekit.Int(avatar["id"]) {
+		name := app.Text(avatar["name"])
+		switch app.Int(avatar["id"]) {
 		case 10000005:
 			name = "空"
 		case 10000007:
 			name = "荧"
 		}
-		avatars = append(avatars, map[string]any{"element": roleElements[gamekit.Text(avatar["element"])], "constellation": gamekit.Int(avatar["actived_constellation_num"]),
-			"level": gamekit.Text(avatar["level"]), "image": resources.Artwork("gacha-"+strconv.Itoa(index), "miao-plugin", "resources/meta-gs/character/"+name+"/imgs/gacha.webp")})
+		avatars = append(avatars, map[string]any{"element": roleElements[app.Text(avatar["element"])], "constellation": app.Int(avatar["actived_constellation_num"]),
+			"level": app.Text(avatar["level"]), "image": resources.Artwork("gacha-"+strconv.Itoa(index), "miao-plugin", "resources/meta-gs/character/"+name+"/imgs/gacha.webp")})
 	}
-	return gamekit.Image{Template: "role-card", Data: map[string]any{"uid": result.Role.UID, "lines": lines, "avatars": avatars}, Resources: resources.List}, true
+	return app.Image{Template: "role-card", Data: map[string]any{"uid": result.Role.UID, "lines": lines, "avatars": avatars}, Resources: resources.List}, true
 }
 
 // RoleExplore draws 探索 the way Yunzai's html/player/role-explore does: the
@@ -135,15 +135,15 @@ func RoleCard(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 // Pot, each against Yunzai's totals; the TCG level and card collection; and
 // every area with its exploration, reputation, underground areas and offering
 // level.
-func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func RoleExplore(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	stats, _ := result.Data["stats"].(map[string]any)
 	if stats == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	role, _ := result.Data["role"].(map[string]any)
 	item := func(label string, value any, extra any) map[string]any {
-		entry := map[string]any{"label": label, "num": gamekit.Text(value), "color": ""}
-		if text := gamekit.Text(extra); text != "" && text != "0" {
+		entry := map[string]any{"label": label, "num": app.Text(value), "color": ""}
+		if text := app.Text(extra); text != "" && text != "0" {
 			entry["extra"] = text
 		}
 		return entry
@@ -175,8 +175,8 @@ func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (game
 	if unlocked, _ := combat["is_unlock"].(bool); unlocked {
 		theater = "-"
 		if detail, _ := combat["has_detail_data"].(bool); detail {
-			theater = "第" + gamekit.Text(combat["max_round_id"]) + "幕"
-			if tarot := gamekit.Int(combat["tarot_finished_cnt"]); tarot > 0 {
+			theater = "第" + app.Text(combat["max_round_id"]) + "幕"
+			if tarot := app.Int(combat["tarot_finished_cnt"]); tarot > 0 {
 				theater += " 圣牌" + strconv.Itoa(tarot)
 			}
 		}
@@ -187,14 +187,14 @@ func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (game
 		onslaught = "-"
 		if has, _ := hard["has_data"].(bool); has {
 			onslaught = ""
-			if difficulty := gamekit.Int(hard["difficulty"]); difficulty >= 1 && difficulty <= 6 {
+			if difficulty := app.Int(hard["difficulty"]); difficulty >= 1 && difficulty <= 6 {
 				onslaught = []string{"I", "II", "III", "IV", "V", "VI"}[difficulty-1]
 			}
 		}
 	}
 	lines := []any{
 		[]any{item("活跃天数", stats["active_day_number"], days), item("深境螺旋", stats["spiral_abyss"], nil), item("幻想真境剧诗", theater, nil), item("幽境危战", onslaught, nil)},
-		[]any{item("角色数", stats["avatar_number"], roleTotals["avatar"]), item("满好感角色", stats["full_fetter_avatar_num"], gamekit.Int(stats["avatar_number"])-3),
+		[]any{item("角色数", stats["avatar_number"], roleTotals["avatar"]), item("满好感角色", stats["full_fetter_avatar_num"], app.Int(stats["avatar_number"])-3),
 			item("传送点", stats["way_point_number"], roleTotals["way_point"]), item("秘境", stats["domain_number"], roleTotals["domain"]),
 			item("成就", stats["achievement_number"], roleTotals["achievement"])},
 		[]any{item("宝箱总数", chests, allChests), map[string]any{"label": "宝箱获取率", "num": grade, "color": color},
@@ -212,7 +212,7 @@ func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (game
 		lines = append(lines, []any{item("家园等级", home["level"], nil), item("最高仙力", home["comfort_num"], nil), item("洞天名称", home["comfort_level_name"], nil),
 			item("获得摆设", home["item_num"], nil), item("历史访客", home["visit_num"], nil)})
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, artwork := range [][2]string{{"tttgbnumber", "resources/font/tttgbnumber.ttf"}, {"genshin-logo", "resources/img/other/原神.png"},
 		{"img-deck-tcg", "resources/img/deck/七圣召唤.png"}, {"img-other-world-exploration-frame", "resources/img/other/world-exploration-frame.png"}} {
 		resources.Artwork(artwork[0], "yunzai-genshin", artwork[1])
@@ -222,7 +222,7 @@ func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (game
 	areas := roleExplorations(result.Data)
 	explorations := []any{}
 	for index, area := range areas {
-		id := gamekit.Int(area["id"])
+		id := app.Int(area["id"])
 		if slices.Contains([]int{7, 11, 12, 13}, id) {
 			continue
 		}
@@ -232,12 +232,12 @@ func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (game
 			lines = append(lines, map[string]any{"name": name, "text": rolePercent(area)})
 		}
 		if slices.Contains([]string{"蒙德", "璃月", "稻妻", "须弥", "枫丹"}, name) {
-			lines = append(lines, map[string]any{"name": "声望", "text": gamekit.Text(area["level"]) + "级"})
+			lines = append(lines, map[string]any{"name": "声望", "text": app.Text(area["level"]) + "级"})
 		}
 		underground := map[int][]int{6: {7}, 10: {13, 12, 11}}[id]
 		for _, other := range underground {
 			for _, candidate := range areas {
-				if gamekit.Int(candidate["id"]) == other {
+				if app.Int(candidate["id"]) == other {
 					lines = append(lines, map[string]any{"name": roleAreas[other], "text": rolePercent(candidate)})
 				}
 			}
@@ -246,26 +246,26 @@ func RoleExplore(context gamekit.ImageContext, result gamekit.QueryResult) (game
 			offerings, _ := area["offerings"].([]any)
 			if len(offerings) > 0 {
 				offering, _ := offerings[0].(map[string]any)
-				label := gamekit.Text(offering["name"])
+				label := app.Text(offering["name"])
 				for _, short := range []string{"流明石", "摹忆中枢"} {
 					if strings.Contains(label, short) {
 						label = short
 					}
 				}
-				lines = append(lines, map[string]any{"name": label, "text": gamekit.Text(offering["level"]) + "级"})
+				lines = append(lines, map[string]any{"name": label, "text": app.Text(offering["level"]) + "级"})
 			}
 		}
 		explorations = append(explorations, map[string]any{"icon": resources.Artwork(fmt.Sprintf("area-%d", index), "yunzai-genshin", "resources/img/other/"+name+".png"), "lines": lines})
 	}
-	data := map[string]any{"uid": result.Role.UID, "nickname": gamekit.Text(role["nickname"]), "level": strconv.Itoa(gamekit.Int(role["level"])),
-		"region": gamekit.Text(role["region"]), "head": resources.URL("mihoyo", role["game_head_icon"]), "lines": lines, "explorations": explorations}
+	data := map[string]any{"uid": result.Role.UID, "nickname": app.Text(role["nickname"]), "level": strconv.Itoa(app.Int(role["level"])),
+		"region": app.Text(role["region"]), "head": resources.URL("mihoyo", role["game_head_icon"]), "lines": lines, "explorations": explorations}
 	// Upstream reads the TCG summary alongside and leaves it out when it fails.
 	if context.Query != nil {
-		if tcg, err := context.Query("genshin.tcg", nil); err == nil && gamekit.Int(tcg.Data["level"]) > 0 {
-			data["tcg"] = map[string]any{"level": gamekit.Text(tcg.Data["level"]),
-				"characters": gamekit.Text(tcg.Data["avatar_card_num_gained"]) + "/" + gamekit.Text(tcg.Data["avatar_card_num_total"]),
-				"actions":    gamekit.Text(tcg.Data["action_card_num_gained"]) + "/" + gamekit.Text(tcg.Data["action_card_num_total"])}
+		if tcg, err := context.Query("genshin.tcg", nil); err == nil && app.Int(tcg.Data["level"]) > 0 {
+			data["tcg"] = map[string]any{"level": app.Text(tcg.Data["level"]),
+				"characters": app.Text(tcg.Data["avatar_card_num_gained"]) + "/" + app.Text(tcg.Data["avatar_card_num_total"]),
+				"actions":    app.Text(tcg.Data["action_card_num_gained"]) + "/" + app.Text(tcg.Data["action_card_num_total"])}
 		}
 	}
-	return gamekit.Image{Template: "role-explore", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "role-explore", Data: data, Resources: resources.List}, true
 }

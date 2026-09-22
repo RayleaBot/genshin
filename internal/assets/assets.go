@@ -5,8 +5,8 @@ import (
 	"embed"
 	"io/fs"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference/miao"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/reference/miao"
 	plugin "github.com/RayleaBot/plugin-genshin"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 	"github.com/RayleaBot/plugin-genshin/internal/showcase"
@@ -37,11 +37,11 @@ func dataFile(name string) []byte {
 	return raw
 }
 
-// Kit is everything the shared game library needs from this plugin.
-func Kit() gamekit.Assets {
+// Load is the compiled-in game data and image builders the app runs with.
+func Load() app.Assets {
 	files, err := fs.Sub(calc, "calc")
 	if err != nil {
 		panic(err) // the embedded directory name is fixed at build time
 	}
-	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json"), Images: images.Builders(), Queries: images.Queries(), Panel: images.Panel, Gacha: images.Gacha, Help: images.Help, MonthlyStats: images.LedgerCount, Calendar: images.Calendar, Entry: images.Entry, SimulationImage: images.GachaTrial, Rank: images.Rank, Showcase: showcase.Source, PanelList: images.PanelList, UIDList: images.UIDList, RankStats: images.RankStats, ArtifactList: images.ArtifactList, DailyMaterial: images.DailyMaterial}
+	return app.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json"), Images: images.Builders(), Queries: images.Queries(), Panel: images.Panel, Gacha: images.Gacha, Help: images.Help, MonthlyStats: images.LedgerCount, Calendar: images.Calendar, Entry: images.Entry, SimulationImage: images.GachaTrial, Rank: images.Rank, Showcase: showcase.Source, PanelList: images.PanelList, UIDList: images.UIDList, RankStats: images.RankStats, ArtifactList: images.ArtifactList, DailyMaterial: images.DailyMaterial}
 }

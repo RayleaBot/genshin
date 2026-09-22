@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/gacha"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/gacha"
 )
 
 func TestGachaFollowsYunzaiAnalysis(t *testing.T) {
@@ -22,7 +22,7 @@ func TestGachaFollowsYunzaiAnalysis(t *testing.T) {
 	add(19, "黎明神剑", "3", "武器", "2023-02-01 10:00:00")
 	add(1, "胡桃", "5", "角色", "2023-02-01 10:00:00")
 	add(10, "黎明神剑", "3", "武器", "2023-03-01 10:00:00")
-	image, ok := Gacha(gamekit.ImageContext{}, gamekit.GachaImage{UID: "100000001", Word: "角色记录", Archive: gacha.Archive{Records: records}})
+	image, ok := Gacha(app.ImageContext{}, app.GachaImage{UID: "100000001", Word: "角色记录", Archive: gacha.Archive{Records: records}})
 	if !ok || image.Data["pool"] != "301" || image.Data["all"] != 100 {
 		t.Fatalf("image = %+v", image.Data)
 	}
@@ -40,7 +40,7 @@ func TestGachaFollowsYunzaiAnalysis(t *testing.T) {
 	if huTao["num"] != 20 || huTao["up"] != true || huTao["class"] != "good" || mona["num"] != 70 || mona["up"] != false || mona["class"] != "normal" {
 		t.Errorf("cards = %v", cards)
 	}
-	if _, ok := Gacha(gamekit.ImageContext{}, gamekit.GachaImage{Word: "武器记录", Archive: gacha.Archive{Records: records}}); ok {
+	if _, ok := Gacha(app.ImageContext{}, app.GachaImage{Word: "武器记录", Archive: gacha.Archive{Records: records}}); ok {
 		t.Error("an empty pool should keep the summary card")
 	}
 }
@@ -67,7 +67,7 @@ func TestGachaAllFollowsYunzai(t *testing.T) {
 	add(1, "301", "莫娜", "5", "角色")
 	add(40, "302", "黎明神剑", "3", "武器")
 	add(1, "302", "护摩之杖", "5", "武器")
-	image, ok := Gacha(gamekit.ImageContext{}, gamekit.GachaImage{UID: "100000001", Word: "全部记录", Archive: gacha.Archive{Records: records}})
+	image, ok := Gacha(app.ImageContext{}, app.GachaImage{UID: "100000001", Word: "全部记录", Archive: gacha.Archive{Records: records}})
 	if !ok || image.Template != "gacha-all" || image.Data["pool"] != "301" {
 		t.Fatalf("image = %v", image.Data)
 	}

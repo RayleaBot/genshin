@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 var (
@@ -49,12 +49,12 @@ var rosterArtwork = [][2]string{
 // does: the profile banner with the strongest character, nickname, level,
 // days active and counts, each region's exploration, the chests, and every
 // character as an avatar card, strongest first.
-func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Characters(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["list"].([]any)
 	if len(list) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range rosterArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -82,25 +82,25 @@ func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 	if context.Query != nil {
 		if index, err := context.Query("genshin.profile", nil); err == nil {
 			role, _ := index.Data["role"].(map[string]any)
-			if nickname := gamekit.Text(role["nickname"]); nickname != "" {
-				player["name"], player["level"] = nickname, gamekit.Int(role["level"])
+			if nickname := app.Text(role["nickname"]); nickname != "" {
+				player["name"], player["level"] = nickname, app.Int(role["level"])
 			}
 			raw, _ := index.Data["stats"].(map[string]any)
-			stats["achievement"], stats["wayPoint"] = gamekit.Int(raw["achievement_number"]), gamekit.Int(raw["way_point_number"])
-			stats["avatar"] = max(stats["avatar"], gamekit.Int(raw["avatar_number"]))
-			if days := gamekit.Int(raw["active_day_number"]); days > 0 {
+			stats["achievement"], stats["wayPoint"] = app.Int(raw["achievement_number"]), app.Int(raw["way_point_number"])
+			stats["avatar"] = max(stats["avatar"], app.Int(raw["avatar_number"]))
+			if days := app.Int(raw["active_day_number"]); days > 0 {
 				player["active"] = activeDays(days)
 			}
 			regions := map[string]int{}
 			worlds, _ := index.Data["world_explorations"].([]any)
 			for _, rawWorld := range worlds {
 				world, _ := rawWorld.(map[string]any)
-				switch name := gamekit.Text(world["name"]); name {
+				switch name := app.Text(world["name"]); name {
 				case "层岩巨渊":
 				case "层岩巨渊·地下矿区":
-					regions["层岩巨渊"] = gamekit.Int(world["exploration_percentage"])
+					regions["层岩巨渊"] = app.Int(world["exploration_percentage"])
 				default:
-					regions[name] = gamekit.Int(world["exploration_percentage"])
+					regions[name] = app.Int(world["exploration_percentage"])
 				}
 			}
 			if _, ok := regions["蒙德"]; ok {
@@ -108,15 +108,15 @@ func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 					exploration = append(exploration, map[string]any{"name": city, "position": strconv.Itoa(index) + "0% 0", "value": strconv.FormatFloat(float64(regions[city])/10, 'f', -1, 64) + "%"})
 				}
 			}
-			if gamekit.Int(raw["common_chest_number"]) > 0 {
+			if app.Int(raw["common_chest_number"]) > 0 {
 				for index, chest := range rosterChests {
-					value := gamekit.Int(raw[chest.key+"_chest_number"])
+					value := app.Int(raw[chest.key+"_chest_number"])
 					chests = append(chests, map[string]any{"title": chest.title, "value": value, "max": max(chest.max, value), "position": strconv.Itoa(index*2) + "0% 0"})
 				}
 			}
 		}
 	}
-	player["show_level"] = gamekit.Int(player["level"]) > 1
+	player["show_level"] = app.Int(player["level"]) > 1
 	shown := []any{}
 	for _, stat := range rosterStats {
 		if value := stats[stat.key]; value != 0 {
@@ -130,7 +130,7 @@ func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 	if player["face"] == "" {
 		player["face"] = cards.miao(path + "face.webp")
 	}
-	return gamekit.Image{Template: "characters", Data: map[string]any{
+	return app.Image{Template: "characters", Data: map[string]any{
 		"uid": result.Role.UID, "player": player, "stats": shown, "exploration": exploration, "chests": chests,
 		"avatars": avatars, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
 	}, Resources: resources.List}, true
@@ -157,7 +157,7 @@ func activeDays(days int) string {
 type rosterEntry struct {
 	id                                  string
 	card                                map[string]any
-	panel                               *gamekit.CharacterPanel
+	panel                               *app.CharacterPanel
 	level, star, aeq, cons              int
 	weaponLevel, weaponStar, refinement int
 	fetter                              int
@@ -167,23 +167,23 @@ type rosterEntry struct {
 // their details, as avatar cards in miao's order: level, rarity, original
 // talents, constellation, weapon level, rarity and refinement, then
 // friendship, highest first.
-func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources, list []any) ([]rosterEntry, *avatarCards) {
+func buildRoster(context app.ImageContext, resources *app.ImageResources, list []any) ([]rosterEntry, *avatarCards) {
 	ids := []string{}
 	for _, raw := range list {
 		avatar, _ := raw.(map[string]any)
-		ids = append(ids, gamekit.Text(avatar["id"]))
+		ids = append(ids, app.Text(avatar["id"]))
 	}
 	cards := newAvatarCards(context, resources, ids)
 	entries := []rosterEntry{}
 	for _, raw := range list {
 		avatar, _ := raw.(map[string]any)
-		id := gamekit.Text(avatar["id"])
+		id := app.Text(avatar["id"])
 		card, ok := cards.own(id)
 		if !ok {
-			card = cards.guest(id, gamekit.Int(avatar["level"]), gamekit.Int(avatar["actived_constellation_num"]))
+			card = cards.guest(id, app.Int(avatar["level"]), app.Int(avatar["actived_constellation_num"]))
 		}
 		card["type"] = "mini"
-		item := rosterEntry{id: id, card: card, level: gamekit.Int(card["level"]), star: gamekit.Int(card["star"]), cons: gamekit.Int(card["cons"]), fetter: gamekit.Int(avatar["fetter"])}
+		item := rosterEntry{id: id, card: card, level: app.Int(card["level"]), star: app.Int(card["star"]), cons: app.Int(card["cons"]), fetter: app.Int(avatar["fetter"])}
 		if panel, ok := cards.panels[id]; ok {
 			item.panel = &panel
 		}
@@ -192,11 +192,11 @@ func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources
 		if talents, _ := card["talents"].([]any); talents != nil {
 			item.aeq = 0
 			for _, talent := range talents {
-				item.aeq += gamekit.Int(talent.(map[string]any)["original"])
+				item.aeq += app.Int(talent.(map[string]any)["original"])
 			}
 		}
 		if weapon, _ := card["weapon"].(map[string]any); weapon != nil {
-			item.weaponLevel, item.weaponStar, item.refinement = gamekit.Int(weapon["level"]), gamekit.Int(weapon["star"]), gamekit.Int(weapon["affix"])
+			item.weaponLevel, item.weaponStar, item.refinement = app.Int(weapon["level"]), app.Int(weapon["star"]), app.Int(weapon["affix"])
 		}
 		entries = append(entries, item)
 	}

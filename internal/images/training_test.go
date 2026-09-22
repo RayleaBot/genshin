@@ -4,34 +4,34 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/assets"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
 func TestTrainingFollowsMiao(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
 	list := decode(t, `{"list":[{"id":10000007,"level":90,"actived_constellation_num":6,"fetter":3},{"id":10000089,"level":90,"actived_constellation_num":2,"fetter":8}]}`)
 	scored := 0
-	context := gamekit.ImageContext{Game: app.Game, Catalog: app.Catalog, Now: time.Now(),
-		Query: func(operation string, input map[string]any) (gamekit.QueryResult, error) {
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Now: time.Now(),
+		Query: func(operation string, input map[string]any) (app.QueryResult, error) {
 			if operation == "genshin.profile" {
-				return gamekit.QueryResult{}, nil
+				return app.QueryResult{}, nil
 			}
-			return gamekit.QueryResult{Data: decode(t, `{"list":[{"base":{"id":10000089,"level":90,"actived_constellation_num":2},
+			return app.QueryResult{Data: decode(t, `{"list":[{"base":{"id":10000089,"level":90,"actived_constellation_num":2},
 				"weapon":{"id":11513,"name":"静水流涌之辉","level":90,"affix_level":1,"rarity":5},
 				"relics":[{"id":1,"pos":1,"set":{"name":"黄金剧团"}},{"id":2,"pos":2,"set":{"name":"黄金剧团"}}],
 				"skills":[{"skill_id":10891,"skill_type":1,"level":6},{"skill_id":10892,"skill_type":1,"level":13,"extra_level":3},{"skill_id":10893,"skill_type":1,"level":10}]}]}`)}, nil
 		},
-		Score: func(panel gamekit.CharacterPanel) (gamekit.CharacterPanel, error) {
+		Score: func(panel app.CharacterPanel) (app.CharacterPanel, error) {
 			scored++
-			panel.ScoreDetail = &gamekit.ScoreDetail{Mark: "210.5", Grade: "ACE"}
+			panel.ScoreDetail = &app.ScoreDetail{Mark: "210.5", Grade: "ACE"}
 			return panel, nil
 		}}
-	image, ok := images.Training(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: list})
+	image, ok := images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
 	if !ok || image.Data["count"] != 2 {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -57,14 +57,14 @@ func TestTrainingFollowsMiao(t *testing.T) {
 	// 天赋统计 keeps the characters whose book the weekday names and skips
 	// the scoring; Furina's 正义 books drop on Tuesday and Friday.
 	context.Word = "周二五星天赋统计"
-	image, _ = images.Training(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
 	rows = image.Data["rows"].([]any)
 	book, _ := rows[0].(map[string]any)["book"].(map[string]any)
 	if image.Data["talent"] != true || len(rows) != 1 || book["label"] != "枫丹·正义" || book["week"] != "2/5" || scored != 1 {
 		t.Errorf("talent rows = %v", rows)
 	}
 	context.Word = "周一天赋统计"
-	image, _ = images.Training(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
 	for _, raw := range image.Data["rows"].([]any) {
 		if raw.(map[string]any)["name"] == "芙宁娜" {
 			t.Error("周一 kept Furina's Tuesday book")

@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // artifactListArtwork maps the images named in the converted stylesheets
@@ -22,8 +22,8 @@ var artifactListArtwork = [][2]string{
 // ArtifactList draws 圣遗物列表 the way miao's character/artis-list does:
 // each piece with the wearer's side portrait, its icon, name, score and
 // grade, the main stat and the substats marked by the wearer's weights.
-func ArtifactList(context gamekit.ImageContext, list gamekit.ArtifactListImage) (gamekit.Image, bool) {
-	resources := &gamekit.ImageResources{Context: context}
+func ArtifactList(context app.ImageContext, list app.ArtifactListImage) (app.Image, bool) {
+	resources := &app.ImageResources{Context: context}
 	for _, item := range artifactListArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -52,5 +52,5 @@ func ArtifactList(context gamekit.ImageContext, list gamekit.ArtifactListImage) 
 			"attrs": attrs,
 		})
 	}
-	return gamekit.Image{Template: "artifact-list", Data: map[string]any{"uid": list.UID, "game": "gs", "artis": artis}, Resources: resources.List}, true
+	return app.Image{Template: "artifact-list", Data: map[string]any{"uid": list.UID, "game": "gs", "artis": artis}, Resources: resources.List}, true
 }

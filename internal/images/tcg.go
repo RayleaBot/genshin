@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // tcgArtwork maps the images the Genius Invokation TCG pages name to
@@ -19,10 +19,10 @@ var tcgArtwork = [][2]string{
 var tcgDeckWord = regexp.MustCompile(`([0-9]{1,2})$`)
 
 // tcgResources adds a Yunzai deck image the first time a page names it.
-type tcgResources struct{ gamekit.ImageResources }
+type tcgResources struct{ app.ImageResources }
 
-func newTCGResources(context gamekit.ImageContext) *tcgResources {
-	resources := &tcgResources{gamekit.ImageResources{Context: context}}
+func newTCGResources(context app.ImageContext) *tcgResources {
+	resources := &tcgResources{app.ImageResources{Context: context}}
 	for _, item := range tcgArtwork {
 		resources.Artwork(item[0], "yunzai-genshin", item[1])
 	}
@@ -39,7 +39,7 @@ func (r *tcgResources) characters(list []any) []any {
 	cards := []any{}
 	for _, raw := range list {
 		card, _ := raw.(map[string]any)
-		cards = append(cards, map[string]any{"hp": r.deck(gamekit.Text(card["hp"])), "image": r.URL("mihoyo", card["image"])})
+		cards = append(cards, map[string]any{"hp": r.deck(app.Text(card["hp"])), "image": r.URL("mihoyo", card["image"])})
 	}
 	return cards
 }
@@ -53,9 +53,9 @@ func (r *tcgResources) actions(list []any) []any {
 		costList, _ := card["action_cost"].([]any)
 		for _, rawCost := range costList {
 			cost, _ := rawCost.(map[string]any)
-			costs = append(costs, map[string]any{"type": r.deck(gamekit.Text(cost["cost_type"])), "value": r.deck(gamekit.Text(cost["cost_value"]))})
+			costs = append(costs, map[string]any{"type": r.deck(app.Text(cost["cost_type"])), "value": r.deck(app.Text(cost["cost_value"]))})
 		}
-		cards = append(cards, map[string]any{"num": gamekit.Text(card["num"]), "costs": costs, "image": r.URL("mihoyo", card["image"])})
+		cards = append(cards, map[string]any{"num": app.Text(card["num"]), "costs": costs, "image": r.URL("mihoyo", card["image"])})
 	}
 	return cards
 }
@@ -65,32 +65,32 @@ func (r *tcgResources) actions(list []any) []any {
 // when the command ends in a deck number, that deck's character cards and
 // action cards with their costs and copies. Upstream answers in text when the
 // number names no deck.
-func TCGDecks(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func TCGDecks(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	decks, _ := result.Data["deck_list"].([]any)
 	resources := newTCGResources(context)
-	data := map[string]any{"uid": result.Role.UID, "nickname": gamekit.Text(result.Data["nickname"]), "level": gamekit.Text(result.Data["level"])}
+	data := map[string]any{"uid": result.Role.UID, "nickname": app.Text(result.Data["nickname"]), "level": app.Text(result.Data["level"])}
 	if match := tcgDeckWord.FindStringSubmatch(context.Word); match != nil {
 		for _, raw := range decks {
 			deck, _ := raw.(map[string]any)
-			if gamekit.Text(deck["id"]) != match[1] {
+			if app.Text(deck["id"]) != match[1] {
 				continue
 			}
 			characters, _ := deck["avatar_cards"].([]any)
 			actions, _ := deck["action_cards"].([]any)
 			data["deck"] = map[string]any{"characters": resources.characters(characters), "actions": resources.actions(actions)}
-			return gamekit.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
+			return app.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
 		}
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	list := []any{}
 	for _, raw := range decks {
 		deck, _ := raw.(map[string]any)
 		characters, _ := deck["avatar_cards"].([]any)
-		id := gamekit.Text(deck["id"])
+		id := app.Text(deck["id"])
 		list = append(list, map[string]any{"id": id, "command": context.Game.Prefix + "七圣查询卡组" + id, "characters": resources.characters(characters)})
 	}
 	data["decks"] = list
-	return gamekit.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
 }
 
 // TCGCards draws 七圣召唤查询牌 the way Yunzai's deckCard page does: the TCG
@@ -98,10 +98,10 @@ func TCGDecks(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 // with its wins, uses and HP and every action card owned with its uses,
 // copies and dice costs. 角色 or 行动 in the command keeps one kind, as
 // upstream queries only that list.
-func TCGCards(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func TCGCards(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	cards, ok := result.Data["card_list"].([]any)
 	if !ok {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := newTCGResources(context)
 	resources.Artwork("deck-tcg", "yunzai-genshin", "resources/img/deck/七圣召唤.png")
@@ -109,9 +109,9 @@ func TCGCards(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 	if context.Query != nil {
 		if basic, err := context.Query("genshin.tcg", nil); err == nil {
 			info := basic.Data
-			data["nickname"], data["level"] = gamekit.Text(info["nickname"]), gamekit.Int(info["level"])
-			data["avatar_gained"], data["avatar_total"] = gamekit.Int(info["avatar_card_num_gained"]), gamekit.Int(info["avatar_card_num_total"])
-			data["action_gained"], data["action_total"] = gamekit.Int(info["action_card_num_gained"]), gamekit.Int(info["action_card_num_total"])
+			data["nickname"], data["level"] = app.Text(info["nickname"]), app.Int(info["level"])
+			data["avatar_gained"], data["avatar_total"] = app.Int(info["avatar_card_num_gained"]), app.Int(info["avatar_card_num_total"])
+			data["action_gained"], data["action_total"] = app.Int(info["action_card_num_gained"]), app.Int(info["action_card_num_total"])
 		}
 	}
 	// One list holds both kinds; character cards are the ones with HP.
@@ -119,7 +119,7 @@ func TCGCards(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 	urls := []any{}
 	for _, raw := range cards {
 		card, _ := raw.(map[string]any)
-		if gamekit.Int(card["num"]) > 0 {
+		if app.Int(card["num"]) > 0 {
 			owned = append(owned, card)
 			urls = append(urls, card["image"])
 		}
@@ -128,10 +128,10 @@ func TCGCards(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 	characters, actions := []any{}, []any{}
 	for _, card := range owned {
 		image := resources.URL("mihoyo", card["image"])
-		if gamekit.Int(card["hp"]) > 0 {
+		if app.Int(card["hp"]) > 0 {
 			if data["show_characters"] == true {
-				characters = append(characters, map[string]any{"image": image, "hp": resources.deck(gamekit.Text(card["hp"])),
-					"wins": gamekit.Int(card["proficiency"]), "uses": gamekit.Int(card["use_count"])})
+				characters = append(characters, map[string]any{"image": image, "hp": resources.deck(app.Text(card["hp"])),
+					"wins": app.Int(card["proficiency"]), "uses": app.Int(card["use_count"])})
 			}
 			continue
 		}
@@ -142,10 +142,10 @@ func TCGCards(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 		list, _ := card["action_cost"].([]any)
 		for _, raw := range list {
 			cost, _ := raw.(map[string]any)
-			costs = append(costs, map[string]any{"type": resources.deck(gamekit.Text(cost["cost_type"])), "value": resources.deck(gamekit.Text(cost["cost_value"]))})
+			costs = append(costs, map[string]any{"type": resources.deck(app.Text(cost["cost_type"])), "value": resources.deck(app.Text(cost["cost_value"]))})
 		}
-		actions = append(actions, map[string]any{"image": image, "uses": gamekit.Int(card["use_count"]), "num": gamekit.Int(card["num"]), "costs": costs})
+		actions = append(actions, map[string]any{"image": image, "uses": app.Int(card["use_count"]), "num": app.Int(card["num"]), "costs": costs})
 	}
 	data["characters"], data["actions"] = characters, actions
-	return gamekit.Image{Template: "tcg-cards", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "tcg-cards", Data: data, Resources: resources.List}, true
 }

@@ -3,7 +3,7 @@ package assets
 import (
 	"context"
 	"encoding/json"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 	"math"
 	"os"
 	"testing"
@@ -145,7 +145,7 @@ func TestEveryWeaponAndRequestIsolation(t *testing.T) {
 // calcEngine runs this plugin's embedded scripts exactly as the plugin does.
 func calcEngine(t *testing.T) *reference.Engine {
 	t.Helper()
-	engine, err := reference.New(Kit().Calc)
+	engine, err := reference.New(Load().Calc)
 	if err != nil {
 		t.Fatal(err)
 	}

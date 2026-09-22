@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/assets"
 	"github.com/RayleaBot/plugin-genshin/internal/showcase"
 )
@@ -21,11 +21,11 @@ const enkaFixture = `{"ttl":60,"playerInfo":{"nickname":"旅行者","level":60},
 {"itemId":15501,"weapon":{"level":90,"promoteLevel":6,"affixMap":{"115501":1}},"flat":{"rankLevel":5,"itemType":"ITEM_WEAPON","weaponStats":[{"appendPropId":"FIGHT_PROP_BASE_ATTACK","statValue":674},{"appendPropId":"FIGHT_PROP_CRITICAL","statValue":22.1}]}}]}]}`
 
 func TestParseReadsEnkaLikeMiao(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	profile, err := showcase.Parse(t.Context(), app.Game, app.Catalog, []byte(enkaFixture))
+	profile, err := showcase.Parse(t.Context(), application.Game, application.Catalog, []byte(enkaFixture))
 	if err != nil || profile.Nickname != "旅行者" || len(profile.Panels) != 1 {
 		t.Fatal(profile, err)
 	}
@@ -33,7 +33,7 @@ func TestParseReadsEnkaLikeMiao(t *testing.T) {
 	if panel.Name != "安柏" || panel.Level != 90 || *panel.Promote != 6 || panel.Rank != 3 || panel.Element != "pyro" {
 		t.Fatalf("identity = %+v", panel)
 	}
-	stats := map[string]gamekit.PanelStat{}
+	stats := map[string]app.PanelStat{}
 	for _, stat := range panel.Stats {
 		stats[stat.ID] = stat
 	}
@@ -67,11 +67,11 @@ func TestParseReadsEnkaLikeMiao(t *testing.T) {
 	if !panel.Ranks[2].Active || panel.Ranks[3].Active {
 		t.Fatal("constellations")
 	}
-	if _, err = showcase.Parse(t.Context(), app.Game, app.Catalog, []byte(`{"playerInfo":{"nickname":"x"},"ttl":60}`)); !errors.Is(err, gamekit.ErrShowcaseEmpty) {
+	if _, err = showcase.Parse(t.Context(), application.Game, application.Catalog, []byte(`{"playerInfo":{"nickname":"x"},"ttl":60}`)); !errors.Is(err, app.ErrShowcaseEmpty) {
 		t.Fatal(err)
 	}
-	var failure *gamekit.ShowcaseFailure
-	if _, err = showcase.Parse(t.Context(), app.Game, app.Catalog, []byte(`{"ttl":60}`)); !errors.As(err, &failure) {
+	var failure *app.ShowcaseFailure
+	if _, err = showcase.Parse(t.Context(), application.Game, application.Catalog, []byte(`{"ttl":60}`)); !errors.As(err, &failure) {
 		t.Fatal(err)
 	}
 }

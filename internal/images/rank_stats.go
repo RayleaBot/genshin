@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // rankStatsArtwork maps the images named in the converted stylesheets (miao's
@@ -26,18 +26,18 @@ var rankStatsPercents = []float64{1, 5, 10, 20, 30, 50, 70, 90, 95, 99}
 // character, the calculation and sample size, the ECharts line of the score
 // at each ranking percentile with its value above each point and a guide at
 // each percentile, and a card per percentile with the first three marked.
-func RankStats(context gamekit.ImageContext, image gamekit.RankStatsImage) (gamekit.Image, bool) {
+func RankStats(context app.ImageContext, image app.RankStatsImage) (app.Image, bool) {
 	scores := image.Stats.Scores
 	if len(scores) != len(rankStatsPercents) {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range rankStatsArtwork {
 		resources.Artwork(item[0], item[1], item[2])
 	}
 	// ark's chart: a 1120 x 520 box, grid 30/40/50/80, y up to 1.15 times the
 	// top score in six splits, labels in 万 from 10000.
-	chart := gamekit.EChartsLine(rankStatsPercents, scores, 1120, 520, [4]float64{30, 40, 50, 80}, math.Ceil(slices.Max(scores)*1.15), 6, 0.4, func(value float64) string {
+	chart := app.EChartsLine(rankStatsPercents, scores, 1120, 520, [4]float64{30, 40, 50, 80}, math.Ceil(slices.Max(scores)*1.15), 6, 0.4, func(value float64) string {
 		if value >= 10000 {
 			return strconv.FormatFloat(value/10000, 'f', 1, 64) + "万"
 		}
@@ -65,6 +65,6 @@ func RankStats(context gamekit.ImageContext, image gamekit.RankStatsImage) (game
 	chart["x_name_x"], chart["x_name_y"] = (left+right)/2, bottom+32
 	chart["y_name_x"], chart["y_name_y"] = left-20, top-15
 	now := time.Now().In(time.FixedZone("UTC+8", 8*3600))
-	return gamekit.Image{Template: "rank-stats", Data: map[string]any{"character": image.Character, "title": image.Stats.Title, "total": image.Stats.Total,
+	return app.Image{Template: "rank-stats", Data: map[string]any{"character": image.Character, "title": image.Stats.Title, "total": image.Stats.Total,
 		"time": now.Format("2006-01-02 15:04"), "chart": chart, "cards": cards}, Resources: resources.List}, true
 }

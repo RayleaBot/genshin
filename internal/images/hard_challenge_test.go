@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/assets"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
@@ -23,7 +23,7 @@ func decode(t *testing.T, text string) map[string]any {
 }
 
 func TestHardChallengeFollowsMiao(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,21 +36,21 @@ func TestHardChallengeFollowsMiao(t *testing.T) {
 	data := decode(t, `{"data":[{"schedule":{"start_time":"1788220800","end_time":"1790812800"},"single":`+mode(6, 300, "1")+`,"mp":`+mode(5, 100, "6")+`},
 		{"schedule":{"start_time":"1785600000","end_time":"1788200000"},"single":{"has_data":false},"mp":{"has_data":false}}]}`)
 	asked := []string{}
-	context := gamekit.ImageContext{Game: app.Game, Catalog: app.Catalog, Query: func(operation string, input map[string]any) (gamekit.QueryResult, error) {
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Query: func(operation string, input map[string]any) (app.QueryResult, error) {
 		asked = append(asked, operation)
 		if operation == "genshin.hard_challenge_popularity" {
-			return gamekit.QueryResult{Data: decode(t, `{"avatar_list":[{"avatar_id":10000089}]}`)}, nil
+			return app.QueryResult{Data: decode(t, `{"avatar_list":[{"avatar_id":10000089}]}`)}, nil
 		}
 		// The requester owns Hu Tao at constellation 3 with her staff and a
 		// four-piece set; Furina is not in the reply.
-		return gamekit.QueryResult{Data: decode(t, `{"list":[{"base":{"id":10000046,"level":90,"actived_constellation_num":3},
+		return app.QueryResult{Data: decode(t, `{"list":[{"base":{"id":10000046,"level":90,"actived_constellation_num":3},
 			"weapon":{"id":13501,"name":"护摩之杖","level":90,"affix_level":5,"rarity":5},
 			"relics":[{"id":1,"pos":1,"set":{"name":"炽烈的炎之魔女"}},{"id":2,"pos":2,"set":{"name":"炽烈的炎之魔女"}},{"id":3,"pos":3,"set":{"name":"炽烈的炎之魔女"}},{"id":4,"pos":4,"set":{"name":"炽烈的炎之魔女"}},{"id":5,"pos":5,"set":{"name":"角斗士的终幕礼"}}],
 			"skills":[{"skill_id":10461,"skill_type":1,"level":10},{"skill_id":10462,"skill_type":1,"level":13,"extra_level":3},{"skill_id":10463,"skill_type":1,"level":10}]}]}`)}, nil
 	}}
 
 	// Without a mode the better record wins: single at difficulty 6.
-	image, ok := images.HardChallenge(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := images.HardChallenge(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok || image.Data["difficulty"] != 6 || image.Data["difficulty_name"] != "绝境" || image.Data["second"] != "300" {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -79,12 +79,12 @@ func TestHardChallengeFollowsMiao(t *testing.T) {
 
 	// A cooperative Hu Tao above the requester's constellation is a guest.
 	context.Word = "幽境组队"
-	image, _ = images.HardChallenge(context, gamekit.QueryResult{Data: data})
+	image, _ = images.HardChallenge(context, app.QueryResult{Data: data})
 	if guest := image.Data["battles"].([]any)[0].(map[string]any)["team"].([]any)[0].(map[string]any); guest["cons"] != 6 || guest["weapon"] != nil {
 		t.Errorf("guest = %v", guest)
 	}
 	context.Word = "上期幽境"
-	if _, ok := images.HardChallenge(context, gamekit.QueryResult{Data: data}); ok {
+	if _, ok := images.HardChallenge(context, app.QueryResult{Data: data}); ok {
 		t.Error("an empty last period answers in text like upstream")
 	}
 }

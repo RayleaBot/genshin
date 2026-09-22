@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 func TestNoteFollowsUpstreamWording(t *testing.T) {
@@ -19,7 +19,7 @@ func TestNoteFollowsUpstreamWording(t *testing.T) {
 		"remain_resin_discount_num": json.Number("1"), "resin_discount_num_limit": json.Number("3"),
 		"transformer": map[string]any{"obtained": true, "recovery_time": map[string]any{"Day": json.Number("2"), "Hour": json.Number("3"), "Minute": json.Number("0"), "reached": false}},
 	}
-	image, ok := Note(gamekit.ImageContext{Now: now}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := Note(app.ImageContext{Now: now}, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok || image.Template != "note" || image.Data["day"] != "09-21 22:30 星期一" {
 		t.Fatalf("image = %+v", image)
 	}
@@ -45,7 +45,7 @@ func TestNoteFollowsUpstreamWording(t *testing.T) {
 	if len(image.Resources) != 0 {
 		t.Errorf("resources without downloaded artwork: %v", image.Resources)
 	}
-	if _, ok := Note(gamekit.ImageContext{Now: now}, gamekit.QueryResult{Data: map[string]any{}}); ok {
+	if _, ok := Note(app.ImageContext{Now: now}, app.QueryResult{Data: map[string]any{}}); ok {
 		t.Error("a result without resin should keep the summary card")
 	}
 }

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 // panelArtwork maps the miao images named in the panel stylesheet to their
@@ -64,10 +64,10 @@ var panelSources = map[string]string{"mihoyo": "mysPanel", "enka": "enka", "miho
 // splash with level, constellation, talents and attributes, constellation
 // icons, the artifact rating with every substat, the weapon and artifacts,
 // and the reference damage table.
-func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Image, bool) {
+func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	panel, record := image.Panel, image.Record
 	if record.Name == "" {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := []rayleabot.RenderImageResource{}
 	add := func(id, name string) bool {
@@ -89,13 +89,13 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	talentCons, _ := record.Data["talentCons"].(map[string]any)
 	talentIcon := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp"}
 	for _, key := range []string{"e", "q"} {
-		if cons := gamekit.Int(talentCons[key]); cons > 0 {
+		if cons := app.Int(talentCons[key]); cons > 0 {
 			talentIcon[key] = characterPath + "icons/cons-" + strconv.Itoa(cons) + ".webp"
 		} else {
 			talentIcon[key] = characterPath + "icons/talent-" + key + ".webp"
 		}
 	}
-	levels := gamekit.PanelTalents("genshin", panel, record)
+	levels := app.PanelTalents("genshin", panel, record)
 	talents := []any{}
 	for _, key := range []string{"a", "e", "q"} {
 		level := levels[key]
@@ -122,7 +122,7 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 		}
 		return detail.Weights[key]
 	}
-	stats := map[string]gamekit.PanelStat{}
+	stats := map[string]app.PanelStat{}
 	for _, stat := range panel.Stats {
 		stats[stat.ID] = stat
 	}
@@ -180,7 +180,7 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 		pieces := []any{}
 		for slot := 1; slot <= 5; slot++ {
 			piece, scored := detail.Pieces[slot]
-			var equipment *gamekit.PanelEquipment
+			var equipment *app.PanelEquipment
 			for index := range panel.Equipment {
 				if panel.Equipment[index].Slot == slot {
 					equipment = &panel.Equipment[index]
@@ -223,15 +223,15 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	if image.Change != "" {
 		data["change"] = image.Change
 	}
-	return gamekit.Image{Template: "panel", Data: data, Resources: resources}, true
+	return app.Image{Template: "panel", Data: data, Resources: resources}, true
 }
 
 // weaponData is the weapon card: miao's icon, the base attack and substat,
 // and the refinement text with this refinement's values.
-func weaponData(context gamekit.ImageContext, weapon *gamekit.PanelEquipment, add func(id, name string) bool) map[string]any {
+func weaponData(context app.ImageContext, weapon *app.PanelEquipment, add func(id, name string) bool) map[string]any {
 	result := map[string]any{"name": weapon.Name, "affix": weapon.Refinement, "level": weapon.Level}
 	attrs := []any{}
-	for index, stat := range append(append([]gamekit.PanelStat{}, weapon.Main...), weapon.Sub...) {
+	for index, stat := range append(append([]app.PanelStat{}, weapon.Main...), weapon.Sub...) {
 		title := "攻击"
 		if index > 0 {
 			key := strings.TrimSuffix(stat.Key, "Plus")
@@ -252,7 +252,7 @@ func weaponData(context gamekit.ImageContext, weapon *gamekit.PanelEquipment, ad
 		add("weapon-icon", "resources/meta-gs/weapon/"+entry.Type+"/"+entry.Name+"/icon.webp")
 		affix, _ := entry.Data["affixData"].(map[string]any)
 		values, _ := affix["datas"].(map[string]any)
-		text := gamekit.Text(affix["text"])
+		text := app.Text(affix["text"])
 		// Upstream wraps each refinement value in <nobr>; the template does
 		// the same with these text and value pieces.
 		parts := []any{}
@@ -261,7 +261,7 @@ func weaponData(context gamekit.ImageContext, weapon *gamekit.PanelEquipment, ad
 			series, _ := values[text[match[2]:match[3]]].([]any)
 			value := ""
 			if index := weapon.Refinement - 1; index >= 0 && index < len(series) {
-				value = gamekit.Text(series[index])
+				value = app.Text(series[index])
 			}
 			parts = append(parts, map[string]any{"text": text[last:match[0]], "value": value})
 			last = match[1]
@@ -304,11 +304,11 @@ func comma(value float64) string {
 // abbreviation is the short name upstream uses in command hints and cards:
 // miao's abbreviation when the name has one, otherwise the full name, as
 // miao's character model does.
-func abbreviation(catalog gamekit.Catalog, record reference.Character) string {
+func abbreviation(catalog app.Catalog, record reference.Character) string {
 	if entry, ok := catalog.Get(record.ID); ok && entry.Abbr != "" {
 		return entry.Abbr
 	}
-	if abbr := gamekit.Text(record.Data["abbr"]); abbr != "" {
+	if abbr := app.Text(record.Data["abbr"]); abbr != "" {
 		return abbr
 	}
 	return record.Name

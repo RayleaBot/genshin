@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 // dailyMaterialArtwork maps the images named in the converted stylesheets
@@ -67,9 +67,9 @@ type dailySection struct {
 // the day's week group, each city's talent book with the characters that use
 // it (level, constellation and talents, finished ones last and greyed), then
 // each city's weapon material with the equipped weapons that use it.
-func DailyMaterial(context gamekit.ImageContext, page gamekit.DailyMaterialImage) (gamekit.Image, bool) {
+func DailyMaterial(context app.ImageContext, page app.DailyMaterialImage) (app.Image, bool) {
 	if context.Game.Calc == nil || context.Artwork == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	raw, err := context.Artwork.Open("miao-plugin", "resources/meta-gs/material/data.json")
 	var materials map[string]struct {
@@ -77,9 +77,9 @@ func DailyMaterial(context gamekit.ImageContext, page gamekit.DailyMaterialImage
 		Items map[string]struct{ Star int }
 	}
 	if err != nil || json.Unmarshal(raw, &materials) != nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range dailyMaterialArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -138,10 +138,10 @@ func DailyMaterial(context gamekit.ImageContext, page gamekit.DailyMaterialImage
 		if !ok || record.ID == "" {
 			continue
 		}
-		star := gamekit.Int(record.Data["star"])
+		star := app.Int(record.Data["star"])
 		id, _ := strconv.Atoi(panel.ID)
 		path := "resources/meta-gs/character/" + record.Name + "/imgs/"
-		levels := gamekit.PanelTalents("genshin", panel, record)
+		levels := app.PanelTalents("genshin", panel, record)
 		talents, lowest := []any{}, math.MaxInt
 		for _, key := range []string{"a", "e", "q"} {
 			level := levels[key]
@@ -206,12 +206,12 @@ func DailyMaterial(context gamekit.ImageContext, page gamekit.DailyMaterialImage
 		city := calendarCities[section.city-1]
 		out = append(out, map[string]any{"type": section.kind, "city": city, "city_icon": picture("city-"+city, "resources/common/item/"+city+".png"), "material": section.material, "icons": section.icons, "data": data})
 	}
-	return gamekit.Image{Template: "daily-material", Data: map[string]any{"uid": page.UID, "prefix": context.Game.Prefix, "sections": out}, Resources: resources.List}, true
+	return app.Image{Template: "daily-material", Data: map[string]any{"uid": page.UID, "prefix": context.Game.Prefix, "sections": out}, Resources: resources.List}, true
 }
 
 // dailyPromote is the character's ascension, or the one its level implies
 // as miao's calcPromote reads it.
-func dailyPromote(panel gamekit.CharacterPanel) int {
+func dailyPromote(panel app.CharacterPanel) int {
 	if panel.Promote != nil {
 		return *panel.Promote
 	}

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // wikiArtwork maps the images the talent page's converted stylesheets name
@@ -54,17 +54,17 @@ type wikiTalent struct {
 // Entry draws the reference pages miao draws for a character: 天赋 and 命座
 // as wiki/character-talent, 图鉴 and 资料 as wiki/character-wiki. The pages
 // read miao's character data, which comes with the downloaded miao artwork.
-func Entry(context gamekit.ImageContext, page gamekit.EntryImage) (gamekit.Image, bool) {
+func Entry(context app.ImageContext, page app.EntryImage) (app.Image, bool) {
 	if page.Command != "talent-wiki" && page.Command != "catalog" || page.Entry.Kind != "character" || context.Artwork == nil || traveler(page.Entry.ID) {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	raw, err := context.Artwork.Open("miao-plugin", "resources/meta-gs/character/"+page.Entry.Name+"/data.json")
 	if err != nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	var character wikiCharacter
 	if json.Unmarshal(raw, &character) != nil || len(character.Talent) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	if page.Command == "catalog" {
 		return CharacterWiki(context, character)
@@ -76,8 +76,8 @@ func Entry(context gamekit.ImageContext, page gamekit.EntryImage) (gamekit.Image
 // and description with the level-100 base stats and ascension stat, then
 // either every talent with its description and its Lv6 to Lv13 table and the
 // passives, or the six constellations.
-func CharacterTalent(context gamekit.ImageContext, character wikiCharacter, cons bool) (gamekit.Image, bool) {
-	resources := &gamekit.ImageResources{Context: context}
+func CharacterTalent(context app.ImageContext, character wikiCharacter, cons bool) (app.Image, bool) {
+	resources := &app.ImageResources{Context: context}
 	for _, item := range wikiArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -145,7 +145,7 @@ func CharacterTalent(context gamekit.ImageContext, character wikiCharacter, cons
 		}
 		data["talents"], data["passives"] = talents, passives
 	}
-	return gamekit.Image{Template: "character-talent", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "character-talent", Data: data, Resources: resources.List}, true
 }
 
 // wikiDetail is miao's talent-detail block: the icon, name and description,

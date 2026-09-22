@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 var (
@@ -31,24 +31,24 @@ var abyssFloorArtwork = [][2]string{
 // the floor's stars, then each chamber fought in both halves with its clear
 // time, stars and every character's constellation, level and face. The
 // command word names the floor.
-func AbyssFloor(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func AbyssFloor(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	match := abyssFloorWord.FindStringSubmatch(context.Word)
 	if match == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	number := abyssFloors[match[1]]
 	var floor map[string]any
 	floors, _ := result.Data["floors"].([]any)
 	for _, raw := range floors {
-		if item, _ := raw.(map[string]any); gamekit.Int(item["index"]) == number {
+		if item, _ := raw.(map[string]any); app.Int(item["index"]) == number {
 			floor = item
 		}
 	}
 	// Upstream answers in text while the floor has no record.
 	if floor == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range abyssFloorArtwork {
 		resources.Artwork(item[0], "yunzai-genshin", item[1])
 	}
@@ -66,7 +66,7 @@ func AbyssFloor(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 			avatars, _ := index.Data["avatars"].([]any)
 			for _, raw := range avatars {
 				avatar, _ := raw.(map[string]any)
-				lives[gamekit.Text(avatar["id"])] = gamekit.Int(avatar["actived_constellation_num"])
+				lives[app.Text(avatar["id"])] = app.Int(avatar["actived_constellation_num"])
 			}
 		}
 	}
@@ -85,18 +85,18 @@ func AbyssFloor(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 			list, _ := battle["avatars"].([]any)
 			for _, rawAvatar := range list {
 				avatar, _ := rawAvatar.(map[string]any)
-				id := gamekit.Text(avatar["id"])
-				avatars = append(avatars, map[string]any{"name": abbreviations[id], "life": lives[id], "rarity": gamekit.Text(avatar["rarity"]), "level": gamekit.Text(avatar["level"]),
+				id := app.Text(avatar["id"])
+				avatars = append(avatars, map[string]any{"name": abbreviations[id], "life": lives[id], "rarity": app.Text(avatar["rarity"]), "level": app.Text(avatar["level"]),
 					"icon": resources.Artwork("face-"+id, "miao-plugin", "resources/meta-gs/character/"+names[id]+"/imgs/face.webp")})
 			}
-			halves = append(halves, map[string]any{"index": gamekit.Text(battle["index"]), "avatars": avatars})
+			halves = append(halves, map[string]any{"index": app.Text(battle["index"]), "avatars": avatars})
 		}
 		first, _ := battles[0].(map[string]any)
-		star := gamekit.Int(level["star"])
-		rooms = append(rooms, map[string]any{"index": gamekit.Text(level["index"]), "stars": []any{star >= 1, star >= 2, star >= 3}, "battles": halves,
-			"time": time.Unix(int64(gamekit.Int(first["timestamp"])), 0).In(chinaTime).Format("2006-01-02 15:04:05")})
+		star := app.Int(level["star"])
+		rooms = append(rooms, map[string]any{"index": app.Text(level["index"]), "stars": []any{star >= 1, star >= 2, star >= 3}, "battles": halves,
+			"time": time.Unix(int64(app.Int(first["timestamp"])), 0).In(chinaTime).Format("2006-01-02 15:04:05")})
 	}
-	return gamekit.Image{Template: "abyss-floor", Data: map[string]any{
-		"uid": result.Role.UID, "floor": number, "star": gamekit.Text(floor["star"]), "max_star": gamekit.Text(floor["max_star"]), "rooms": rooms,
+	return app.Image{Template: "abyss-floor", Data: map[string]any{
+		"uid": result.Role.UID, "floor": number, "star": app.Text(floor["star"]), "max_star": app.Text(floor["max_star"]), "rooms": rooms,
 	}, Resources: resources.List}, true
 }

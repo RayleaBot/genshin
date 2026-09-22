@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/assets"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
 func TestAbyssFloorFollowsYunzai(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,10 +19,10 @@ func TestAbyssFloorFollowsYunzai(t *testing.T) {
 	}
 	data := decode(t, `{"floors":[{"index":11,"star":9,"max_star":9,"levels":[]},{"index":12,"star":7,"max_star":9,"levels":[
 		{"index":1,"star":3,"battles":[`+half("1")+`,`+half("2")+`]},{"index":2,"star":2,"battles":[`+half("1")+`,`+half("2")+`]},{"index":3,"star":0,"battles":[`+half("1")+`]}]}]}`)
-	context := gamekit.ImageContext{Game: app.Game, Word: "上期深渊十二层", Query: func(string, map[string]any) (gamekit.QueryResult, error) {
-		return gamekit.QueryResult{Data: decode(t, `{"avatars":[{"id":10000046,"actived_constellation_num":1}]}`)}, nil
+	context := app.ImageContext{Game: application.Game, Word: "上期深渊十二层", Query: func(string, map[string]any) (app.QueryResult, error) {
+		return app.QueryResult{Data: decode(t, `{"avatars":[{"id":10000046,"actived_constellation_num":1}]}`)}, nil
 	}}
-	image, ok := images.AbyssFloor(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := images.AbyssFloor(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok || image.Data["floor"] != 12 || image.Data["star"] != "7" {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -37,7 +37,7 @@ func TestAbyssFloorFollowsYunzai(t *testing.T) {
 		t.Errorf("avatars = %v", avatars)
 	}
 	context.Word = "深渊十层"
-	if _, ok := images.AbyssFloor(context, gamekit.QueryResult{Data: data}); ok {
+	if _, ok := images.AbyssFloor(context, app.QueryResult{Data: data}); ok {
 		t.Error("a floor without record answers in text like upstream")
 	}
 	if images.Queries()["genshin.abyss_floor"](time.Now()) != "genshin.abyss" {

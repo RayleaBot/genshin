@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // characterWikiArtwork maps the images the converted stylesheets (miao's
@@ -153,7 +153,7 @@ func wikiFetch(url string) map[string]any {
 
 // wikiStats returns a character's lelaer entry and yshelper holding rate
 // (negative when unknown), fetching both at most once an hour.
-func wikiStats(name string, catalog gamekit.Catalog) (map[string]any, float64) {
+func wikiStats(name string, catalog app.Catalog) (map[string]any, float64) {
 	wikiStatistics.Lock()
 	defer wikiStatistics.Unlock()
 	if wikiStatistics.roles == nil || time.Since(wikiStatistics.fetched) > time.Hour {
@@ -162,7 +162,7 @@ func wikiStats(name string, catalog gamekit.Catalog) (map[string]any, float64) {
 			list, _ := data["result"].([]any)
 			for _, raw := range list {
 				role, _ := raw.(map[string]any)
-				if entry, ok := catalog.Resolve(gamekit.Text(role["role"]), "character", nil); ok {
+				if entry, ok := catalog.Resolve(app.Text(role["role"]), "character", nil); ok {
 					roles[entry.Name] = role
 				}
 			}
@@ -171,8 +171,8 @@ func wikiStats(name string, catalog gamekit.Catalog) (map[string]any, float64) {
 			list, _ := data["has_list"].([]any)
 			for _, raw := range list {
 				role, _ := raw.(map[string]any)
-				if entry, ok := catalog.Resolve(gamekit.Text(role["name"]), "character", nil); ok {
-					rate, _ := strconv.ParseFloat(gamekit.Text(role["own_rate"]), 64)
+				if entry, ok := catalog.Resolve(app.Text(role["name"]), "character", nil); ok {
+					rate, _ := strconv.ParseFloat(app.Text(role["own_rate"]), 64)
 					owned[entry.Name] = rate / 100
 				}
 			}
@@ -200,8 +200,8 @@ var wikiSetPart = regexp.MustCompile(`^(.*?)(4|2)$`)
 // base stats and ascension stat, the ascension and talent materials, then the
 // public statistics: average level and constellation with each
 // constellation's share, and the weapons and artifact sets used most.
-func CharacterWiki(context gamekit.ImageContext, character wikiCharacter) (gamekit.Image, bool) {
-	resources := &gamekit.ImageResources{Context: context}
+func CharacterWiki(context app.ImageContext, character wikiCharacter) (app.Image, bool) {
+	resources := &app.ImageResources{Context: context}
 	for _, item := range characterWikiArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -248,11 +248,11 @@ func CharacterWiki(context gamekit.ImageContext, character wikiCharacter) (gamek
 	data["materials"] = materials
 	role, owned := wikiStats(character.Name, context.Catalog)
 	if role != nil {
-		level, _ := strconv.ParseFloat(gamekit.Text(role["avg_level"]), 64)
-		cons, _ := strconv.ParseFloat(gamekit.Text(role["avg_class"]), 64)
+		level, _ := strconv.ParseFloat(app.Text(role["avg_level"]), 64)
+		cons, _ := strconv.ParseFloat(app.Text(role["avg_class"]), 64)
 		shares := []any{}
 		for index := 0; index <= 6; index++ {
-			share, _ := strconv.ParseFloat(gamekit.Text(role["c"+strconv.Itoa(index)]), 64)
+			share, _ := strconv.ParseFloat(app.Text(role["c"+strconv.Itoa(index)]), 64)
 			icon := "cons0"
 			if index > 0 {
 				icon = miao(base + "icons/cons-" + strconv.Itoa(index) + ".webp")
@@ -265,7 +265,7 @@ func CharacterWiki(context gamekit.ImageContext, character wikiCharacter) (gamek
 		data["weapons"] = wikiWeaponUsage(context, miao, role["weapon"])
 		data["artis"] = wikiSetUsage(context, miao, role["artifacts_set"])
 	}
-	return gamekit.Image{Template: "character-wiki", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "character-wiki", Data: data, Resources: resources.List}, true
 }
 
 type wikiMaterialEntry struct {
@@ -276,7 +276,7 @@ type wikiMaterialEntry struct {
 // wikiMaterial finds a material in miao's material data, as a material of its
 // own or a tier of one, with miao's label: the city and book for talent books,
 // the abbreviation for others.
-func wikiMaterial(context gamekit.ImageContext, name string) (wikiMaterialEntry, bool) {
+func wikiMaterial(context app.ImageContext, name string) (wikiMaterialEntry, bool) {
 	if name == "" || context.Artwork == nil {
 		return wikiMaterialEntry{}, false
 	}
@@ -325,7 +325,7 @@ func wikiMaterial(context gamekit.ImageContext, name string) (wikiMaterialEntry,
 
 // wikiWeaponUsage is miao's getWeaponsData: the weapons by usage, each with
 // its icon, rarity and short name.
-func wikiWeaponUsage(context gamekit.ImageContext, miao func(string) string, raw any) []any {
+func wikiWeaponUsage(context app.ImageContext, miao func(string) string, raw any) []any {
 	list, _ := raw.([]any)
 	type usage struct {
 		item  map[string]any
@@ -334,8 +334,8 @@ func wikiWeaponUsage(context gamekit.ImageContext, miao func(string) string, raw
 	usages := []usage{}
 	for _, value := range list {
 		item, _ := value.(map[string]any)
-		name := gamekit.Text(item["name"])
-		rate, _ := strconv.ParseFloat(gamekit.Text(item["rate"]), 64)
+		name := app.Text(item["name"])
+		rate, _ := strconv.ParseFloat(app.Text(item["rate"]), 64)
 		weapon := map[string]any{"name": name, "abbr": name}
 		if entry, ok := context.Catalog.Resolve(name, "weapon", nil); ok {
 			weapon["star"] = entry.Rarity
@@ -362,7 +362,7 @@ func wikiWeaponUsage(context gamekit.ImageContext, miao func(string) string, raw
 
 // wikiSetUsage is miao's getArtisData: the set combinations by usage, each
 // with its sets' pictures and abbreviations.
-func wikiSetUsage(context gamekit.ImageContext, miao func(string) string, raw any) []any {
+func wikiSetUsage(context app.ImageContext, miao func(string) string, raw any) []any {
 	list, _ := raw.([]any)
 	type usage struct {
 		item  map[string]any
@@ -371,9 +371,9 @@ func wikiSetUsage(context gamekit.ImageContext, miao func(string) string, raw an
 	usages := []usage{}
 	for _, value := range list {
 		item, _ := value.(map[string]any)
-		rate, _ := strconv.ParseFloat(gamekit.Text(item["rate"]), 64)
+		rate, _ := strconv.ParseFloat(app.Text(item["rate"]), 64)
 		images, titles := []any{}, []string{}
-		for _, part := range strings.Split(gamekit.Text(item["name"]), "+") {
+		for _, part := range strings.Split(app.Text(item["name"]), "+") {
 			if match := wikiSetPart.FindStringSubmatch(part); match != nil {
 				abbr := context.Catalog.SetAbbrs[match[1]]
 				if abbr == "" {

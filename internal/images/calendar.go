@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 // Miao's calendar skips these announcements by ID and by title.
@@ -102,16 +102,16 @@ type calendarItem struct {
 // layout. Miao also reads corrected times from its own HTTP service; this
 // plugin reads only the official HTTPS announcements, so those corrections
 // are not applied.
-func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gamekit.Image, bool) {
+func Calendar(context app.ImageContext, calendar app.CalendarImage) (app.Image, bool) {
 	if len(calendar.Announcements.Groups) < 2 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	now := context.Now.In(chinaTime)
 	times := calendarTimes(calendar.Announcements.Contents)
 	first := time.Date(now.Year(), now.Month(), now.Day()-6, 0, 0, 0, 0, chinaTime)
 	last := time.Date(now.Year(), now.Month(), now.Day()+6, 23, 59, 59, 0, chinaTime)
 	total := float64(last.Sub(first))
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range calendarArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -124,7 +124,7 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	}
 	resources.Prefetch("mihoyo", urls...)
 	place := func(ann map[string]any, target *[]calendarItem, act bool, kind string) {
-		id, title := gamekit.Text(ann["ann_id"]), gamekit.Text(ann["title"])
+		id, title := app.Text(ann["ann_id"]), app.Text(ann["title"])
 		if slices.Contains(calendarIgnoreIDs, id) || calendarIgnore.MatchString(title) {
 			return
 		}
@@ -160,8 +160,8 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 			item.kind = "pass"
 		}
 		window := times[id]
-		sDate := calendarDate(window[0], gamekit.Text(ann["start_time"]))
-		eDate := calendarDate(window[1], gamekit.Text(ann["end_time"]))
+		sDate := calendarDate(window[0], app.Text(ann["start_time"]))
+		eDate := calendarDate(window[1], app.Text(ann["end_time"]))
 		sTime, eTime := sDate, eDate
 		if sTime.Before(first) {
 			sTime = first
@@ -190,10 +190,10 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 		if sDate.After(last) || eDate.Before(first) {
 			return
 		}
-		if act && gamekit.Text(ann["banner"]) != "" {
+		if act && app.Text(ann["banner"]) != "" {
 			item.banner = resources.URL("mihoyo", ann["banner"])
 		}
-		if gamekit.Text(ann["tag_icon"]) != "" {
+		if app.Text(ann["tag_icon"]) != "" {
 			item.icon = resources.URL("mihoyo", ann["tag_icon"])
 		}
 		if item.kind == "activity" || item.kind == "normal" {
@@ -265,7 +265,7 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	if strings.HasSuffix(calendar.Word, "日历列表") || strings.HasSuffix(calendar.Word, "活动") {
 		mode, template = "list", "calendar-list"
 	}
-	return gamekit.Image{Template: template, Data: map[string]any{
+	return app.Image{Template: template, Data: map[string]any{
 		"mode": mode, "months": months, "births": births, "list_class": fmt.Sprintf("char-%d-%d char-num-%d", characterCount, characterOld, most),
 		"rows": rows, "abyss": abyssViews, "now_left": fmt.Sprintf("%.4f", float64(now.Sub(first))/total*100),
 		"now_time": now.Format("2006-01-02 15:04"), "talents": calendarTalents(context, resources, now),
@@ -311,7 +311,7 @@ func calendarTimes(contents []any) map[string][2]string {
 	versions := map[string]string{}
 	for _, raw := range contents {
 		ann, _ := raw.(map[string]any)
-		title, content := gamekit.Text(ann["title"]), gamekit.Text(ann["content"])
+		title, content := app.Text(ann["title"]), app.Text(ann["content"])
 		match := calendarVersionTitle.FindStringSubmatch(title)
 		if match == nil {
 			continue
@@ -327,11 +327,11 @@ func calendarTimes(contents []any) map[string][2]string {
 	times := map[string][2]string{}
 	for _, raw := range contents {
 		ann, _ := raw.(map[string]any)
-		title := gamekit.Text(ann["title"])
+		title := app.Text(ann["title"])
 		if calendarIgnore.MatchString(title) {
 			continue
 		}
-		section := calendarSection.FindStringSubmatch(calendarTags.ReplaceAllString(gamekit.Text(ann["content"]), ""))
+		section := calendarSection.FindStringSubmatch(calendarTags.ReplaceAllString(app.Text(ann["content"]), ""))
 		if section == nil || section[1] == "" {
 			continue
 		}
@@ -367,7 +367,7 @@ func calendarTimes(contents []any) map[string][2]string {
 			span = []string{match[1], "2099/01/01 00:00:00"}
 		}
 		if len(span) == 2 {
-			times[gamekit.Text(ann["ann_id"])] = [2]string{strings.ReplaceAll(strings.TrimSpace(span[0]), "/", "-"), strings.ReplaceAll(strings.TrimSpace(span[1]), "/", "-")}
+			times[app.Text(ann["ann_id"])] = [2]string{strings.ReplaceAll(strings.TrimSpace(span[0]), "/", "-"), strings.ReplaceAll(strings.TrimSpace(span[1]), "/", "-")}
 		}
 	}
 	return times
@@ -452,9 +452,9 @@ func calendarAbyss(now, first, last time.Time) []calendarPeriod {
 
 // calendarDays is the day header and each day's birthdays: the days grouped
 // by month, the characters born on each day, and the most born on one day.
-func calendarDays(context gamekit.ImageContext, resources *gamekit.ImageResources, now, first time.Time) ([]any, map[string]any, int) {
-	born := map[string][]gamekit.Entry{}
-	entries := map[string]gamekit.Entry{}
+func calendarDays(context app.ImageContext, resources *app.ImageResources, now, first time.Time) ([]any, map[string]any, int) {
+	born := map[string][]app.Entry{}
+	entries := map[string]app.Entry{}
 	for _, entry := range context.Catalog.Entries {
 		if entry.Kind == "character" {
 			entries[entry.ID] = entry
@@ -481,7 +481,7 @@ func calendarDays(context gamekit.ImageContext, resources *gamekit.ImageResource
 		characters := []any{}
 		list := born[key]
 		// Miao lists characters by ID.
-		slices.SortFunc(list, func(a, b gamekit.Entry) int {
+		slices.SortFunc(list, func(a, b app.Entry) int {
 			return strings.Compare(fmt.Sprintf("%012s", a.ID), fmt.Sprintf("%012s", b.ID))
 		})
 		for _, entry := range list {
@@ -506,7 +506,7 @@ func calendarDays(context gamekit.ImageContext, resources *gamekit.ImageResource
 // calendarTalents are miao's getCharData talent books: those farmable today
 // (the day turns at 04:00; Sunday has them all), by city, each with its
 // characters, rarest and newest first, and their weekly boss material.
-func calendarTalents(context gamekit.ImageContext, resources *gamekit.ImageResources, now time.Time) []any {
+func calendarTalents(context app.ImageContext, resources *app.ImageResources, now time.Time) []any {
 	day := now
 	if day.Hour() < 4 {
 		day = day.AddDate(0, 0, -1)
@@ -515,7 +515,7 @@ func calendarTalents(context gamekit.ImageContext, resources *gamekit.ImageResou
 	type book struct {
 		abbr, city string
 		cid        int
-		chars      []gamekit.Entry
+		chars      []app.Entry
 	}
 	books := []*book{}
 	byName := map[string]*book{}
@@ -541,7 +541,7 @@ func calendarTalents(context gamekit.ImageContext, resources *gamekit.ImageResou
 	slices.SortStableFunc(books, func(a, b *book) int { return a.cid - b.cid })
 	out := []any{}
 	for _, talent := range books {
-		slices.SortStableFunc(talent.chars, func(a, b gamekit.Entry) int {
+		slices.SortStableFunc(talent.chars, func(a, b app.Entry) int {
 			if a.Rarity != b.Rarity {
 				return b.Rarity - a.Rarity
 			}

@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 // Source is Enka's Genshin Impact API.
-var Source = gamekit.ShowcaseSource{Name: "Enka", URL: func(uid string) string { return "https://enka.network/api/uid/" + uid }, Parse: Parse}
+var Source = app.ShowcaseSource{Name: "Enka", URL: func(uid string) string { return "https://enka.network/api/uid/" + uid }, Parse: Parse}
 
 type enkaAnswer struct {
 	TTL        int `json:"ttl"`
@@ -106,30 +106,30 @@ var panelStats = []struct {
 func percent(value float64) string { return strconv.FormatFloat(value, 'f', 1, 64) + "%" }
 func flat(value float64) string    { return strconv.FormatFloat(math.Round(value), 'f', 0, 64) }
 
-func equipmentStat(stat enkaStat) (gamekit.PanelStat, bool) {
+func equipmentStat(stat enkaStat) (app.PanelStat, bool) {
 	name := stat.MainPropID + stat.AppendPropID
 	prop, ok := fightProps[name]
 	if !ok {
-		return gamekit.PanelStat{}, false
+		return app.PanelStat{}, false
 	}
 	value := flat(stat.StatValue)
 	if prop.percent {
 		value = percent(stat.StatValue)
 	}
-	return gamekit.PanelStat{ID: prop.id, Key: statKeys[prop.id], Name: prop.name, Value: value}, true
+	return app.PanelStat{ID: prop.id, Key: statKeys[prop.id], Name: prop.name, Value: value}, true
 }
 
 // Parse reads Enka's answer the way miao's EnkaApi and EnkaData do: every
 // character with details and the weapon, artifacts, talents and
 // constellations it shows, with the final properties Enka reports.
-func Parse(_ context.Context, game gamekit.Game, catalog gamekit.Catalog, raw []byte) (gamekit.ShowcaseProfile, error) {
+func Parse(_ context.Context, game app.Game, catalog app.Catalog, raw []byte) (app.ShowcaseProfile, error) {
 	var answer enkaAnswer
 	if err := json.Unmarshal(raw, &answer); err != nil || answer.PlayerInfo == nil {
-		return gamekit.ShowcaseProfile{}, &gamekit.ShowcaseFailure{Status: 200}
+		return app.ShowcaseProfile{}, &app.ShowcaseFailure{Status: 200}
 	}
-	profile := gamekit.ShowcaseProfile{Nickname: answer.PlayerInfo.Nickname, Level: answer.PlayerInfo.Level, TTL: time.Duration(answer.TTL) * time.Second}
+	profile := app.ShowcaseProfile{Nickname: answer.PlayerInfo.Nickname, Level: answer.PlayerInfo.Level, TTL: time.Duration(answer.TTL) * time.Second}
 	if len(answer.AvatarInfoList) == 0 || answer.AvatarInfoList[0].PropMap == nil {
-		return profile, gamekit.ErrShowcaseEmpty
+		return profile, app.ErrShowcaseEmpty
 	}
 	sets := map[string]string{}
 	for id, set := range catalog.ArtifactSets {
@@ -146,23 +146,23 @@ func Parse(_ context.Context, game gamekit.Game, catalog gamekit.Catalog, raw []
 	return profile, nil
 }
 
-func parseAvatar(game gamekit.Game, catalog gamekit.Catalog, sets map[string]string, avatar enkaAvatar) (gamekit.CharacterPanel, bool) {
+func parseAvatar(game app.Game, catalog app.Catalog, sets map[string]string, avatar enkaAvatar) (app.CharacterPanel, bool) {
 	id := strconv.Itoa(avatar.AvatarID)
 	entry, ok := catalog.Get(id)
 	record, found := calcRecord(game, id, avatar.SkillLevelMap)
 	if !ok || !found {
-		return gamekit.CharacterPanel{}, false
+		return app.CharacterPanel{}, false
 	}
 	level, _ := strconv.Atoi(text(avatar.PropMap["4001"].Val))
 	promote, _ := strconv.Atoi(text(avatar.PropMap["1002"].Val))
-	panel := gamekit.CharacterPanel{ID: id, Name: entry.Name, Level: level, Promote: &promote, Rank: len(avatar.TalentIDList), RankKnown: true, Element: record.Element, Source: "enka",
-		WeaponKnown: true, EquipmentKnown: true, Stats: []gamekit.PanelStat{}, Equipment: []gamekit.PanelEquipment{}, Skills: []gamekit.PanelSkill{}, Ranks: []gamekit.PanelSkill{}}
+	panel := app.CharacterPanel{ID: id, Name: entry.Name, Level: level, Promote: &promote, Rank: len(avatar.TalentIDList), RankKnown: true, Element: record.Element, Source: "enka",
+		WeaponKnown: true, EquipmentKnown: true, Stats: []app.PanelStat{}, Equipment: []app.PanelEquipment{}, Skills: []app.PanelSkill{}, Ranks: []app.PanelSkill{}}
 	for _, stat := range panelStats {
 		final, ok := avatar.FightPropMap[stat.id]
 		if !ok {
 			continue
 		}
-		item := gamekit.PanelStat{ID: stat.id, Key: statKeys[stat.id], Name: stat.name}
+		item := app.PanelStat{ID: stat.id, Key: statKeys[stat.id], Name: stat.name}
 		if stat.percent {
 			item.Value, item.Base, item.Added = percent(final*100), percent(stat.fixedBase*100), percent((final-stat.fixedBase)*100)
 		} else {
@@ -180,7 +180,7 @@ func parseAvatar(game gamekit.Game, catalog gamekit.Catalog, sets map[string]str
 		switch {
 		case equip.Weapon != nil:
 			weaponID := strconv.Itoa(equip.ItemID)
-			w := gamekit.PanelEquipment{ID: weaponID, Level: equip.Weapon.Level, Promote: &equip.Weapon.PromoteLevel, Rarity: strconv.Itoa(equip.Flat.RankLevel), Refinement: 1, Main: []gamekit.PanelStat{}, Sub: []gamekit.PanelStat{}, Complete: true}
+			w := app.PanelEquipment{ID: weaponID, Level: equip.Weapon.Level, Promote: &equip.Weapon.PromoteLevel, Rarity: strconv.Itoa(equip.Flat.RankLevel), Refinement: 1, Main: []app.PanelStat{}, Sub: []app.PanelStat{}, Complete: true}
 			if weapon, ok := catalog.Get(weaponID); ok {
 				w.Name = weapon.Name
 			}
@@ -207,7 +207,7 @@ func parseAvatar(game gamekit.Game, catalog gamekit.Catalog, sets map[string]str
 			if slot == 0 || set == "" || equip.Flat.ReliquaryMainstat == nil {
 				continue
 			}
-			piece := gamekit.PanelEquipment{ID: id, Slot: slot, Level: min(20, equip.Reliquary.Level-1), Rarity: strconv.Itoa(equip.Flat.RankLevel), SetName: set, Main: []gamekit.PanelStat{}, Sub: []gamekit.PanelStat{}, Complete: true}
+			piece := app.PanelEquipment{ID: id, Slot: slot, Level: min(20, equip.Reliquary.Level-1), Rarity: strconv.Itoa(equip.Flat.RankLevel), SetName: set, Main: []app.PanelStat{}, Sub: []app.PanelStat{}, Complete: true}
 			if names := catalog.ArtifactPieces[set]; slot <= len(names) {
 				piece.Name = names[slot-1]
 			}
@@ -230,14 +230,14 @@ func parseAvatar(game gamekit.Game, catalog gamekit.Catalog, sets map[string]str
 			panel.Equipment = append(panel.Equipment, piece)
 		}
 	}
-	slices.SortFunc(panel.Equipment, func(a, b gamekit.PanelEquipment) int { return a.Slot - b.Slot })
+	slices.SortFunc(panel.Equipment, func(a, b app.PanelEquipment) int { return a.Slot - b.Slot })
 	panel.Skills, panel.Ranks = talents(record, avatar, panel.Rank)
 	return panel, true
 }
 
 // calcRecord is the character's upstream record; the Traveler's element is
 // the one whose talents the showcase lists.
-func calcRecord(game gamekit.Game, id string, skills map[string]int) (reference.Character, bool) {
+func calcRecord(game app.Game, id string, skills map[string]int) (reference.Character, bool) {
 	if game.Calc == nil {
 		return reference.Character{}, false
 	}
@@ -261,11 +261,11 @@ func calcRecord(game gamekit.Game, id string, skills map[string]int) (reference.
 // talents are the character's normal attack, skill and burst with the three
 // levels a constellation adds, as miao's talentCons gives them, and its six
 // constellations.
-func talents(record reference.Character, avatar enkaAvatar, rank int) ([]gamekit.PanelSkill, []gamekit.PanelSkill) {
+func talents(record reference.Character, avatar enkaAvatar, rank int) ([]app.PanelSkill, []app.PanelSkill) {
 	ids := asMap(record.Data["talentId"])
 	cons := asMap(record.Data["talentCons"])
 	names := asMap(record.Data["talent"])
-	skills := []gamekit.PanelSkill{}
+	skills := []app.PanelSkill{}
 	keys := []string{}
 	for key := range avatar.SkillLevelMap {
 		keys = append(keys, key)
@@ -276,22 +276,22 @@ func talents(record reference.Character, avatar enkaAvatar, rank int) ([]gamekit
 		if talent == "" {
 			continue
 		}
-		skill := gamekit.PanelSkill{HasSkillType: true, SkillType: 1, ID: key, Level: avatar.SkillLevelMap[key], Active: true, Name: text(asMap(names[talent])["name"])}
+		skill := app.PanelSkill{HasSkillType: true, SkillType: 1, ID: key, Level: avatar.SkillLevelMap[key], Active: true, Name: text(asMap(names[talent])["name"])}
 		if need, _ := strconv.Atoi(text(cons[talent])); need > 0 && rank >= need {
 			skill.ExtraLevel = 3
 			skill.Level += 3
 		}
 		skills = append(skills, skill)
 	}
-	slices.SortFunc(skills, func(a, b gamekit.PanelSkill) int {
-		order := func(s gamekit.PanelSkill) int { return strings.Index("aeq", text(ids[s.ID])) }
+	slices.SortFunc(skills, func(a, b app.PanelSkill) int {
+		order := func(s app.PanelSkill) int { return strings.Index("aeq", text(ids[s.ID])) }
 		return order(a) - order(b)
 	})
-	ranks := []gamekit.PanelSkill{}
+	ranks := []app.PanelSkill{}
 	constellations := asMap(record.Data["cons"])
 	for index := 1; index <= 6; index++ {
 		item := asMap(constellations[strconv.Itoa(index)])
-		ranks = append(ranks, gamekit.PanelSkill{Name: text(item["name"]), Active: index <= rank, Description: text(item["desc"])})
+		ranks = append(ranks, app.PanelSkill{Name: text(item["name"]), Active: index <= rank, Description: text(item["desc"])})
 	}
 	return skills, ranks
 }

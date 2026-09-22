@@ -3,15 +3,15 @@ package images_test
 import (
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
 func TestHelpFollowsMiao(t *testing.T) {
-	help := gamekit.HelpImage{Title: "原神帮助", Subtitle: "插件 1.0.0", Groups: []gamekit.HelpGroup{{Title: "信息查询", Commands: []gamekit.HelpCommand{
+	help := app.HelpImage{Title: "原神帮助", Subtitle: "插件 1.0.0", Groups: []app.HelpGroup{{Title: "信息查询", Commands: []app.HelpCommand{
 		{ID: "note", Usage: "#体力", Description: "实时便笺"}, {ID: "characters", Usage: "#角色", Description: "角色列表"},
 		{ID: "training", Usage: "#练度统计", Description: "练度"}, {ID: "tcg", Usage: "#七圣", Description: "七圣召唤"}}}}}
-	image, ok := images.Help(gamekit.ImageContext{}, help)
+	image, ok := images.Help(app.ImageContext{}, help)
 	if !ok || image.Data["title"] != "原神帮助" {
 		t.Fatalf("image = %v", image.Data)
 	}

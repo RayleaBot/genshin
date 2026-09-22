@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/gacha"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/gacha"
 )
 
 // gachaWords are stripped from the command word before picking the pool, as
@@ -94,8 +94,8 @@ var gachaAllPools = [][2]string{{"301", "角色"}, {"302", "武器"}, {"500", "�
 // gacha-log's summary lines for the pool type and every five-star with its
 // pull count, or, for 全部记录, gacha-all-log's block for every pool with
 // records, each five-star row padded to the longest.
-func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Image, bool) {
-	resources := &gamekit.ImageResources{Context: context}
+func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
+	resources := &app.ImageResources{Context: context}
 	for _, item := range gachaArtwork {
 		resources.Artwork(item[0], item[1], item[2])
 	}
@@ -109,7 +109,7 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 			}
 		}
 		if len(logs) == 0 {
-			return gamekit.Image{}, false
+			return app.Image{}, false
 		}
 		// Upstream reads the label colour, the five-star period and the UP
 		// badges' pool from the first block for every block.
@@ -128,20 +128,20 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 			log["cards"] = cards
 			list = append(list, log)
 		}
-		return gamekit.Image{Template: "gacha-all", Data: map[string]any{"pool": first["pool"], "first_time": first["first_time"], "last_time": first["last_time"], "logs": list},
+		return app.Image{Template: "gacha-all", Data: map[string]any{"pool": first["pool"], "first_time": first["first_time"], "last_time": first["last_time"], "logs": list},
 			Resources: resources.List}, true
 	}
 	pool, poolName := gachaPool(image.Word)
 	log, ok := gachaLog(context, image, resources, pool, poolName)
 	if !ok {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	return gamekit.Image{Template: "gacha", Data: log, Resources: resources.List}, true
+	return app.Image{Template: "gacha", Data: log, Resources: resources.List}, true
 }
 
 // gachaLog is upstream's analyse and randData for one pool: its pull count,
 // summary lines and five-stars; false when the pool has no records.
-func gachaLog(context gamekit.ImageContext, image gamekit.GachaImage, resources *gamekit.ImageResources, pool, poolName string) (map[string]any, bool) {
+func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.ImageResources, pool, poolName string) (map[string]any, bool) {
 	records := []gacha.Record{}
 	for _, record := range image.Archive.Records {
 		if gacha.Pool("genshin", record.GachaType) == pool {

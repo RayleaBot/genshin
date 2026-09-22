@@ -3,12 +3,12 @@ package images_test
 import (
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
 func TestUIDListFollowsYunzai(t *testing.T) {
-	image, ok := images.UIDList(gamekit.ImageContext{Game: gamekit.Game{Prefix: "#"}}, gamekit.UIDListImage{Entries: []gamekit.UIDListEntry{
+	image, ok := images.UIDList(app.ImageContext{Game: app.Game{Prefix: "#"}}, app.UIDListImage{Entries: []app.UIDListEntry{
 		{UID: "100000001", Account: true, Nickname: "旅行者", Level: 60},
 		{UID: "100000002", Active: true, Nickname: "只有昵称"},
 	}})

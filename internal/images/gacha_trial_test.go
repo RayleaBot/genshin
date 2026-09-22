@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/artwork"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/artwork"
 )
 
 func TestGachaTrialOrdersDrawsLikeYunzai(t *testing.T) {
@@ -24,20 +24,20 @@ func TestGachaTrialOrdersDrawsLikeYunzai(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	catalog := gamekit.Catalog{Entries: []gamekit.Entry{
+	catalog := app.Catalog{Entries: []app.Entry{
 		{ID: "10000052", Name: "雷电将军", Abbr: "雷神", Kind: "character", Element: "雷"},
 		{ID: "10000074", Name: "莱依拉", Aliases: []string{"莱伊拉"}, Kind: "character", Element: "冰"},
 		{ID: "14414", Name: "流浪的晚星", Aliases: []string{"流浪晚星"}, Kind: "weapon"},
 	}}
-	context := gamekit.ImageContext{Artwork: &artwork.Store{Root: root}, Catalog: catalog}
-	draws := []gamekit.SimulationDraw{
+	context := app.ImageContext{Artwork: &artwork.Store{Root: root}, Catalog: catalog}
+	draws := []app.SimulationDraw{
 		{Name: "弹弓", Rarity: 3, Item: "weapon"},
 		{Name: "流浪晚星", Rarity: 4, Item: "weapon"},
 		{Name: "莱伊拉", Rarity: 4, Item: "character"},
 		{Name: "莱依拉", Rarity: 4, Item: "character"},
 		{Name: "雷电将军", Rarity: 5, Item: "character", Interval: 73, Guaranteed: true},
 	}
-	image, ok := GachaTrial(context, gamekit.SimulationImage{Selection: gamekit.SimulationSelection{Kind: "character", Featured: "雷电将军"}, Draws: draws, Pity: gamekit.SimulationPity{Five: 0}})
+	image, ok := GachaTrial(context, app.SimulationImage{Selection: app.SimulationSelection{Kind: "character", Featured: "雷电将军"}, Draws: draws, Pity: app.SimulationPity{Five: 0}})
 	if !ok {
 		t.Fatal("no image")
 	}
@@ -61,7 +61,7 @@ func TestGachaTrialOrdersDrawsLikeYunzai(t *testing.T) {
 	}
 	// Without a five-star the corner shows the pity count; the weapon pool
 	// shows the Epitomized Path instead of the pool.
-	image, _ = GachaTrial(context, gamekit.SimulationImage{Selection: gamekit.SimulationSelection{Kind: "weapon", FateTarget: "流浪晚星"}, Draws: draws[:1], Pity: gamekit.SimulationPity{Five: 12, Fate: 1}})
+	image, _ = GachaTrial(context, app.SimulationImage{Selection: app.SimulationSelection{Kind: "weapon", FateTarget: "流浪晚星"}, Draws: draws[:1], Pity: app.SimulationPity{Five: 12, Fate: 1}})
 	if image.Data["info"] != "累计「12抽」" || image.Data["bing"] != "流浪的晚星" || image.Data["life"] != 1 || image.Data["pool"] != nil {
 		t.Errorf("weapon header = %v", image.Data)
 	}

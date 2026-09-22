@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
 var (
@@ -35,7 +35,7 @@ var combatArtwork = [][2]string{
 
 // officialImage caches an image from an official URL on demand, the way
 // upstream's page loads it, and returns its resource ID.
-func officialImage(context gamekit.ImageContext, add func(rayleabot.RenderImageResource), id, url string) string {
+func officialImage(context app.ImageContext, add func(rayleabot.RenderImageResource), id, url string) string {
 	resource, ok := context.FetchURLResource(id, "mihoyo", url)
 	if !ok {
 		return ""
@@ -48,16 +48,16 @@ func officialImage(context gamekit.ImageContext, add func(rayleabot.RenderImageR
 // the traveler card, the difficulty and best act with star medals, flowers,
 // audience support and support lends, then every act with its cast, buffs
 // and chosen cards.
-func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Combat(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["data"].([]any)
 	if len(list) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	first, _ := list[0].(map[string]any)
 	detail, _ := first["detail"].(map[string]any)
 	stat, _ := first["stat"].(map[string]any)
-	if gamekit.Text(result.Data["has_detail_data"]) == "false" || detail == nil || stat == nil {
-		return gamekit.Image{}, false
+	if app.Text(result.Data["has_detail_data"]) == "false" || detail == nil || stat == nil {
+		return app.Image{}, false
 	}
 	resources := []rayleabot.RenderImageResource{}
 	add := func(resource rayleabot.RenderImageResource) { resources = append(resources, resource) }
@@ -78,8 +78,8 @@ func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 	if context.Query != nil {
 		if index, err := context.Query("genshin.profile", nil); err == nil {
 			role, _ := index.Data["role"].(map[string]any)
-			player["nickname"], player["level"] = gamekit.Text(role["nickname"]), gamekit.Text(role["level"])
-			if head := gamekit.Text(role["game_head_icon"]); head != "" {
+			player["nickname"], player["level"] = app.Text(role["nickname"]), app.Text(role["level"])
+			if head := app.Text(role["game_head_icon"]); head != "" {
 				player["head"] = officialImage(context, add, "head", head)
 			}
 		}
@@ -88,7 +88,7 @@ func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 	medals := []any{}
 	list, _ = stat["get_medal_round_list"].([]any)
 	for _, medal := range list {
-		medals = append(medals, gamekit.Int(medal))
+		medals = append(medals, app.Int(medal))
 	}
 	faces, elements := map[string]string{}, map[string]string{}
 	icons := 0
@@ -100,7 +100,7 @@ func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 		avatars, _ := round["avatars"].([]any)
 		for _, rawAvatar := range avatars {
 			avatar, _ := rawAvatar.(map[string]any)
-			name, element := gamekit.Text(avatar["name"]), gamekit.Text(avatar["element"])
+			name, element := app.Text(avatar["name"]), app.Text(avatar["element"])
 			if _, seen := faces[name]; !seen {
 				faces[name] = local("face-"+strconv.Itoa(len(faces)), "miao-plugin", "resources/meta-gs/character/"+name+"/imgs/face.webp")
 			}
@@ -109,9 +109,9 @@ func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 				// resolves on case-insensitive disks.
 				elements[element] = local("element-"+strconv.Itoa(len(elements)), "yunzai-genshin", "resources/img/element/"+strings.ToLower(element)+".png")
 			}
-			kind := gamekit.Int(avatar["avatar_type"])
-			cast = append(cast, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "face": faces[name], "element": elements[element],
-				"type": kind, "type_name": combatAvatarTypes[kind], "level": gamekit.Text(avatar["level"])})
+			kind := app.Int(avatar["avatar_type"])
+			cast = append(cast, map[string]any{"rarity": app.Int(avatar["rarity"]), "face": faces[name], "element": elements[element],
+				"type": kind, "type_name": combatAvatarTypes[kind], "level": app.Text(avatar["level"])})
 		}
 		iconsOf := func(field string) []any {
 			result := []any{}
@@ -119,7 +119,7 @@ func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 			for _, rawEntry := range entries {
 				entry, _ := rawEntry.(map[string]any)
 				icons++
-				if id := officialImage(context, add, "icon-"+strconv.Itoa(icons), gamekit.Text(entry["icon"])); id != "" {
+				if id := officialImage(context, add, "icon-"+strconv.Itoa(icons), app.Text(entry["icon"])); id != "" {
 					result = append(result, id)
 				}
 			}
@@ -127,13 +127,13 @@ func Combat(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.I
 		}
 		tarot, _ := round["is_tarot"].(bool)
 		medal, _ := round["is_get_medal"].(bool)
-		rounds = append(rounds, map[string]any{"tarot": tarot, "tarot_no": gamekit.Text(round["tarot_serial_no"]), "round": gamekit.Text(round["round_id"]),
-			"medal": medal, "finish": gamekit.Text(round["finish"]), "cast": cast, "buffs": iconsOf("buffs"), "cards": iconsOf("choice_cards")})
+		rounds = append(rounds, map[string]any{"tarot": tarot, "tarot_no": app.Text(round["tarot_serial_no"]), "round": app.Text(round["round_id"]),
+			"medal": medal, "finish": app.Text(round["finish"]), "cast": cast, "buffs": iconsOf("buffs"), "cards": iconsOf("choice_cards")})
 	}
-	return gamekit.Image{Template: "combat", Data: map[string]any{
-		"player": player, "difficulty": combatDifficulties[gamekit.Int(stat["difficulty_id"])],
-		"heraldry": gamekit.Text(stat["heraldry"]), "start_time": gamekit.Text(stat["start_time"]),
-		"max_round": gamekit.Text(stat["max_round_id"]), "medals": medals, "coins": gamekit.Text(stat["coin_num"]),
-		"bonus": gamekit.Text(stat["avatar_bonus_num"]), "rent": gamekit.Text(stat["rent_cnt"]), "rounds": rounds,
+	return app.Image{Template: "combat", Data: map[string]any{
+		"player": player, "difficulty": combatDifficulties[app.Int(stat["difficulty_id"])],
+		"heraldry": app.Text(stat["heraldry"]), "start_time": app.Text(stat["start_time"]),
+		"max_round": app.Text(stat["max_round_id"]), "medals": medals, "coins": app.Text(stat["coin_num"]),
+		"bonus": app.Text(stat["avatar_bonus_num"]), "rent": app.Text(stat["rent_cnt"]), "rounds": rounds,
 	}, Resources: resources}, true
 }
