@@ -224,9 +224,7 @@ func cleanCloudAvatar(value any) (string, json.RawMessage, error) {
 			copy := map[string]any{}
 			for key, v := range slots {
 				slot, e := strconv.Atoi(strings.TrimPrefix(key, "arti"))
-				limit := 6
-				limit = 5
-
+				limit := 5
 				if e != nil || slot < 1 || slot > limit {
 					return "", nil, gameError("cloud_invalid", "装备部位编号无效。")
 				}

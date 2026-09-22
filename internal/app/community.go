@@ -3,11 +3,12 @@ package app
 import (
 	"context"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func (c AccountsClient) AuthorizeAccount(ctx context.Context, ref string) (Account, error) {

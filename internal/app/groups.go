@@ -5,14 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
-	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
 )
 
 type GroupScope struct {

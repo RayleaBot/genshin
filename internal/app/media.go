@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -20,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 )
 
 const mediaMaxBytes = 4 * 1024 * 1024

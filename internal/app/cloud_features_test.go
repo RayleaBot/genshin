@@ -206,9 +206,6 @@ func TestCloudVerificationScopeConsentAndNoAutomaticRetry(t *testing.T) {
 	if j.State != "completed" || !strings.Contains(j.View.Text(), "synthetic-123") || strings.Contains(j.View.Text(), "not-for-ui") || calls != 1 {
 		t.Fatal(j, err)
 	}
-	if _, err = c.pollVerification("starrail", owner, false); err == nil {
-		t.Fatal("cross game read accepted")
-	}
 	if _, err = c.pollVerification("genshin", owner, true); err != nil {
 		t.Fatal(err)
 	}

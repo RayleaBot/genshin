@@ -3,8 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"strconv"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func (a *App) accountTaskCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {

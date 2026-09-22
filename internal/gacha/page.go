@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -67,8 +66,8 @@ func ParsePage(uid, region, pool, endID string, data map[string]any) (RemotePage
 }
 
 // pageTimezone is the UTC offset of the record times. The official field is
-// used when present. Without it, overseas regions fall back to their server
-// offset and the Chinese servers to UTC+8.
+// used when present. Without it, the America and Europe servers fall back to
+// their offset and the others to UTC+8.
 func pageTimezone(region string, data map[string]any) (int, error) {
 	if zone, exists := data["region_time_zone"]; exists {
 		offset, err := strconv.Atoi(text(zone))
@@ -77,10 +76,10 @@ func pageTimezone(region string, data map[string]any) (int, error) {
 		}
 		return offset, nil
 	}
-	switch {
-	case strings.HasSuffix(region, "usa") || region == "prod_gf_us":
+	switch region {
+	case "os_usa":
 		return -5, nil
-	case strings.HasSuffix(region, "euro") || strings.HasSuffix(region, "_eur") || region == "prod_gf_eu":
+	case "os_euro":
 		return 1, nil
 	}
 	return 8, nil

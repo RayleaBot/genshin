@@ -51,14 +51,14 @@ type PanelChange struct {
 }
 
 var (
-	changeWord      = regexp.MustCompile(`[变改换]`)
-	changeUID       = regexp.MustCompile(`uid ?:? ?`)
-	changeMain      = regexp.MustCompile(`^#*(\d{9,10})?(.+?)(详细|详情|面板|面版|圣遗物|伤害[1-7]?)?\s*(\d{9,10})?[变换改](.+)`)
-	changeUIDs      = regexp.MustCompile(`\d{9,10}`)
-	changeWeapon    = regexp.MustCompile(`^(?:等?级?([1-9][0-9])?级?)?\s*(?:([1-5一二三四五满])(精炼?|叠影?)|(精炼?|叠影?)([1-5一二三四五]))?\s*(?:等?级?([1-9][0-9])?级?)?\s*(.*)$`)
-	changeCons      = regexp.MustCompile(`([0-6零一二三四五六满])(命|魂|星魂)`)
-	changeTalentsGS = regexp.MustCompile(`(?:天赋|技能|行迹)((?:[1][0-5]|[1-9])[ ,]?)((?:[1][0-5]|[1-9])[ ,]?)([1][0-5]|[1-9])`)
-	changeLevel     = regexp.MustCompile(`等级(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)(?:[^0-9]|$)|(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)级`)
+	changeWord    = regexp.MustCompile(`[变改换]`)
+	changeUID     = regexp.MustCompile(`uid ?:? ?`)
+	changeMain    = regexp.MustCompile(`^#*(\d{9,10})?(.+?)(详细|详情|面板|面版|圣遗物|伤害[1-7]?)?\s*(\d{9,10})?[变换改](.+)`)
+	changeUIDs    = regexp.MustCompile(`\d{9,10}`)
+	changeWeapon  = regexp.MustCompile(`^(?:等?级?([1-9][0-9])?级?)?\s*(?:([1-5一二三四五满])(精炼?|叠影?)|(精炼?|叠影?)([1-5一二三四五]))?\s*(?:等?级?([1-9][0-9])?级?)?\s*(.*)$`)
+	changeCons    = regexp.MustCompile(`([0-6零一二三四五六满])(命|魂|星魂)`)
+	changeTalents = regexp.MustCompile(`(?:天赋|技能|行迹)((?:[1][0-5]|[1-9])[ ,]?)((?:[1][0-5]|[1-9])[ ,]?)([1][0-5]|[1-9])`)
+	changeLevel   = regexp.MustCompile(`等级(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)(?:[^0-9]|$)|(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)级`)
 )
 
 // changeKeys are miao's words for the parts of a panel, by part.
@@ -190,7 +190,7 @@ func parsePanelChange(catalog Catalog, aliases map[string]string, text string) (
 			txt = strings.Replace(txt, cons[0], "", 1)
 			changed = true
 		}
-		talents, order := changeTalentsGS, "aeq"
+		talents, order := changeTalents, "aeq"
 		if match := talents.FindStringSubmatch(txt); match != nil {
 			change.Talents = map[string]int{}
 			for index, key := range order {
@@ -247,7 +247,6 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 	if err != nil {
 		return CharacterPanel{}, err
 	}
-	gs := true
 	panel := CharacterPanel{ID: id, Level: cmp.Or(change.Level, source.Level, 90), Element: record.Element, Source: "change", RankKnown: true, WeaponKnown: true, EquipmentKnown: true,
 		Stats: []PanelStat{}, Equipment: []PanelEquipment{}, Skills: []PanelSkill{}, Ranks: []PanelSkill{}}
 	if entry, ok := a.Catalog.Get(id); ok {
@@ -275,7 +274,7 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 	weapons := map[string]reference.Weapon{}
 	for _, weapon := range a.Game.Calc.Metadata().Weapons {
 		weapons[weapon.ID] = weapon
-		if weapon.Name == changeDefaultWeapons[record.WeaponType] && gs {
+		if weapon.Name == changeDefaultWeapons[record.WeaponType] {
 			weapons["default"] = weapon
 		}
 	}
@@ -283,14 +282,11 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 	if change.Weapon != nil && change.Weapon.ID != "" {
 		weaponID = change.Weapon.ID
 	}
-	if weapon, ok := weapons[weaponID]; gs && (!ok || weapon.Type != record.WeaponType) {
+	if weapon, ok := weapons[weaponID]; !ok || weapon.Type != record.WeaponType {
 		weaponID = weapons["default"].ID
 	}
 	weapon := PanelEquipment{ID: weaponID, Name: weapons[weaponID].Name, Main: []PanelStat{}, Sub: []PanelStat{}, Complete: true}
 	maxLevel := 90
-	if !gs {
-		maxLevel = 80
-	}
 	requested := 0
 	if change.Weapon != nil {
 		requested = change.Weapon.Level
@@ -317,9 +313,6 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 		talents = change.Talents
 	} else {
 		original := map[string]int{"a": 9, "e": 9, "q": 9}
-		if !gs {
-			original = map[string]int{"a": 6, "e": 8, "t": 8, "q": 8}
-		}
 		if hasSource {
 			sourceRecord, err := findReferenceCharacter(a.Game.Calc, source)
 			if err == nil {
@@ -343,9 +336,6 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 		pieces[piece.Slot] = piece
 	}
 	slots, groups := 5, "00111"
-	if !gs {
-		slots, groups = 6, "001122"
-	}
 	for slot := 1; slot <= slots; slot++ {
 		if from, ok := change.Pieces[slot]; ok {
 			if other, ok := kept(from); ok {
@@ -413,9 +403,7 @@ func (a *App) computedPanel(ctx context.Context, record reference.Character, pan
 // talentBonus is the levels a constellation or eidolon adds to a talent, as
 // miao counts them from talentCons.
 func talentBonus(record reference.Character, key string, rank int) int {
-	step := map[string]int{"a": 1, "e": 2, "q": 2, "t": 2, "me": 1, "mt": 1, "xe": 1}[key]
-	step = 3
-
+	step := 3
 	bonus := 0
 	switch need := asObject(record.Data["talentCons"])[key].(type) {
 	case float64:

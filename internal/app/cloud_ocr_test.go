@@ -2,9 +2,10 @@ package app
 
 import (
 	"context"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"strings"
 	"testing"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func TestCloudOCRURLAndGearProjection(t *testing.T) {

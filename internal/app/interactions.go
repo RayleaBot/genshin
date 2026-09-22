@@ -6,13 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 	"math/rand/v2"
 	"slices"
 	"strings"
 	"sync"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 )
 
 type InteractionProfile struct {

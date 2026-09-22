@@ -1,7 +1,6 @@
-// Package miao is the calculation runtime shared by the Genshin Impact and
-// Honkai: Star Rail plugins. common.js bundles the damage and attribute models of
-// miao-plugin 7f6f1c84 (MIT); bootstrap.js and runner.js adapt them to the
-// engine's runBuild entry point.
+// Package miao is the Genshin Impact calculation runtime. common.js bundles the
+// damage and attribute models of miao-plugin 7f6f1c84 (MIT); bootstrap.js and
+// runner.js adapt them to the engine's entry points.
 package miao
 
 import (

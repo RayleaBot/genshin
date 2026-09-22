@@ -3,10 +3,11 @@ package app
 import (
 	"context"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"path/filepath"
 	"testing"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type monthCaller struct {
@@ -97,11 +98,11 @@ func TestDailyMonthlyCollectionPersistsAdmissionAndKeepsNotifyOff(t *testing.T) 
 		return QueryResult{Data: map[string]any{"data_month": 202609}}, nil
 	}
 	send := func(Reminder, string) error { sends++; return nil }
-	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "zzz"}); err != nil {
+	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "genshin"}); err != nil {
 		t.Fatal(err)
 	}
 	s = &ReminderStore{taskFiles[Reminder]{Directory: s.Directory}}
-	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "zzz"}); err != nil {
+	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "genshin"}); err != nil {
 		t.Fatal(err)
 	}
 	items, _ := s.List()

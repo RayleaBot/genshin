@@ -157,9 +157,7 @@ func miaoScoreInput(panel CharacterPanel) (map[string]any, error) {
 		}
 		weapon = BuildWeapon{ID: w.ID, Name: w.Name, Refinement: w.Refinement}
 	}
-	maxSlot := 6
-	maxSlot = 5
-
+	maxSlot := 5
 	gear := []BuildGear{}
 	seen := map[int]bool{}
 	for _, piece := range panel.Equipment {

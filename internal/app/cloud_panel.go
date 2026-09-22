@@ -182,9 +182,7 @@ func decodeCloudGear(g Game, slot int, gear map[string]any) (Section, *PanelEqui
 	}
 	section.Rows = append(section.Rows, Row{Label: "套装", Value: item.Set})
 	level, levelOK := cloudInteger(gear["level"], 0, 20)
-	star := item.Star
-	star, _ = cloudInteger(gear["star"], 1, 5)
-
+	star, _ := cloudInteger(gear["star"], 1, 5)
 	if !levelOK || star < 1 || star > 5 || (level > map[int]int{1: 4, 2: 4, 3: 12, 4: 16, 5: 20}[star]) {
 		section.Text = "装备等级或星级资料缺失，暂不能解释词条。"
 		return section, nil

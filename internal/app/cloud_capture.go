@@ -101,8 +101,7 @@ func officialCloudGear(g Game, gear PanelEquipment, raw map[string]any) (map[str
 		return nil, gameError("cloud_invalid", "官方装备品质无效。")
 	}
 	d := *g.Data.CloudGear
-	itemKey := gear.ID
-	itemKey = gear.Name
+	itemKey := gear.Name
 	if _, ok := d.Items[itemKey]; !ok {
 		for name, item := range d.Items {
 			if item.Set == gear.SetName && item.Slot == gear.Slot {

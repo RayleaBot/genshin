@@ -2,8 +2,9 @@ package app
 
 import (
 	"context"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"slices"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type OwnedTeam struct {

@@ -3,12 +3,13 @@ package app
 import (
 	"context"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func TestPublicCodesFixedSourcesEstimatedExpiryAndNoCredentials(t *testing.T) {

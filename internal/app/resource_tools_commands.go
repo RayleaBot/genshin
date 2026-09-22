@@ -2,8 +2,9 @@ package app
 
 import (
 	"context"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"strconv"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func (a *App) resourceToolsCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {

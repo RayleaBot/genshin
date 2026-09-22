@@ -6,13 +6,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 	"math/big"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 )
 
 type BillingRow struct {

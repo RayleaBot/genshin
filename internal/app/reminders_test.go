@@ -2,14 +2,15 @@ package app
 
 import (
 	"errors"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 	"os"
 	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/plugin-genshin/internal/localdata"
 )
 
 func TestReminderPersistsAdmissionAndThresholdRearming(t *testing.T) {

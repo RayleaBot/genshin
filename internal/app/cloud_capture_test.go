@@ -2,9 +2,10 @@ package app
 
 import (
 	"encoding/json"
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
 	"math"
 	"testing"
+
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 func TestOfficialCloudRollRestorationAndPercentAliases(t *testing.T) {

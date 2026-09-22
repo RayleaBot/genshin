@@ -9,9 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
-
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
 type BuildWeapon struct {
@@ -100,10 +99,6 @@ func findBuildCharacter(engine *reference.Engine, panel CharacterPanel) (referen
 
 func findReferenceCharacter(engine *reference.Engine, panel CharacterPanel) (reference.Character, error) {
 	metadata := engine.Metadata()
-	short := "gs"
-	if short == "" {
-		return reference.Character{}, buildUnavailable("game")
-	}
 	wanted := canonicalBuildElement(panel.Element)
 	ruleID := referenceCharacterID(panel)
 	for _, record := range metadata.Characters {
@@ -111,7 +106,7 @@ func findReferenceCharacter(engine *reference.Engine, panel CharacterPanel) (ref
 		if slices.Contains([]string{"10000005", "10000007"}, panel.ID) && slices.Contains([]string{"10000005", "10000007", "20000000"}, record.ID) {
 			match = true
 		}
-		if record.Game == short && match && canonicalBuildElement(record.Element) == wanted {
+		if match && canonicalBuildElement(record.Element) == wanted {
 			record.ID = panel.ID
 
 			return record, nil
@@ -402,13 +397,9 @@ func BuildView(game Game, result BuildResult) View {
 // number from an unknown endpoint revision is never mistaken for one.
 func elementDamageBonus(panel CharacterPanel) (float64, bool) {
 	element := normalizedElement(panel.Element)
-	if mapped := map[string]string{"fire": "pyro", "ice": "cryo", "lightning": "electro", "wind": "anemo", "以太": "ether", "电": "electro"}[element]; mapped != "" {
-		element = mapped
-	}
 	statID := map[string]string{"pyro": "40", "electro": "41", "hydro": "42", "dendro": "43", "anemo": "44", "geo": "45", "cryo": "46"}[element]
-	statName := ""
 	for _, stat := range panel.Stats {
-		if (statID == "" || stat.ID != statID) && (statName == "" || stat.Name != statName) {
+		if statID == "" || stat.ID != statID {
 			continue
 		}
 		raw := strings.ReplaceAll(strings.TrimSpace(stat.Value), ",", "")

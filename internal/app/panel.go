@@ -105,9 +105,7 @@ func panelStats(raw []any, metadata map[string]any, defaultValue string) []Panel
 		if display == "" {
 			continue
 		}
-		key := id
-		key = gsStatKeys[id]
-
+		key := gsStatKeys[id]
 		result = append(result, PanelStat{ID: id, Key: key, Name: plainGameText(name), Value: display, Base: asText(item["base"]), Added: asText(item["add"]), Times: number(item["times"])})
 	}
 	return result
@@ -235,14 +233,10 @@ func NormalizePanels(result QueryResult, catalog Catalog) []CharacterPanel {
 			_, hasSkillType := skill["skill_type"]
 			panel.Skills = append(panel.Skills, PanelSkill{HasSkillType: hasSkillType, Kind: firstText(skill, "remake"), PointType: number(skill["point_type"]), SkillType: number(skill["skill_type"]), ID: firstText(skill, "skill_id", "point_id", "id"), ExtraLevel: number(skill["extra_level"]), Name: plainGameText(name), Level: number(skill["level"]), Active: active, Description: plainGameText(description)})
 		}
-		ranks := asList(item["ranks"])
-		ranks = asList(item["constellations"])
-
+		ranks := asList(item["constellations"])
 		for _, raw := range ranks {
 			rank := asObject(raw)
-			active, _ := rank["is_unlocked"].(bool)
-			active, _ = rank["is_actived"].(bool)
-
+			active, _ := rank["is_actived"].(bool)
 			panel.Ranks = append(panel.Ranks, PanelSkill{Name: plainGameText(asText(rank["name"])), Active: active, Description: plainGameText(firstText(rank, "desc", "effect"))})
 		}
 		if plan := asObject(item["equip_plan_info"]); plan != nil {
