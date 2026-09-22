@@ -1,0 +1,11 @@
+{
+  "id": "rank-stats",
+  "name": "原神排名统计",
+  "description": "排名统计命令的图片，布局参照 ark-plugin graph/stats",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1680,
+  "height": 1400
+}

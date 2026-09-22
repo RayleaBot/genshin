@@ -192,6 +192,19 @@
       ]
     },
     {
+      "id": "ark-plugin",
+      "name": "ark 插件图片",
+      "archives": [
+        "https://codeload.github.com/NotIvny/ark-plugin/tar.gz/HEAD"
+      ],
+      "include": [
+        "resources/graph/"
+      ],
+      "extensions": [
+        ".png"
+      ]
+    },
+    {
       "id": "mihoyo",
       "name": "官方图片缓存",
       "mirrors": [
