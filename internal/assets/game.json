@@ -89,6 +89,21 @@
       "input": "none"
     }
   ],
+  "panels": {
+    "refresh_with_account": false,
+    "replies": {
+      "failed": "UID{uid}更新面板失败，当前面板服务{service}，\n可能是面板服务维护中，请稍后重试...\n或尝试使用【{prefix}米游社更新面板】",
+      "empty": "请将角色放置在【游戏内】角色展柜，并打开【显示详情】，等待5分钟重新获取面板",
+      "none": "获取角色面板数据失败，请确认角色已在游戏内橱窗展示，并开放了查看详情。设置完毕后请5分钟后再进行请求~",
+      "slow": "开始获取uid:{uid}的数据，可能会需要一定时间~",
+      "list_empty": "本地暂无uid{uid}[gs]的面板数据...",
+      "missing": "⚠️ 暂无 {name} 数据，请：\n━━━━━━━━━━━━\n📋 方式一：角色展柜更新（展柜需开启\"显示角色详情）\n{prefix}更新面板\n\n📋 方式二：全量更新\n{prefix}扫码登录 (已登录可忽略)\n{prefix}米游社更新面板",
+      "delete_owner": "为确保数据安全，目前仅允许绑定CK用户删除自己UID的面板数据，请联系Bot主人删除...",
+      "delete_confirm": "你确认要删除面板数据吗？ 请回复 {prefix}删除面板{uid} 以删除面板数据",
+      "delete_denied": "仅允许删除自己的UID数据[{uids}]",
+      "deleted": "UID{uid}的本地数据已删除，排名数据已清除..."
+    }
+  },
   "artwork": [
     {
       "id": "miao-plugin",

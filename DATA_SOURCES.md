@@ -4,7 +4,7 @@
 
 原神与星铁资料来自 miao-plugin，固定提交 7f6f1c84c89102bc6b1c58c8e1b06c61f4642161；保留 LICENSES/miao-plugin-MIT.txt。
 
-公开展柜来自 [Enka.Network](https://github.com/EnkaNetwork/API-docs/blob/master/api.md)，按响应 TTL 缓存。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
+没有账号时的面板来自 [Enka.Network](https://github.com/EnkaNetwork/API-docs/blob/master/api.md)（miao-plugin 海外服的默认面板服务，国服默认的 MiniGG 为 HTTP 地址，不使用），按响应 TTL 缓存；解析同 miao 的 EnkaData，圣遗物部件名由 bundle-reference-calculation.mjs 从 miao `meta-gs/artifact/data.json` 写入资料目录的 `artifact_pieces`。`templates/panel-list/` 按 miao-plugin 的 `character/profile-list` 改写（MIT）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
 
 本插件及编译期业务库沿用 RayleaBot SDK 的 AGPL-3.0 许可，安装包管理页提供对应源码下载。上游数据的原许可声明另行保留。
 

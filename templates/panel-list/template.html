@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+<div class="profile-cont game-{{ .game }}">
+  <div class="head-box">
+    <div class="title">{{ .prefix }}面板列表
+      <div class="label">UID:{{ .uid }}</div>
+    </div>
+    {{ with .msg }}<div class="label">{{ . }}</div>{{ end }}
+    <div class="label">你可以使用<span>{{ .prefix }}{{ .demo }}面板</span>、<span>{{ .prefix }}{{ .demo }}伤害</span>、<span>{{ .prefix }}{{ .demo }}圣遗物</span>命令来查看面板信息了
+    </div>
+  </div>
+  <div class="cont group-rank-tip {{ if .group_rank }}has-rank{{ else }}no-rank{{ end }}">
+    <div class="cont-title">
+      <span>
+      <i class="group-rank-icon dmg-icon"></i>综合练度排名
+      <i class="group-rank-icon mark-icon"></i>圣遗物评分排名
+    </span>
+      <span class="rank-time">
+      排名：本群内 {{ .rank_since }} 后，通过 {{ .prefix }}面板 命令查看过的角色数据
+    </span>
+    </div>
+  </div>
+  <div class="cont {{ if .group_rank }}has-rank{{ else }}no-rank{{ end }}">
+    <div class="char-list">
+      {{ range .chars }}
+      <div class="char-item{{ if and .is_new $.has_new }} new-char{{ end }}">
+        <div class="item-icon char-icon star{{ .star }}">
+       <span class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></span>
+        </div>
+        <span class="name">{{ .abbr }}<span class="cons cons-{{ .cons }}">{{ .cons }}</span></span>
+        {{ with .rank }}
+        <div class="group-rank rank-{{ .class }} rank-type-{{ .type }}">
+          <span>{{ .place }}</span>
+        </div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+    <div class="cont-footer">
+      {{ if .has_new }}
+      <span class="new-tip">本次更新角色</span>
+      {{ else }}
+      <span>{{ with .update_time }} 更新时间：{{ . }} {{ end }}</span>
+      {{ end }}
+      <span class="serv">
+      当前更新服务：{{ .service }}
+    </span>
+    </div>
+  </div>
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

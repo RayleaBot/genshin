@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["elem", "game", "prefix", "uid", "demo", "chars", "service"],
+  "properties": {
+    "elem": { "type": "string" },
+    "game": { "type": "string" },
+    "prefix": { "type": "string" },
+    "uid": { "type": "string" },
+    "msg": { "type": "string" },
+    "demo": { "type": "string" },
+    "group_rank": { "type": "boolean" },
+    "rank_since": { "type": "string" },
+    "chars": { "type": "array" },
+    "has_new": { "type": "boolean" },
+    "update_time": { "type": "string" },
+    "service": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

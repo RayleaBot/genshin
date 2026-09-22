@@ -168,24 +168,47 @@
       }
     },
     {
-      "id": "showcase",
+      "id": "panel-refresh",
       "name": "更新面板",
-      "description": "查询已开放的公开展柜",
+      "description": "从 Enka 读取游戏内角色展柜的面板并保存",
       "usage": "#更新面板 [UID]",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "更新面板",
-          "面板更新",
-          "更新全部面板",
-          "全部面板更新",
-          "面板",
-          "面板列表",
-          "角色面板",
-          "面板角色",
-          "展柜"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "panel-refresh-account",
+      "name": "米游社更新面板",
+      "description": "从已绑定账号的米游社数据更新全部角色面板并保存",
+      "usage": "#米游社更新面板",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "panel-list",
+      "name": "面板列表",
+      "description": "已保存面板的角色列表",
+      "usage": "#面板列表 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:(?:面板角色|角色面板|面板)(?:列表)?|(?:加载|重新加载|重载)面板)(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "panel-delete",
+      "name": "删除面板",
+      "description": "删除本人 UID 已保存的面板与群排名",
+      "usage": "#删除面板<UID>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:删除全部面板|删除面板|删除面板数据)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1280,7 +1303,10 @@
       "title": "角色面板",
       "commands": [
         "character",
-        "showcase",
+        "panel-refresh",
+        "panel-refresh-account",
+        "panel-list",
+        "panel-delete",
         "score",
         "build",
         "public-profile",

@@ -9,6 +9,7 @@ import (
 	"github.com/RayleaBot/game-plugin-kit/reference/miao"
 	plugin "github.com/RayleaBot/plugin-genshin"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
+	"github.com/RayleaBot/plugin-genshin/internal/showcase"
 )
 
 //go:embed catalog.json
@@ -42,5 +43,5 @@ func Kit() gamekit.Assets {
 	if err != nil {
 		panic(err) // the embedded directory name is fixed at build time
 	}
-	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json"), Images: images.Builders(), Queries: images.Queries(), Panel: images.Panel, Gacha: images.Gacha, Help: images.Help, MonthlyStats: images.LedgerCount, Calendar: images.Calendar, Entry: images.Entry, SimulationImage: images.GachaTrial, Rank: images.Rank}
+	return gamekit.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Enemies: dataFile("enemies.json"), Images: images.Builders(), Queries: images.Queries(), Panel: images.Panel, Gacha: images.Gacha, Help: images.Help, MonthlyStats: images.LedgerCount, Calendar: images.Calendar, Entry: images.Entry, SimulationImage: images.GachaTrial, Rank: images.Rank, Showcase: showcase.Source, PanelList: images.PanelList}
 }

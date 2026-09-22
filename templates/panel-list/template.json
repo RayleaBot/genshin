@@ -1,0 +1,11 @@
+{
+  "id": "panel-list",
+  "name": "原神面板列表",
+  "description": "面板列表与更新面板的图片，布局参照 miao-plugin character/profile-list",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1040,
+  "height": 4000
+}
