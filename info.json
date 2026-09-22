@@ -302,6 +302,50 @@
       }
     },
     {
+      "id": "alias-help",
+      "name": "别名帮助",
+      "description": "自定义别名命令的说明",
+      "usage": "#喵喵别名帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:帮助)?$"
+      }
+    },
+    {
+      "id": "alias-set",
+      "name": "设置别名",
+      "description": "给角色添加对所有群生效的自定义别名",
+      "usage": "#喵喵别名设置 角色名 别名",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:原神)?设置$"
+      }
+    },
+    {
+      "id": "alias-remove",
+      "name": "删除别名",
+      "description": "删除自定义别名，预设别名不能删除",
+      "usage": "#喵喵别名删除 别名",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:原神)?删除$"
+      }
+    },
+    {
+      "id": "alias-list",
+      "name": "别名列表",
+      "description": "查看原神全部自定义别名",
+      "usage": "#喵喵别名列表",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:原神)?列表$"
+      }
+    },
+    {
       "id": "simulation-history",
       "name": "模拟记录",
       "description": "查看本人的模拟抽卡记录",
@@ -1707,7 +1751,11 @@
         "version",
         "group-settings",
         "artwork",
-        "artwork-status"
+        "artwork-status",
+        "alias-help",
+        "alias-set",
+        "alias-remove",
+        "alias-list"
       ]
     }
   ],
