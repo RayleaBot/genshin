@@ -1417,6 +1417,24 @@
       }
     },
     {
+      "id": "panel-help",
+      "name": "面板帮助",
+      "description": "面板、伤害与换装命令的说明图",
+      "usage": "#面板帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "面板帮助",
+          "面版帮助",
+          "角色面板帮助",
+          "角色面版帮助",
+          "换面板帮助",
+          "更换面板帮助"
+        ]
+      }
+    },
+    {
       "id": "character",
       "name": "面板",
       "description": "查看角色面板",
@@ -1470,7 +1488,8 @@
         "panel-refresh-account",
         "panel-list",
         "panel-delete",
-        "original-image"
+        "original-image",
+        "panel-help"
       ]
     },
     {
