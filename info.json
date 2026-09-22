@@ -1221,6 +1221,28 @@
       }
     },
     {
+      "id": "cloud-export",
+      "name": "导出面板数据",
+      "description": "把本人 UID 已保存的面板上传 ark，十分钟内可在另一个机器人导入",
+      "usage": "#导出面板数据",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^导出面板数据(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "cloud-import",
+      "name": "导入面板数据",
+      "description": "从 ark 下载本人 UID 上传的面板，存入面板交换档案",
+      "usage": "#导入面板数据<UID>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^导入面板数据(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1388,6 +1410,8 @@
         "cloud-character-rank",
         "cloud-total-rank",
         "cloud-rank-stats",
+        "cloud-export",
+        "cloud-import",
         "cloud-private-panel",
         "cloud-verify",
         "original-image"
