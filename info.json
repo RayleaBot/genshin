@@ -1188,6 +1188,39 @@
       }
     },
     {
+      "id": "cloud-character-rank",
+      "name": "角色排名",
+      "description": "ark 云端该角色的全服伤害排名（先更新）",
+      "usage": "#角色排名雷电将军 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^角色排名(?P<text>.+)$"
+      }
+    },
+    {
+      "id": "cloud-total-rank",
+      "name": "总排名",
+      "description": "ark 云端本地已保存角色的全服排名",
+      "usage": "#总排名 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^总排名(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "cloud-rank-stats",
+      "name": "排名统计",
+      "description": "ark 云端该角色的评分分布",
+      "usage": "#雷电将军排名统计",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)排名统计$"
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1352,6 +1385,9 @@
         "score",
         "build",
         "public-profile",
+        "cloud-character-rank",
+        "cloud-total-rank",
+        "cloud-rank-stats",
         "cloud-private-panel",
         "cloud-verify",
         "original-image"
