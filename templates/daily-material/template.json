@@ -1,0 +1,11 @@
+{
+  "id": "daily-material",
+  "name": "原神今日素材",
+  "description": "今日素材命令的图片，布局参照 miao-plugin wiki/today-material",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 748,
+  "height": 8000
+}

@@ -1160,6 +1160,17 @@
       }
     },
     {
+      "id": "daily-material",
+      "name": "今日素材",
+      "description": "今天（或明天、周几）可刷的天赋书与武器材料，以及用得上的角色和武器",
+      "usage": "#今日素材 / #明天素材 / #周三素材",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:今日|今天|每日|我的|明天|明日|周(?:[1-7]|一|二|三|四|五|六|日))*(?:素材|材料)$"
+      }
+    },
+    {
       "id": "materials",
       "name": "材料",
       "description": "查询固定参考资料",
@@ -1365,6 +1376,7 @@
         "catalog",
         "talent-wiki",
         "growth",
+        "daily-material",
         "materials",
         "blueprint",
         "guides",

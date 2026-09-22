@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container" id="container">
+<div class="main_box">
+  <div class="base_info">
+    <div class="id">
+      <span>ID：{{ .uid }}</span>
+    </div>
+    <div class="day">
+      <span></span>
+    </div>
+  </div>
+  {{ range .sections }}
+  <div class="city-cont">
+    <div class="cont-title">
+      <div class="area">
+        <img class="tab-item-icon"{{ with .city_icon }} data-render-resource="{{ . }}"{{ end }}/>
+        <div class="tab-item-text">{{ .city }}</div>
+      </div>
+      <div class="ele_box">
+        <div class="ele_name">{{ .material }}</div>
+        <div class="ele_img">
+          {{ range .icons }}
+          <div class="img_item">
+            <span class="icon"{{ with . }} data-render-resource="{{ . }}"{{ end }}></span>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      <div class="tab-line"></div>
+    </div>
+    {{ if eq .type "talent" }}
+    <div class="item_box">
+      {{ range .data }}
+      <div class="item {{ if .max }}disable{{ end }} avatar-card">
+        <div class="role_box">
+          {{ if .cons }}
+          <span class="life life{{ .cons }}"> {{ .cons }}命</span>
+          {{ end }}
+          <div class="bg{{ .star }}"></div>
+          <img class="role_img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}/>
+          <div class="desc">Lv.{{ .level }}</div>
+        </div>
+        <div class="talent avatar-talent">
+          {{ range .talents }}
+          <span class="talent-item{{ if .crown }} talent-crown{{ end }}{{ if .plus }} talent-plus{{ end }}">{{ .level }}</span>
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    {{ else }}
+    <div class="weapon_box">
+      {{ range .data }}
+      <div class="weapon_item {{ if .max }}disable{{ end }}">
+              <span class="weapon_user">
+                <span class="user_img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></span>
+              </span>
+        <div class="weapon_role_box">
+          {{ if .affix_shown }}
+          <span class="life life{{ .affix }}">{{ .affix }}</span>
+          {{ end }}
+          <div class="weapon_bg bg{{ .star }}"></div>
+          <span class="weapon_role_img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span>
+          <div class="desc_1">Lv.{{ .level }}</div>
+        </div>
+        <div class="role_name">{{ .abbr }}</div>
+      </div>
+      {{ end }}
+    </div>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+<div class="explain">
+  * 根据你所拥有的角色查询今天可升天赋角色，仅显现已装备的武器 <br>
+  * 可通过【{{ .prefix }}练度统计】（需具备CK），或【{{ .prefix }}更新面板】更新本地缓存<br>
+  * 绑定CK用户也可通过【{{ .prefix }}米游社更新面板】来强制更新天赋数据
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
