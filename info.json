@@ -1025,7 +1025,7 @@
     {
       "id": "photo",
       "name": "照片",
-      "description": "随机发送该角色的图库照片",
+      "description": "随机发送该角色的照片，取自已下载的 miao 角色图与导入的图库",
       "usage": "#<角色>照片",
       "permission": "everyone",
       "trigger": {
@@ -1355,7 +1355,7 @@
     {
       "id": "catalog",
       "name": "图鉴",
-      "description": "查询离线角色和装备资料",
+      "description": "角色资料图；武器、圣遗物、食物、原魔等发送已下载的 Atlas 或逍遥图鉴图",
       "usage": "#<名称>图鉴",
       "permission": "everyone",
       "trigger": {

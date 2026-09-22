@@ -198,5 +198,33 @@
         "https://"
       ]
     }
-  ]
+  ],
+  "pictures": {
+    "photos": [
+      {
+        "source": "miao-plugin",
+        "paths": [
+          "resources/character-img/{name}"
+        ]
+      }
+    ],
+    "atlas": [
+      {
+        "source": "genshin-atlas",
+        "index": "path.json"
+      },
+      {
+        "source": "xiaoyao-plus",
+        "paths": [
+          "juese_tujian/{name}.png",
+          "wuqi_tujian/{name}.png",
+          "shengyiwu_tujian/{name}.png",
+          "shiwu_tujian/{name}.png",
+          "yuanmo_tujian/{name}.png",
+          "mijin_tujian/{name}.png",
+          "daoju_tujian/{name}.png"
+        ]
+      }
+    ]
+  }
 }
