@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+<div class="basic">
+  <div class="main-pic"{{ with .splash }} data-render-resource="{{ . }}"{{ end }}></div>
+  <div class="detail">
+    <div class="char-title">
+      <div class="char-name"><span>{{ .title }} · </span>{{ .name }}</div>
+      <div class="char-lv char-desc">{{ safeHTML .desc }}</div>
+    </div>
+    <div class="char-meta">
+      <div class="cont">
+        <ul class="attr char-attr">
+          <li><strong>武器类型</strong> <span>{{ .weapon }}</span></li>
+          <li><strong>命之座</strong> <span>{{ .astro }}</span></li>
+          <li><strong>生日</strong> <span>{{ .birthday }}</span></li>
+          <li><strong>归属</strong> <span>{{ .allegiance }}</span></li>
+          <li><strong>中文CV</strong> <span>{{ .cncv }}</span></li>
+          <li><strong>日文CV</strong> <span>{{ .jpcv }}</span></li>
+        </ul>
+      </div>
+      <div class="cont">
+        <div class="cont-title">100级基础属性{{ with .star }}（{{ . }}星）{{ end }}</div>
+        <ul class="attr char-attr">
+          {{ range .attrs }}<li><strong>{{ .title }}</strong> <span>{{ .value }}</span></li>{{ end }}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="material-list">
+    {{ range .materials }}
+    <div class="material-{{ .type }}">
+      <div class="num">{{ .num }}</div>
+      <div class="item-card material-card">
+        <div class="item-icon star{{ .star }} opacity-bg">
+          <div class="item-bg"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div>
+        </div>
+        <div class="item-title">{{ .label }}</div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+
+<div class="wiki-cont">
+  {{ with .holding }}
+  <div class="cont cont-bg">
+    <div class="char-holding">
+      <div class="char-pct">
+        <div class="avg-stats">
+          <div class="avg-label-level">平均等级</div>
+          <div class="avg-level">{{ .level }}</div>
+          <div class="avg-line"></div>
+          <div class="avg-cons">{{ .cons }}</div>
+          <div class="avg-label-cons">平均命座</div>
+        </div>
+      </div>
+      <div class="char-cons">
+        {{ range .shares }}
+        <div class="cons-item cons{{ .cons }}">
+          <div class="talent-icon"><div class="talent-icon-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div></div>
+          <div class="cons-num">{{ .num }}</div>
+          <div class="cons-title">{{ .title }}</div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+  {{ end }}
+
+  <div class="talent-notice">输入<strong>{{ .prefix }}{{ .abbr }}天赋、{{ .prefix }}{{ .abbr }}命座</strong>可查看详细天赋/命座信息</div>
+  {{ with .weapons }}
+  <div class="cont">
+    <div class="cont-title border-less">常用武器</div>
+    <div class="item-list weapon-list">
+      {{ range . }}
+      <div class="item item-card">
+        <div class="item-icon star{{ .star }}"><div class="item-bg"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div></div>
+        <div class="item-value">{{ .value }}</div>
+        <div class="item-title">{{ .abbr }}</div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{ end }}
+  {{ with .artis }}
+  <div class="cont">
+    <div class="cont-title border-less">常用圣遗物<span>持有率、武器、圣遗物统计来自提瓦特小助手API，未经允许请勿使用此数据</span></div>
+    <div class="item-list weapon-list artis-list">
+      {{ range . }}
+      <div class="item item-card">
+        <div class="item-icon star5 artis-count{{ .count }}">
+          {{ range $index, $image := .images }}<div class="item-bg artis{{ if eq $index 0 }}1{{ else }}2{{ end }}"{{ with $image }} data-render-resource="{{ . }}"{{ end }}></div>{{ end }}
+        </div>
+        <div class="item-value">{{ .value }}</div>
+        <div class="item-title">{{ .title }}</div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="talent-notice"></div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

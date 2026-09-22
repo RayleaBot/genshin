@@ -56,3 +56,17 @@ func TestMiaoCommaRoundsLikeJavaScript(t *testing.T) {
 		t.Errorf("miaoComma(942.25) = %s", got)
 	}
 }
+
+// miao breaks a long description at a dash, else between its clauses; the
+// expected lines are miao's getDesc output for the same text.
+func TestWikiDescBreaksLikeMiao(t *testing.T) {
+	for desc, want := range map[string]string{
+		"「往生堂」七十七代堂主，年纪轻轻就已主掌璃月的葬仪事务。": "「往生堂」七十七代堂主</br>年纪轻轻就已主掌璃月的葬仪事务",
+		"短描述。": "短描述",
+		"璃月的「七星」之一，玉衡星。对她而言，「规则」是用来打破的，而「万全的准备」是用来颠覆的——相信自己，远比相信神明更重要。": "璃月的「七星」之一，玉衡星，对她而言</br>「规则」是用来打破的，而「万全的准备」是用来颠覆的",
+	} {
+		if got := wikiDesc(desc); got != want {
+			t.Errorf("wikiDesc(%s) = %q, want %q", desc, got, want)
+		}
+	}
+}

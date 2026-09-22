@@ -26,9 +26,12 @@ var wikiGrowth = map[string]string{"atkPct": "大攻击", "hpPct": "大生命", 
 
 // wikiCharacter is the part of miao's character data.json the pages read.
 type wikiCharacter struct {
-	Name, Title, Desc, Elem, Weapon string
-	BaseAttr                        map[string]float64
-	GrowAttr                        struct {
+	ID                                                                          int
+	Name, Abbr, Title, Desc, Elem, Weapon, Allegiance, Birth, Astro, Cncv, Jpcv string
+	Star                                                                        int
+	Materials                                                                   map[string]string
+	BaseAttr                                                                    map[string]float64
+	GrowAttr                                                                    struct {
 		Key   string
 		Value float64
 	}
@@ -49,10 +52,10 @@ type wikiTalent struct {
 }
 
 // Entry draws the reference pages miao draws for a character: 天赋 and 命座
-// as wiki/character-talent. The page reads miao's character data, which comes
-// with the downloaded miao artwork.
+// as wiki/character-talent, 图鉴 and 资料 as wiki/character-wiki. The pages
+// read miao's character data, which comes with the downloaded miao artwork.
 func Entry(context gamekit.ImageContext, page gamekit.EntryImage) (gamekit.Image, bool) {
-	if page.Command != "talent-wiki" || page.Entry.Kind != "character" || context.Artwork == nil || traveler(page.Entry.ID) {
+	if page.Command != "talent-wiki" && page.Command != "catalog" || page.Entry.Kind != "character" || context.Artwork == nil || traveler(page.Entry.ID) {
 		return gamekit.Image{}, false
 	}
 	raw, err := context.Artwork.Open("miao-plugin", "resources/meta-gs/character/"+page.Entry.Name+"/data.json")
@@ -62,6 +65,9 @@ func Entry(context gamekit.ImageContext, page gamekit.EntryImage) (gamekit.Image
 	var character wikiCharacter
 	if json.Unmarshal(raw, &character) != nil || len(character.Talent) == 0 {
 		return gamekit.Image{}, false
+	}
+	if page.Command == "catalog" {
+		return CharacterWiki(context, character)
 	}
 	return CharacterTalent(context, character, strings.Contains(page.Word, "命"))
 }

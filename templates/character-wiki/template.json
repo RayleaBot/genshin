@@ -1,0 +1,11 @@
+{
+  "id": "character-wiki",
+  "name": "原神角色图鉴",
+  "description": "图鉴与资料命令的角色图片，布局参照 miao-plugin wiki/character-wiki",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 840,
+  "height": 4000
+}

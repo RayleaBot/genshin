@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["elem", "title", "name", "desc", "weapon", "astro", "birthday", "allegiance", "cncv", "jpcv", "attrs", "materials", "prefix", "abbr"],
+  "properties": {
+    "elem": { "type": "string" },
+    "title": { "type": "string" },
+    "name": { "type": "string" },
+    "desc": { "type": "string" },
+    "star": { "type": "integer" },
+    "weapon": { "type": "string" },
+    "astro": { "type": "string" },
+    "birthday": { "type": "string" },
+    "allegiance": { "type": "string" },
+    "cncv": { "type": "string" },
+    "jpcv": { "type": "string" },
+    "attrs": { "type": "array" },
+    "splash": { "type": "string" },
+    "materials": { "type": "array" },
+    "holding": { "type": "object" },
+    "weapons": { "type": "array" },
+    "artis": { "type": "array" },
+    "prefix": { "type": "string" },
+    "abbr": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
