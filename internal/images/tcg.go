@@ -2,6 +2,7 @@ package images
 
 import (
 	"regexp"
+	"strings"
 
 	gamekit "github.com/RayleaBot/game-plugin-kit"
 )
@@ -90,4 +91,61 @@ func TCGDecks(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 	}
 	data["decks"] = list
 	return gamekit.Image{Template: "tcg-decks", Data: data, Resources: resources.List}, true
+}
+
+// TCGCards draws 七圣召唤查询牌 the way Yunzai's deckCard page does: the TCG
+// level and the cards collected of each kind, then every character card owned
+// with its wins, uses and HP and every action card owned with its uses,
+// copies and dice costs. 角色 or 行动 in the command keeps one kind, as
+// upstream queries only that list.
+func TCGCards(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+	cards, ok := result.Data["card_list"].([]any)
+	if !ok {
+		return gamekit.Image{}, false
+	}
+	resources := newTCGResources(context)
+	resources.Artwork("deck-tcg", "yunzai-genshin", "resources/img/deck/七圣召唤.png")
+	data := map[string]any{"uid": result.Role.UID, "nickname": result.Role.Nickname, "show_characters": !strings.Contains(context.Word, "行动"), "show_actions": !strings.Contains(context.Word, "角色")}
+	if context.Query != nil {
+		if basic, err := context.Query("genshin.tcg", nil); err == nil {
+			info := basic.Data
+			data["nickname"], data["level"] = gamekit.Text(info["nickname"]), gamekit.Int(info["level"])
+			data["avatar_gained"], data["avatar_total"] = gamekit.Int(info["avatar_card_num_gained"]), gamekit.Int(info["avatar_card_num_total"])
+			data["action_gained"], data["action_total"] = gamekit.Int(info["action_card_num_gained"]), gamekit.Int(info["action_card_num_total"])
+		}
+	}
+	// One list holds both kinds; character cards are the ones with HP.
+	owned := []map[string]any{}
+	urls := []any{}
+	for _, raw := range cards {
+		card, _ := raw.(map[string]any)
+		if gamekit.Int(card["num"]) > 0 {
+			owned = append(owned, card)
+			urls = append(urls, card["image"])
+		}
+	}
+	resources.Prefetch("mihoyo", urls...)
+	characters, actions := []any{}, []any{}
+	for _, card := range owned {
+		image := resources.URL("mihoyo", card["image"])
+		if gamekit.Int(card["hp"]) > 0 {
+			if data["show_characters"] == true {
+				characters = append(characters, map[string]any{"image": image, "hp": resources.deck(gamekit.Text(card["hp"])),
+					"wins": gamekit.Int(card["proficiency"]), "uses": gamekit.Int(card["use_count"])})
+			}
+			continue
+		}
+		if data["show_actions"] != true {
+			continue
+		}
+		costs := []any{}
+		list, _ := card["action_cost"].([]any)
+		for _, raw := range list {
+			cost, _ := raw.(map[string]any)
+			costs = append(costs, map[string]any{"type": resources.deck(gamekit.Text(cost["cost_type"])), "value": resources.deck(gamekit.Text(cost["cost_value"]))})
+		}
+		actions = append(actions, map[string]any{"image": image, "uses": gamekit.Int(card["use_count"]), "num": gamekit.Int(card["num"]), "costs": costs})
+	}
+	data["characters"], data["actions"] = characters, actions
+	return gamekit.Image{Template: "tcg-cards", Data: data, Resources: resources.List}, true
 }

@@ -28,3 +28,22 @@ func TestTCGDecksFollowYunzai(t *testing.T) {
 		t.Error("a missing deck drew a page")
 	}
 }
+
+func TestTCGCardsKeepsOwnedCardsOfTheKindAsked(t *testing.T) {
+	cards := []any{
+		map[string]any{"num": 1, "hp": 10, "proficiency": 3, "use_count": 5, "image": "https://example.com/a.png"},
+		map[string]any{"num": 0, "hp": 10, "image": "https://example.com/b.png"},
+		map[string]any{"num": 2, "use_count": 7, "image": "https://example.com/c.png", "action_cost": []any{map[string]any{"cost_type": "CostTypeSame", "cost_value": "2"}}},
+	}
+	result := gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: map[string]any{"card_list": cards}}
+	image, ok := images.TCGCards(gamekit.ImageContext{Word: "七圣查询牌"}, result)
+	characters, actions := image.Data["characters"].([]any), image.Data["actions"].([]any)
+	if !ok || len(characters) != 1 || len(actions) != 1 || characters[0].(map[string]any)["wins"] != 3 || actions[0].(map[string]any)["num"] != 2 {
+		t.Fatalf("cards = %v / %v", characters, actions)
+	}
+	// 角色 keeps only the character cards, as upstream then skips the action list.
+	image, _ = images.TCGCards(gamekit.ImageContext{Word: "七圣查询角色牌"}, result)
+	if len(image.Data["actions"].([]any)) != 0 || image.Data["show_actions"] != false || len(image.Data["characters"].([]any)) != 1 {
+		t.Fatalf("character cards = %v", image.Data)
+	}
+}

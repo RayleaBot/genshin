@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="head_box">
+    <div class="id_text">{{ .nickname }}</div>
+    <div class="id_text">UID: {{ .uid }}</div>
+    <img class="genshin_logo" data-render-resource="genshin-logo" alt="">
+  </div>
+  <div style="height: 11px;"></div>
+  {{ if .level }}
+  <div class="basicInfo">
+    <div class="tab_lable">七圣召唤</div>
+    <div class="basicInfo_header">
+      <div class="basicInfo_icon"><span>{{ .level }}</span></div>
+      <div class="basicInfo_right">
+        <div class="item"><div>已收集角色牌</div><div>{{ .avatar_gained }}/{{ .avatar_total }}</div></div>
+        <div class="item"><div>已收集行动牌</div><div>{{ .action_gained }}/{{ .action_total }}</div></div>
+      </div>
+    </div>
+  </div>
+  {{ end }}
+  <div style="height: 5px;"></div>
+  {{ if .show_characters }}
+  <div class="basicInfo">
+    <div class="tab_lable">角色牌详情</div>
+    <div style="height: 10px;"></div>
+    <div class="avatar_covers">
+      {{ range .characters }}
+      <div class="card-wrapper">
+        <div class="overlay">
+          <img data-render-resource="deck-frame" alt="">
+          <span><div class="win_lable">{{ .wins }}/{{ .uses }}</div></span>
+        </div>
+        <div class="overlay">
+          <div class="rq-container"><img data-render-resource="deck-container" alt=""></div>
+          <div class="hp-container"><img{{ with .hp }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+        <img{{ with .image }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+      {{ end }}
+    </div>
+    <div class="logo">左下角为胜利场数/使用次数，仅展示已有角色牌</div>
+  </div>
+  {{ end }}
+  {{ if .show_actions }}
+  <div class="basicInfo">
+    <div class="tab_lable">行动牌详情</div>
+    <div style="height: 10px;"></div>
+    <div class="action_covers">
+      {{ range .actions }}
+      <div class="card-wrapper">
+        <div class="overlay">
+          <img data-render-resource="deck-frame" alt="">
+          <span><div class="win_lable">{{ .uses }}</div></span>
+          <span><div class="num_lable">{{ .num }}</div></span>
+        </div>
+        <div class="cost-wrapper">
+          {{ range .costs }}
+          <div class="ty-container"><img{{ with .type }} data-render-resource="{{ . }}"{{ end }} alt="" style="position: absolute; z-index: 1;"></div>
+          <div class="va-container"><img{{ with .value }} data-render-resource="{{ . }}"{{ end }} alt="" style="position: absolute; z-index: 2;"></div>
+          <div style="height: 150px;"></div>
+          {{ end }}
+        </div>
+        <img{{ with .image }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+      {{ end }}
+    </div>
+    <div class="logo">左下角为使用次数，仅展示已有行动牌</div>
+  </div>
+  {{ end }}
+  {{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

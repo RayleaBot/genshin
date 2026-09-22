@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "nickname", "show_characters", "show_actions", "characters", "actions"],
+  "properties": {
+    "uid": { "type": "string" },
+    "nickname": { "type": "string" },
+    "level": { "type": "integer" },
+    "avatar_gained": { "type": "integer" },
+    "avatar_total": { "type": "integer" },
+    "action_gained": { "type": "integer" },
+    "action_total": { "type": "integer" },
+    "show_characters": { "type": "boolean" },
+    "show_actions": { "type": "boolean" },
+    "characters": { "type": "array" },
+    "actions": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
