@@ -218,6 +218,25 @@
       }
     },
     {
+      "id": "gacha-help",
+      "name": "抽卡帮助",
+      "description": "抽卡记录的获取与查看方法",
+      "usage": "#抽卡帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "记录帮助",
+          "抽卡帮助",
+          "安卓帮助",
+          "苹果帮助",
+          "电脑帮助",
+          "pc帮助",
+          "ios帮助"
+        ]
+      }
+    },
+    {
       "id": "gacha",
       "name": "抽卡记录",
       "description": "分析已导入的抽卡记录",
@@ -658,6 +677,20 @@
       }
     },
     {
+      "id": "pay-help",
+      "name": "充值记录帮助",
+      "description": "充值与消费记录的查询方法",
+      "usage": "#充值记录帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "充值记录帮助",
+          "消费统计帮助"
+        ]
+      }
+    },
+    {
       "id": "billing",
       "name": "资产记录",
       "description": "查询官方可用资产变动明细",
@@ -1019,6 +1052,19 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:公开信息|(?:uid|UID)?[+＋]*(?P<uid>(?:18|[1-9])[0-9]{8}))$"
+      }
+    },
+    {
+      "id": "pool-help",
+      "name": "卡池帮助",
+      "description": "卡池查询的写法",
+      "usage": "#卡池帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "卡池帮助"
+        ]
       }
     },
     {
@@ -1541,7 +1587,8 @@
         "monthly",
         "monthly-history",
         "monthly-save",
-        "billing"
+        "billing",
+        "pay-help"
       ]
     },
     {
@@ -1553,7 +1600,8 @@
         "gacha-schedule",
         "gacha-progress",
         "gacha-stop",
-        "gacha-versions"
+        "gacha-versions",
+        "gacha-help"
       ]
     },
     {
@@ -1565,7 +1613,8 @@
         "simulation",
         "simulation-history",
         "simulation-fate",
-        "simulation-reset"
+        "simulation-reset",
+        "pool-help"
       ]
     },
     {
