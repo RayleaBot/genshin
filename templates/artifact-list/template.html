@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container elem-bg" id="container">
+<div class="uid">UID {{ .uid }}</div>
+
+<div class="profile-cont game-{{ .game }}">
+  <div class="artis">
+    {{ range .artis }}
+    <div class="item arti">
+      <div class="avatar">
+        {{ with .side }}<img data-render-resource="{{ . }}" />{{ end }}
+      </div>
+      <div class="arti-icon">
+        <div class="img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div>
+      </div>
+      <div class="head">
+        <strong>{{ .name }}</strong>
+        <span class="mark mark-{{ .grade }}"><span>{{ .mark }}分</span> - {{ .grade }}</span>
+      </div>
+      <ul class="detail attr">
+        <li class="arti-main"><span class="title">{{ .main.title }}</span><span
+            class="val">+{{ .main.value }}</span>
+        </li>
+        {{ range .attrs }}
+        <li class="{{ .class }}">
+          <span class="title">{{ if .eff }}<i class="eff">{{ .eff }}</i>{{ end }}{{ if .up }}<i
+              class="up-num up-{{ .up }}"></i>{{ end }}{{ .title }}</span>
+          <span class="val">+{{ .value }}</span>
+        </li>
+        {{ end }}
+      </ul>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

@@ -212,6 +212,17 @@
       }
     },
     {
+      "id": "artifact-list",
+      "name": "圣遗物列表",
+      "description": "已保存面板中评分最高的圣遗物",
+      "usage": "#圣遗物列表 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^圣遗物列表(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
       "id": "gacha",
       "name": "抽卡记录",
       "description": "分析已导入的抽卡记录",
@@ -1307,6 +1318,7 @@
         "panel-refresh-account",
         "panel-list",
         "panel-delete",
+        "artifact-list",
         "score",
         "build",
         "public-profile",

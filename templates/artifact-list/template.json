@@ -1,0 +1,11 @@
+{
+  "id": "artifact-list",
+  "name": "原神圣遗物列表",
+  "description": "原神圣遗物列表命令的图片，布局参照 miao-plugin character/artis-list",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1106,
+  "height": 6000
+}

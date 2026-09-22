@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "game", "artis"],
+  "properties": {
+    "uid": { "type": "string" },
+    "game": { "type": "string" },
+    "artis": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
