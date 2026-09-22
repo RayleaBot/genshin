@@ -57,6 +57,9 @@ var affixPlaceholder = regexp.MustCompile(`\$\[(\d)\]`)
 // chinaTime is the time zone the upstream images print times in.
 var chinaTime = time.FixedZone("UTC+8", 8*3600)
 
+// panelSources are miao's names for the services a panel came from.
+var panelSources = map[string]string{"mihoyo": "mysPanel", "enka": "enka", "mihomo": "homo", "change": "面板变换"}
+
 // Panel draws a single character the way miao's profile-detail does: the
 // splash with level, constellation, talents and attributes, constellation
 // icons, the artifact rating with every substat, the weapon and artifacts,
@@ -106,6 +109,12 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 		cons = append(cons, map[string]any{"icon": id, "off": index > panel.Rank})
 	}
 
+	// miao names a panel's source as its data services do, and a changed
+	// panel 面板变换.
+	updated := context.Now
+	if panel.UpdatedAtMS > 0 {
+		updated = time.UnixMilli(panel.UpdatedAtMS)
+	}
 	detail := panel.ScoreDetail
 	weight := func(key string) float64 {
 		if detail == nil {
@@ -139,7 +148,7 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	data := map[string]any{
 		"elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"talents": talents, "attrs": attrs, "cons_icons": cons,
-		"data_source": "mys", "update_time": context.Now.In(chinaTime).Format("2006-01-02 15:04:05"),
+		"data_source": panelSources[panel.Source], "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
 		"artifact_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "圣遗物",
 		"damage_hint":   context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
 	}
@@ -210,6 +219,9 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 			rows = append(rows, row)
 		}
 		data["damage"] = map[string]any{"rows": rows, "enemy_level": image.Damage.EnemyLevel}
+	}
+	if image.Change != "" {
+		data["change"] = image.Change
 	}
 	return gamekit.Image{Template: "panel", Data: data, Resources: resources}, true
 }

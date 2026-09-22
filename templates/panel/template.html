@@ -49,6 +49,14 @@
     </div>
   </div>
 
+  {{ with .change }}
+  <div class="cont">
+    <div class="cont-footer dmg-desc">
+      <strong>该面板为非实际数据。当前替换命令：</strong> {{ . }}
+    </div>
+  </div>
+  {{ end }}
+
   <div class="profile-detail">
     {{ with .rating }}
     <div class="cont arti-mark-cont">

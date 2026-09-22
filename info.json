@@ -1301,6 +1301,17 @@
         "type": "pattern",
         "pattern": "^(?P<character>.+?)(?:面板|面版|详情|详细)$"
       }
+    },
+    {
+      "id": "panel-change",
+      "name": "面板换装",
+      "description": "按上游写法替换面板的武器、圣遗物、套装、命座、天赋或等级后重新计算",
+      "usage": "#雷神换90级5精护摩换绝缘4",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^.+[换变改].+$"
+      }
     }
   ],
   "command_groups": [
@@ -1330,6 +1341,7 @@
         "panel-list",
         "panel-delete",
         "artifact-list",
+        "panel-change",
         "score",
         "build",
         "public-profile",
