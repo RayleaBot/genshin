@@ -1243,6 +1243,17 @@
       }
     },
     {
+      "id": "cloud-reforge",
+      "name": "ark重塑识别",
+      "description": "附带或引用重塑截图，由 ark 识别前后两件圣遗物，找到佩戴的角色后生成重塑后的面板",
+      "usage": "#ark重塑识别",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^ark(重塑|重投)识别$"
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1366,7 +1377,7 @@
     {
       "id": "panel-change",
       "name": "面板换装",
-      "description": "按上游写法替换面板的武器、圣遗物、套装、命座、天赋或等级后重新计算",
+      "description": "按上游写法替换面板的武器、圣遗物、套装、命座、天赋或等级后重新计算；附带或引用圣遗物截图时换上 ark 识别的圣遗物",
       "usage": "#雷神换90级5精护摩换绝缘4",
       "permission": "everyone",
       "trigger": {
@@ -1439,6 +1450,7 @@
         "cloud-rank-stats",
         "cloud-export",
         "cloud-import",
+        "cloud-reforge",
         "cloud-private-panel",
         "cloud-verify"
       ]
