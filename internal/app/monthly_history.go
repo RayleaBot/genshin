@@ -249,7 +249,11 @@ var ledgerMonths = []string{"一", "二", "三", "四", "五", "六", "七", "�
 
 // ledgerMonth reads the month of 原石7月 or 札记七月 the way Yunzai's getMonth
 // does: digits or a Chinese numeral, anything else this month; only this
-// month and the two before it can be read.
+// month and the two before it can be read. A month after this one is last
+// year's, which the official report reads by its number. Upstream sends such
+// a month (November or December in January, December in February) to this
+// month instead, because its check for later months tests month <= 9 +
+// month, which always holds.
 func ledgerMonth(word string, now time.Time) (int, error) {
 	current := int(now.Month())
 	month, err := strconv.Atoi(word)
@@ -317,26 +321,31 @@ func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) er
 	return event.SendText("原石任务完成")
 }
 
-// refreshMonthly saves this month's report and each month the official report
-// still offers that was not saved after it ended; a month that fails to load
-// is left as saved.
+// refreshMonthly reads this month's report and saves it as keepMonthly does.
 func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice Selection) error {
-	operation := a.Game.ID + ".monthly"
-	current, err := client.Execute(ctx, choice, operation, map[string]any{})
+	current, err := client.Execute(ctx, choice, a.Game.ID+".monthly", map[string]any{})
 	if err != nil {
 		return err
 	}
+	return a.keepMonthly(ctx, client, choice, current)
+}
+
+// keepMonthly saves a month's report that was read and each other month the
+// official report still offers that was not saved after it ended, as
+// Yunzai's saveLedger does; a month that fails to load is left as saved.
+func (a *App) keepMonthly(ctx context.Context, client AccountsClient, choice Selection, read QueryResult) error {
+	operation := a.Game.ID + ".monthly"
 	now := time.Now()
-	if err := a.Monthly.Keep(client.Provider, choice, current.Data, now); err != nil {
+	if err := a.Monthly.Keep(client.Provider, choice, read.Data, now); err != nil {
 		return err
 	}
 	archive, err := a.Monthly.Read(client.Provider, choice)
 	if err != nil {
 		return err
 	}
-	for _, value := range asList(current.Data["optional_month"]) {
+	for _, value := range asList(read.Data["optional_month"]) {
 		month := asText(value)
-		if month == asText(current.Data["data_month"]) {
+		if month == asText(read.Data["data_month"]) {
 			continue
 		}
 		key, _, err := monthlyKey(map[string]any{"data_month": month}, now)
