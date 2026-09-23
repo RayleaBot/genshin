@@ -7,7 +7,8 @@ weapon/alias.js `alias` and `abbr`, the abbreviation also kept as `abbr`), the
 character names from miao's character index, which upstream resolves names
 through, and the set abbreviations from artifact/alias.js as `set_abbrs` and
 the set aliases as `set_aliases`; also miao's material abbreviations (material/abbr.js) as `material_abbrs`
-and its 老婆 types (character/extra.js wifeCfg) as `wife_types`.
+and its 老婆 types (character/extra.js wifeCfg) as `wife_types`; Yunzai's short names
+(defSet role/weapon other.yaml sortName) as `short_names`.
 Only built-in aliases are replaced; custom aliases stay in plugin settings.
 Needs node.
 """
@@ -105,5 +106,24 @@ wife = {}
 for kind, names in module(meta / "character/extra.js").get("wifeCfg", {}).items():
     wife[kind] = [ids[name] for name in words(names) if name in ids]
 catalog["wife_types"] = wife
+
+
+def sort_names(file):
+    """The sortName block of a Yunzai defSet YAML: two-space `name: short` lines."""
+    names, inside = {}, False
+    for line in file.read_text(encoding="utf-8").splitlines():
+        if not line.startswith(" "):
+            inside = line.strip() == "sortName:"
+            continue
+        if inside and ":" in line:
+            name, short = line.strip().split(":", 1)
+            names[name.strip()] = short.strip()
+    return names
+
+
+# Yunzai's short names (defSet role/weapon other.yaml sortName), which its
+# pages print in place of long names.
+yunzai = refs / "Yunzai-genshin/defSet"
+catalog["short_names"] = {"character": sort_names(yunzai / "role/other.yaml"), "weapon": sort_names(yunzai / "weapon/other.yaml")}
 save(path, catalog)
 print(json.dumps({"aliases": counted, "set_abbrs": len(catalog["set_abbrs"]), "renamed": renamed}, ensure_ascii=False))

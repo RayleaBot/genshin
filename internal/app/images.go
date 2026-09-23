@@ -74,6 +74,8 @@ type GachaImage struct {
 	Role    Role
 	Word    string
 	Archive gacha.Archive
+	// Group is a group chat, where 抽卡统计 shows fewer pools.
+	Group bool
 }
 
 // GachaImageBuilder draws a gacha record reply with the plugin's template, or

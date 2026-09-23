@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+<div class="head_box">
+  <div class="id_text">ID: {{ .uid }}</div>
+  <h2 class="day_text">抽卡统计-{{ .type_name }}</h2>
+  <img class="genshin_logo" data-render-resource="logo" alt="">
+</div>
+{{ range .pools }}
+{{ if .items }}
+<div class="pool_box">
+  <div class="title_box">
+    <div class="name_box">
+      <div class="title"><h2>「{{ .five }}」</h2></div>
+      <span class="label label_301">{{ .count }}抽</span>
+    </div>
+    {{ if $.dated }}
+    <span class="date">{{ .start }} - {{ .end }}</span>
+    {{ end }}
+  </div>
+  <div class="list_box">
+    {{ range .items }}
+    <div class="item">
+      <div class="bg{{ .rank }}"></div>
+      <span class="num {{ if .life5 }}life5{{ end }}">{{ .count }}</span>
+      <span class="role_img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
+{{ end }}
+{{ if .group }}
+<div class="hasMore">*完整数据请私聊查看</div>
+{{ end }}
+{{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

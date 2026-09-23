@@ -1,0 +1,11 @@
+{
+  "id": "gacha-count",
+  "name": "原神抽卡统计",
+  "description": "抽卡统计命令的图片，布局参照 Yunzai 原神插件 html/gacha/log-count",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 795,
+  "height": 4000
+}

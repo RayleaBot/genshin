@@ -39,6 +39,9 @@ type Catalog struct {
 	// WifeTypes are miao's 老婆 kinds (girlfriend, boyfriend, daughter, son)
 	// and the character IDs of each.
 	WifeTypes map[string][]string `json:"wife_types,omitempty"`
+	// ShortNames are Yunzai's short character and weapon names (defSet
+	// other.yaml sortName), by kind.
+	ShortNames map[string]map[string]string `json:"short_names,omitempty"`
 	// MaterialAbbrs are upstream's short names for some materials, by name.
 	MaterialAbbrs map[string]string `json:"material_abbrs,omitempty"`
 	Version       string            `json:"version"`

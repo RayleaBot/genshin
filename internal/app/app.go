@@ -592,8 +592,9 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = GachaView(game, archive)
 		if command == "gacha-versions" {
 			view = versionDrawView(game, versionDraws(game, archive))
-		} else if a.gacha != nil {
-			if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: role.UID, Role: role, Word: event.Event.Command(), Archive: archive}); ok {
+		}
+		if a.gacha != nil {
+			if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: role.UID, Role: role, Word: event.Event.Command(), Archive: archive, Group: event.Event.Target.Type == "group"}); ok {
 				view.Image = &drawn
 			}
 		}

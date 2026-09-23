@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "uid",
+    "type_name",
+    "dated",
+    "group",
+    "pools"
+  ],
+  "properties": {
+    "uid": {
+      "type": "string"
+    },
+    "type_name": {
+      "type": "string"
+    },
+    "dated": {
+      "type": "boolean"
+    },
+    "group": {
+      "type": "boolean"
+    },
+    "pools": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

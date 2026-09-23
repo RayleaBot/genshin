@@ -585,13 +585,13 @@
     },
     {
       "id": "gacha-versions",
-      "name": "版本统计",
-      "description": "按版本统计抽数与出货",
-      "usage": "#版本统计 [UID]",
+      "name": "抽卡统计",
+      "description": "按卡池列出每期抽数与所得四星、五星及次数",
+      "usage": "#抽卡统计 / #武器统计 / #常驻统计 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:(?:喵喵)?(?:全部|抽卡|抽奖|角色|武器|光锥|常驻|集录|up|新手|版本)+池?统计|版本抽卡)$"
+        "pattern": "^(?:原神)?(?:抽卡|抽奖|角色|武器|集录|常驻|up|新手|光锥)池*统计$"
       }
     },
     {
