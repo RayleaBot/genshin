@@ -127,6 +127,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"深渊第12层使用率", "stat-usage", nil},
 			{"幽境危战使用率", "stat-usage", nil},
 			{"深渊配队", "abyss-team", nil},
+			{"202507剧诗练度统计", "theater-training", []string{"202507"}},
 			{"雷神", "character-card", nil},
 		},
 	}

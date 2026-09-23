@@ -473,6 +473,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.statisticsCommand(ctx, event, command)
 	case "character-card":
 		return a.characterCard(ctx, event, args)
+	case "theater-training":
+		return a.theaterTraining(ctx, event, args)
 	case "build":
 		if len(args) < 1 || len(args) > 2 {
 			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "胡桃伤害”）查看固定参考情境下的角色伤害。")

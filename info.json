@@ -133,6 +133,17 @@
       }
     },
     {
+      "id": "theater-training",
+      "name": "剧诗练度统计",
+      "description": "按月份读取幻想真境剧诗的限制元素、开幕与特邀角色和各幕怪物，并列出可参战角色的练度",
+      "usage": "#202507剧诗练度统计",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<month>202[0-9]{3})(?:幻想|真境|剧诗|幻想真境剧诗)练度统计$"
+      }
+    },
+    {
       "id": "weapons",
       "name": "武器",
       "description": "已装备武器的列表",
@@ -1688,6 +1699,7 @@
         "note",
         "characters",
         "training",
+        "theater-training",
         "weapons",
         "talent-stat",
         "public-profile"

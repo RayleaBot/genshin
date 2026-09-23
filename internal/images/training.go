@@ -3,6 +3,7 @@ package images
 import (
 	"regexp"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -75,7 +76,10 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 	for _, item := range trainingArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	entries, _ := buildRoster(context, resources, list)
+	entries, cards := buildRoster(context, resources, list)
+	if theater, ok := context.Input["theater"].(map[string]any); ok {
+		entries = theaterRoster(entries, cards, theater)
+	}
 	day := context.Now.In(chinaTime)
 	if day.Hour() < 4 {
 		day = day.AddDate(0, 0, -1)
@@ -173,4 +177,60 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 	return app.Image{Template: "training", Data: map[string]any{
 		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"), "talent": talent,
 	}, Resources: resources.List}, true
+}
+
+// theaterRoster is miao's 剧诗练度统计 roster: the month's opening characters
+// join at level 90 with every talent at 8 unless the player's own is at
+// least that level, the roster is ordered by element and then as usual,
+// highest first, and only characters of level 70 or more that are invited or
+// of an allowed element remain, the Manekin twins aside.
+func theaterRoster(entries []rosterEntry, cards *avatarCards, theater map[string]any) []rosterEntry {
+	list := func(key string) []string {
+		values, _ := theater[key].([]string)
+		return values
+	}
+	initial, invite, elements := list("initial"), list("invite"), list("elements")
+	for _, id := range initial {
+		index := slices.IndexFunc(entries, func(entry rosterEntry) bool { return entry.id == id })
+		if index >= 0 && entries[index].level >= 90 {
+			continue
+		}
+		card := cards.guest(id, 90, 0)
+		if card["known"] != true {
+			continue
+		}
+		talents := []any{}
+		for _, key := range []string{"a", "e", "q"} {
+			talents = append(talents, map[string]any{"key": key, "level": 8, "original": 8})
+		}
+		card["talents"], card["type"] = talents, "mini"
+		start := rosterEntry{id: id, card: card, level: 90, star: app.Int(card["star"]), aeq: 24}
+		if index >= 0 {
+			entries[index] = start
+		} else {
+			entries = append(entries, start)
+		}
+	}
+	element := func(entry rosterEntry) string { return app.Text(entry.card["elem"]) }
+	// miao sorts ascending and reverses, so equal characters swap order too.
+	sort.SliceStable(entries, func(i, j int) bool {
+		a, b := entries[i], entries[j]
+		if element(a) != element(b) {
+			return element(a) < element(b)
+		}
+		for _, pair := range [][2]int{{a.level, b.level}, {a.star, b.star}, {a.aeq, b.aeq}, {a.cons, b.cons}, {a.weaponLevel, b.weaponLevel}, {a.weaponStar, b.weaponStar}, {a.refinement, b.refinement}, {a.fetter, b.fetter}} {
+			if pair[0] != pair[1] {
+				return pair[0] < pair[1]
+			}
+		}
+		return false
+	})
+	slices.Reverse(entries)
+	kept := []rosterEntry{}
+	for _, entry := range entries {
+		if entry.level >= 70 && entry.id != "10000117" && entry.id != "10000118" && (slices.Contains(invite, entry.id) || slices.Contains(elements, element(entry))) {
+			kept = append(kept, entry)
+		}
+	}
+	return kept
 }
