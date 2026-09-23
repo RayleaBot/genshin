@@ -1,0 +1,11 @@
+{
+  "id": "stat-abyss-team",
+  "name": "原神深渊配队",
+  "description": "深渊配队命令的图片，布局参照 miao-plugin stat/abyss-team",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 900,
+  "height": 16000
+}

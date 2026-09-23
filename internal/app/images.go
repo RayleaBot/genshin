@@ -40,6 +40,8 @@ type ImageContext struct {
 	// many characters' equipment scores, as 练度统计. It is nil when the game
 	// has no scoring.
 	Score func(CharacterPanel) (CharacterPanel, error)
+	// Statistic reads the public statistics miao reads, cached an hour.
+	Statistic func(source string) (map[string]any, error)
 
 	ctx context.Context
 }
@@ -204,6 +206,7 @@ func (c ImageContext) FetchURLResource(id, source, url string) (rayleabot.Render
 
 func (a *App) imageContext(ctx context.Context) ImageContext {
 	context := ImageContext{Game: a.Game, Catalog: a.Catalog, Artwork: a.Artwork, Now: time.Now(), ctx: ctx}
+	context.Statistic = func(source string) (map[string]any, error) { return a.statistic(ctx, source) }
 	if a.Game.Calc != nil {
 		context.Score = func(panel CharacterPanel) (CharacterPanel, error) { return a.scorePanel(ctx, panel) }
 	}

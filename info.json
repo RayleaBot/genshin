@@ -177,6 +177,39 @@
       }
     },
     {
+      "id": "stat-cons",
+      "name": "角色持有率",
+      "description": "全服角色持有率与命座分布（公开统计样本）",
+      "usage": "#角色持有率 / #角色命座 / #角色六命统计",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:喵喵)?角色(?:持有|持有率|命座|命之座|.命)(?:分布|统计|持有|持有率)?$"
+      }
+    },
+    {
+      "id": "stat-usage",
+      "name": "深渊使用率",
+      "description": "深渊或幽境危战的角色使用率（公开统计样本）",
+      "usage": "#深渊使用率 / #幽境使用率",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:喵喵)?(?:深渊|幽境|危战|幽境危战)(?:第?.{1,2}层)?(?:角色)?(?:出场|使用)(?:率|统计)*$"
+      }
+    },
+    {
+      "id": "abyss-team",
+      "name": "深渊配队",
+      "description": "按深渊使用统计与自己的角色推荐十二层上下半配队",
+      "usage": "#深渊配队",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^深渊(?:组队|配队|配对)$"
+      }
+    },
+    {
       "id": "talent-wiki",
       "name": "角色天赋",
       "description": "角色的天赋、被动与命之座资料",
@@ -1706,7 +1739,10 @@
         "abyss",
         "abyss-floor",
         "theater",
-        "hard_challenge"
+        "hard_challenge",
+        "stat-usage",
+        "abyss-team",
+        "stat-cons"
       ]
     },
     {

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "mode",
+    "holding",
+    "cons_title",
+    "total",
+    "last_update",
+    "chars"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string"
+    },
+    "holding": {
+      "type": "boolean"
+    },
+    "cons_title": {
+      "type": "string"
+    },
+    "total": {
+      "type": "string"
+    },
+    "last_update": {
+      "type": "string"
+    },
+    "chars": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

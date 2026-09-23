@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "title",
+    "name",
+    "total",
+    "last_update",
+    "floor_name",
+    "ranks"
+  ],
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "total": {
+      "type": "string"
+    },
+    "last_update": {
+      "type": "string"
+    },
+    "floor_name": {
+      "type": "string"
+    },
+    "ranks": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

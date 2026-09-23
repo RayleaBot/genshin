@@ -1,17 +1,12 @@
 package images
 
 import (
-	"context"
 	"encoding/json"
 	"html"
-	"io"
-	"net/http"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 	"unicode/utf8"
 
 	"github.com/RayleaBot/plugin-genshin/internal/app"
@@ -107,86 +102,37 @@ func wikiDescHTML(desc string) string {
 	return strings.Join(parts, "<br>")
 }
 
-// wikiStatistics are the public statistics miao's character page reads:
-// lelaer's constellation, level and equipment usage by character name and
-// yshelper's holding rate, each cached for an hour as upstream does.
-var wikiStatistics = struct {
-	sync.Mutex
-	fetched time.Time
-	roles   map[string]map[string]any
-	owned   map[string]float64
-}{}
-
-const (
-	wikiRoleAvgURL   = "https://api.lelaer.com/ys/getRoleAvg.php?star=all&lang=zh-Hans"
-	wikiAbyssRankURL = "https://api.yshelper.com/ys/getAbyssRank.php?star=all&role=all&lang=zh-Hans"
-)
-
-// wikiFetch reads one statistics response; upstream accepts JSON wrapped in
-// other text by taking what lies between the first { and the last }.
-func wikiFetch(url string) map[string]any {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil
+// wikiStats returns a character's entry in lelaer's averages and its
+// yshelper holding rate (negative when unknown), the statistics miao's
+// character page reads.
+func wikiStats(context app.ImageContext, name string) (map[string]any, float64) {
+	if context.Statistic == nil {
+		return nil, -1
 	}
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil
-	}
-	defer response.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(response.Body, 8<<20))
-	if err != nil || response.StatusCode != http.StatusOK {
-		return nil
-	}
-	var data map[string]any
-	if json.Unmarshal(body, &data) != nil {
-		start, end := strings.IndexByte(string(body), '{'), strings.LastIndexByte(string(body), '}')
-		if start < 0 || end <= start || json.Unmarshal(body[start:end+1], &data) != nil {
-			return nil
-		}
-	}
-	return data
-}
-
-// wikiStats returns a character's lelaer entry and yshelper holding rate
-// (negative when unknown), fetching both at most once an hour.
-func wikiStats(name string, catalog app.Catalog) (map[string]any, float64) {
-	wikiStatistics.Lock()
-	defer wikiStatistics.Unlock()
-	if wikiStatistics.roles == nil || time.Since(wikiStatistics.fetched) > time.Hour {
-		roles, owned := map[string]map[string]any{}, map[string]float64{}
-		if data := wikiFetch(wikiRoleAvgURL); data != nil {
-			list, _ := data["result"].([]any)
-			for _, raw := range list {
-				role, _ := raw.(map[string]any)
-				if entry, ok := catalog.Resolve(app.Text(role["role"]), "character", nil); ok {
-					roles[entry.Name] = role
-				}
+	var role map[string]any
+	if data, err := context.Statistic("ownership"); err == nil {
+		list, _ := data["result"].([]any)
+		for _, raw := range list {
+			item, _ := raw.(map[string]any)
+			if entry, ok := context.Catalog.Resolve(app.Text(item["role"]), "character", nil); ok && entry.Name == name {
+				role = item
+				break
 			}
 		}
-		if data := wikiFetch(wikiAbyssRankURL); data != nil {
-			list, _ := data["has_list"].([]any)
-			for _, raw := range list {
-				role, _ := raw.(map[string]any)
-				if entry, ok := catalog.Resolve(app.Text(role["name"]), "character", nil); ok {
-					rate, _ := strconv.ParseFloat(app.Text(role["own_rate"]), 64)
-					owned[entry.Name] = rate / 100
-				}
+	}
+	rate := -1.0
+	if data, err := context.Statistic("abyss"); err == nil {
+		list, _ := data["has_list"].([]any)
+		for _, raw := range list {
+			item, _ := raw.(map[string]any)
+			if entry, ok := context.Catalog.Resolve(app.Text(item["name"]), "character", nil); ok && entry.Name == name {
+				owned, _ := strconv.ParseFloat(app.Text(item["own_rate"]), 64)
+				rate = owned / 100
+				break
 			}
 		}
-		// A failed fetch is retried on the next page rather than cached.
-		if len(roles) > 0 {
-			wikiStatistics.roles, wikiStatistics.owned, wikiStatistics.fetched = roles, owned, time.Now()
-		}
 	}
-	rate, ok := wikiStatistics.owned[name]
-	if !ok {
-		rate = -1
-	}
-	return wikiStatistics.roles[name], rate
+	return role, rate
 }
 
 // miaoPercent is miao's Format.percent: the fraction as a percentage.
@@ -246,7 +192,7 @@ func CharacterWiki(context app.ImageContext, character wikiCharacter) (app.Image
 		materials = append(materials, map[string]any{"type": material.kind, "num": num, "star": material.star, "label": material.label, "icon": miao(material.icon)})
 	}
 	data["materials"] = materials
-	role, owned := wikiStats(character.Name, context.Catalog)
+	role, owned := wikiStats(context, character.Name)
 	if role != nil {
 		level, _ := strconv.ParseFloat(app.Text(role["avg_level"]), 64)
 		cons, _ := strconv.ParseFloat(app.Text(role["avg_class"]), 64)

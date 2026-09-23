@@ -122,6 +122,11 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"设置胡桃别名", "alias-add", []string{"胡桃"}},
 			{"删除别名堂主", "alias-remove", []string{"堂主"}},
 			{"胡桃别名", "aliases", []string{"胡桃"}},
+			{"角色命座", "stat-cons", nil},
+			{"角色持有率", "stat-cons", nil},
+			{"深渊第12层使用率", "stat-usage", nil},
+			{"幽境危战使用率", "stat-usage", nil},
+			{"深渊配队", "abyss-team", nil},
 		},
 	}
 	for game, list := range cases {

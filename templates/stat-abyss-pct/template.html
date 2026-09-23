@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro use-mode">
+<div class="container" id="container">
+<div class="info_box">
+  <div class="head-box type">
+    <div class="title">{{ .title }}</div>
+    <div class="label">【#{{ .name }}使用率】出场总数/持有该角色的记录数</div>
+    <div class="genshin-logo"></div>
+  </div>
+  <div class="cont msg-cont">
+    <div class="cont-title">{{ .name }}使用率统计</div>
+    <div class="cont-body">
+      <ul class="cont-msg">
+        <li>数据来自<strong>提瓦特小助手API</strong>，统计结果仅供参考</li>
+        <li>目前仅支持查看 <strong>#{{ .name }}使用率</strong> 数据</li>
+        <li>由于是用户自主上传，数据可能有一定滞后，数据会在深渊开启后一段时间逐步稳定</li>
+        <li>统计数据为本期深渊数据，{{ if .total }}本期已提交用户数：<strong>{{ .total }}</strong>，{{ end }}数据更新时间：{{ .last_update }}</li>
+      </ul>
+    </div>
+  </div>
+  <div class="info_box_border">
+    <div class="line_box">
+      <span class="line"></span>
+      <span class="text">第{{ .floor_name }}</span>
+      <span class="line"></span>
+    </div>
+    {{ range .ranks }}
+    <div class="rank-group">
+      <div class="rank-title">{{ .name }}</div>
+      <div class="card-list">
+        {{ range .chars }}
+        <div class="item star{{ .star }}">
+          <img class="role"{{ with .face }} data-render-resource="{{ . }}"{{ end }} alt="">
+          <div class="num_name">{{ .pct }}%</div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

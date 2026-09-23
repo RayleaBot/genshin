@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,38 @@ type PublicTeam struct {
 	Middle  *float64 `json:"middle"`
 	Down    *float64 `json:"down"`
 	UseRate *float64 `json:"use_rate"`
+}
+
+// statisticsCache keeps each statistics response an hour, as miao caches
+// them.
+type statisticsCache struct {
+	mu      sync.Mutex
+	entries map[string]statisticsEntry
+}
+
+type statisticsEntry struct {
+	data    map[string]any
+	fetched time.Time
+}
+
+// statistic reads one of the public statistics by source: ownership (lelaer's
+// averages), abyss (yshelper's abyss ranking with holding rates) or stygian
+// (lelaer's 幽境危战 ranking).
+func (a *App) statistic(ctx context.Context, source string) (map[string]any, error) {
+	if a.stats == nil {
+		return a.Content.statsRaw(ctx, source)
+	}
+	a.stats.mu.Lock()
+	defer a.stats.mu.Unlock()
+	if entry, ok := a.stats.entries[source]; ok && time.Since(entry.fetched) < time.Hour {
+		return entry.data, nil
+	}
+	data, err := a.Content.statsRaw(ctx, source)
+	if err != nil {
+		return nil, err
+	}
+	a.stats.entries[source] = statisticsEntry{data, time.Now()}
+	return data, nil
 }
 
 func (c PublicContentClient) statsRaw(ctx context.Context, mode string) (map[string]any, error) {
@@ -44,14 +77,19 @@ func (c PublicContentClient) statsRaw(ctx context.Context, mode string) (map[str
 	if res.StatusCode != 200 {
 		return nil, gameError("statistics_unavailable", "公开统计服务暂时不可用。")
 	}
-	raw, err := io.ReadAll(io.LimitReader(res.Body, 2*1024*1024+1))
-	if err != nil || len(raw) > 2*1024*1024 {
+	raw, err := io.ReadAll(io.LimitReader(res.Body, 8*1024*1024+1))
+	if err != nil || len(raw) > 8*1024*1024 {
 		return nil, gameError("statistics_invalid", "公开统计数据过大或无法读取。")
+	}
+	// Like miao, a response wrapped in other text is read between its first
+	// { and last }.
+	if start, end := bytes.IndexByte(raw, '{'), bytes.LastIndexByte(raw, '}'); start > 0 && end > start {
+		raw = raw[start : end+1]
 	}
 	var data map[string]any
 	d := json.NewDecoder(bytes.NewReader(raw))
 	d.UseNumber()
-	if d.Decode(&data) != nil || d.Decode(new(any)) != io.EOF || asText(data["code"]) != "200" || data["result"] == nil {
+	if d.Decode(&data) != nil || data["result"] == nil {
 		return nil, gameError("statistics_invalid", "公开统计响应暂不兼容。")
 	}
 	return data, nil
@@ -78,7 +116,7 @@ func (a *App) publicStatistics(ctx context.Context, q ContentQuery) (map[string]
 	if !slices.Contains([]string{"ownership", "abyss", "stygian"}, q.Source) {
 		return nil, gameError("operation_denied", "此参考统计仅适用于原神。")
 	}
-	data, err := a.Content.statsRaw(ctx, q.Source)
+	data, err := a.statistic(ctx, q.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +129,7 @@ func (a *App) publicStatistics(ctx context.Context, q ContentQuery) (map[string]
 		}
 	}
 	if q.Source == "ownership" {
-		holdData, err := a.Content.statsRaw(ctx, "abyss")
+		holdData, err := a.statistic(ctx, "abyss")
 		holdings := map[string]*float64{}
 		holdingAvailable := err == nil
 		if err == nil {

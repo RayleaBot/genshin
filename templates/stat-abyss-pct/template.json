@@ -1,0 +1,11 @@
+{
+  "id": "stat-abyss-pct",
+  "name": "原神深渊使用率",
+  "description": "深渊与幽境使用率命令的图片，布局参照 miao-plugin stat/abyss-pct",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 900,
+  "height": 16000
+}

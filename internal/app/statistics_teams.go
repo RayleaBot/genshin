@@ -3,112 +3,152 @@ package app
 import (
 	"context"
 	"slices"
+	"sort"
+	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-type OwnedTeam struct {
-	Team     PublicTeam `json:"team"`
-	Owned    bool       `json:"owned"`
-	Weight   float64    `json:"weight"`
-	Fallback bool       `json:"fallback"`
-}
-type TeamPair struct {
-	Up     OwnedTeam `json:"up"`
-	Down   OwnedTeam `json:"down"`
-	Weight float64   `json:"weight"`
+// AbyssTeam is one half's team of miao's 深渊配队: its characters in ID order,
+// how often the sample used it, and whether the player owns all of them.
+type AbyssTeam struct {
+	IDs   []string `json:"ids"`
+	Count float64  `json:"count"`
+	Mark  float64  `json:"mark"`
+	Owned bool     `json:"owned"`
 }
 
-func pairStatisticsTeams(teams []PublicTeam, weights map[string]float64, fallback map[string]bool) []TeamPair {
-	type candidate struct {
-		owned OwnedTeam
-		half  string
-		rate  float64
-		used  bool
-	}
-	candidates := []candidate{}
-	for _, team := range teams {
-		v := OwnedTeam{Team: team, Owned: true}
-		for _, id := range team.IDs {
-			score, ok := weights[id]
-			if id == "" || !ok {
-				v.Owned = false
-			}
-			v.Weight += score
-			v.Fallback = v.Fallback || fallback[id]
-		}
-		if !v.Owned {
-			v.Weight = 1
-		}
-		for _, half := range []string{"up", "down"} {
-			rate := team.Up
-			if half == "down" {
-				rate = team.Down
-			}
-			if rate != nil && *rate > 0 {
-				copy := v
-				copy.Weight *= *rate
-				candidates = append(candidates, candidate{copy, half, *rate, false})
-			}
+// AbyssTeamPair is a first half and a second half team without a shared
+// character.
+type AbyssTeamPair struct {
+	Up    AbyssTeam `json:"up"`
+	Down  AbyssTeam `json:"down"`
+	Count float64   `json:"count"`
+	Mark  float64   `json:"mark"`
+}
+
+// abyssTeamPairs is miao's AbyssTeam over yshelper's floor 12 teams: each team
+// scores its sample uses times the sum of the player's character weights, or
+// just its uses when a character is missing; teams pair across halves best
+// first, each team once, and the four best pairs remain. It also returns the
+// characters the teams need that the player lacks.
+func abyssTeamPairs(data map[string]any, catalog Catalog, weights map[string]float64) ([]AbyssTeamPair, map[string]bool) {
+	characters := map[string]string{}
+	for _, raw := range asList(data["has_list"]) {
+		item := asObject(raw)
+		if entry, ok := catalog.Resolve(asText(item["name"]), "character", nil); ok {
+			characters[asText(item["avatar"])] = entry.ID
 		}
 	}
-	slices.SortStableFunc(candidates, func(a, b candidate) int {
-		if a.owned.Weight > b.owned.Weight {
-			return -1
+	// The team list is the first result list whose entries carry roles.
+	var list []any
+	for _, raw := range asList(data["result"]) {
+		items := asList(raw)
+		if len(items) > 0 && asList(asObject(items[0])["role"]) != nil {
+			list = items
+			break
 		}
-		if a.owned.Weight < b.owned.Weight {
-			return 1
+	}
+	type sample struct {
+		key  string
+		rate float64
+	}
+	samples := map[string][]sample{}
+	for _, raw := range list {
+		item := asObject(raw)
+		ids := []string{}
+		for _, role := range asList(item["role"]) {
+			if id := characters[asText(asObject(role)["avatar"])]; id != "" {
+				ids = append(ids, id)
+			}
 		}
-		return 0
-	})
-	pairs := []TeamPair{}
-	for i := range candidates {
-		if candidates[i].used {
+		if len(ids) == 0 {
 			continue
 		}
-		for j := range candidates {
-			if i == j || candidates[j].used || candidates[i].half == candidates[j].half {
-				continue
+		key := strings.Join(ids, ",")
+		for _, half := range []string{"up", "down"} {
+			if rate := statNumberOf(item[half+"_use_num"]); rate > 0 {
+				samples[half] = append(samples[half], sample{key, rate})
 			}
-			left, right := candidates[i], candidates[j]
-			overlap := false
-			for _, id := range left.owned.Team.IDs {
-				if id == "" || slices.Contains(right.owned.Team.IDs, id) {
-					overlap = true
+		}
+	}
+	missing := map[string]bool{}
+	type team struct {
+		AbyssTeam
+		key, half string
+		left      int
+	}
+	teams := []*team{}
+	for _, half := range []string{"up", "down"} {
+		found := map[string]*team{}
+		for _, s := range samples[half] {
+			ids := strings.Split(s.key, ",")
+			sort.Strings(ids)
+			mark := 0.0
+			for _, id := range ids {
+				if weights[id] == 0 {
+					missing[id] = true
+					mark = -1
+				}
+				if mark != -1 {
+					mark += weights[id]
 				}
 			}
-			if overlap {
+			if mark == -1 {
+				mark = 1
+			}
+			key := strings.Join(ids, ",")
+			t := found[key]
+			if t == nil {
+				t = &team{AbyssTeam: AbyssTeam{IDs: ids, Owned: mark > 1}, key: key, half: half, left: 1}
+				found[key] = t
+				teams = append(teams, t)
+			}
+			t.Count += s.rate
+			t.Mark += s.rate * mark
+		}
+		// miao sorts ascending and reverses after each half.
+		sort.SliceStable(teams, func(i, j int) bool { return teams[i].Mark < teams[j].Mark })
+		slices.Reverse(teams)
+	}
+	pairs := []AbyssTeamPair{}
+	seen := map[string]bool{}
+	for _, t1 := range teams {
+		if t1.left <= 0 {
+			continue
+		}
+		for _, t2 := range teams {
+			if t1.half == t2.half || t2.left <= 0 {
 				continue
 			}
-			up, down := left.owned, right.owned
-			if left.half == "down" {
-				up, down = right.owned, left.owned
+			up, down := t1, t2
+			if t1.half != "up" {
+				up, down = t2, t1
 			}
-			weight := up.Weight + down.Weight
-			if !up.Owned || !down.Owned {
-				weight = left.rate + right.rate
+			if seen[up.key+"+"+down.key] || slices.ContainsFunc(t1.IDs, func(id string) bool { return slices.Contains(t2.IDs, id) }) {
+				continue
 			}
-			pairs = append(pairs, TeamPair{up, down, weight})
-			candidates[i].used = true
-			candidates[j].used = true
+			seen[up.key+"+"+down.key] = true
+			pair := AbyssTeamPair{Up: up.AbyssTeam, Down: down.AbyssTeam, Count: min(t1.Count, t2.Count), Mark: t1.Count + t2.Count}
+			if t1.Owned && t2.Owned {
+				pair.Mark = t1.Mark + t2.Mark
+			}
+			pairs = append(pairs, pair)
+			t1.left--
+			t2.left--
 			break
 		}
 		if len(pairs) >= 20 {
 			break
 		}
 	}
-	slices.SortStableFunc(pairs, func(a, b TeamPair) int {
-		if a.Weight > b.Weight {
-			return -1
-		}
-		if a.Weight < b.Weight {
-			return 1
-		}
-		return 0
-	})
-	return pairs[:min(4, len(pairs))]
+	sort.SliceStable(pairs, func(i, j int) bool { return pairs[i].Mark < pairs[j].Mark })
+	slices.Reverse(pairs)
+	return pairs[:min(4, len(pairs))], missing
 }
 
+// statisticsTeams matches the abyss statistics the page read to the chosen
+// account's characters, the same pairing 深渊配队 answers in chat.
 func (a *App) statisticsTeams(ctx context.Context, event *rayleabot.EventContext, input map[string]any) (map[string]any, error) {
 	job, err := a.ContentJobs.Poll(asText(input["ref"]), false)
 	if err != nil {
@@ -117,83 +157,31 @@ func (a *App) statisticsTeams(ctx context.Context, event *rayleabot.EventContext
 	if job.State != "completed" || job.Result["source"] != "abyss" {
 		return nil, gameError("statistics_missing", "请先读取深渊统计。")
 	}
-	teams, ok := job.Result["teams"].([]PublicTeam)
-	if !ok {
-		return nil, gameError("statistics_invalid", "统计队伍格式无效。")
-	}
 	choice := Selection{asText(input["account_ref"]), asText(input["role_ref"])}
-	client := a.accountClient(event)
-	owned, err := client.Execute(ctx, choice, "genshin.characters", nil)
+	panels, err := a.accountPanels(ctx, a.accountClient(event), choice)
 	if err != nil {
 		return nil, err
 	}
-	roster := asList(owned.Data["list"])
-	if roster == nil {
-		roster = asList(owned.Data["avatars"])
-	}
-	available := map[string]bool{}
-	for _, v := range roster {
-		id := firstText(asObject(v), "id", "avatar_id")
-		if id != "" {
-			available[id] = true
-		}
-	}
-	ids := []string{}
-	for _, team := range teams {
-		for _, id := range team.IDs {
-			if available[id] && !slices.Contains(ids, id) {
-				ids = append(ids, id)
-			}
-		}
-	}
-	if len(ids) > 150 {
-		return nil, gameError("statistics_limit", "候选角色超过150位，请缩小统计范围。")
+	data, err := a.statistic(ctx, "abyss")
+	if err != nil {
+		return nil, err
 	}
 	weights := map[string]float64{}
-	fallback := map[string]bool{}
-	for at := 0; at < len(ids); at += 50 {
-		values := []any{}
-		for _, id := range ids[at:min(at+50, len(ids))] {
-			values = append(values, id)
-		}
-		details, err := client.Execute(ctx, choice, "genshin.character", map[string]any{"character_ids": values})
-		if err != nil {
-			return nil, err
-		}
-		list := asList(details.Data["list"])
-		if list == nil {
-			list = asList(details.Data["avatars"])
-		}
-		for _, raw := range list {
-			v := asObject(raw)
-			id := firstText(v, "id", "avatar_id")
-			level, ok := challengeNumber(v["level"])
-			if !available[id] || !ok {
-				continue
-			}
-			weapon, hasWeapon := challengeNumber(asObject(v["weapon"])["level"])
-			if !hasWeapon {
-				weapon = 1
-			}
-			maxTalent := 1.0
-			hasTalent := false
-			for _, field := range []string{"skills", "skill_list", "talents"} {
-				for _, r := range asList(v[field]) {
-					m := asObject(r)
-					n, ok := challengeNumber(m["level"])
-					if !ok {
-						n, ok = challengeNumber(m["level_current"])
-					}
-					if ok {
-						hasTalent = true
-						maxTalent = max(maxTalent, n)
-					}
-				}
-			}
-			weights[id] = min(level, weapon)*100 + maxTalent*1000
-			fallback[id] = !hasWeapon || !hasTalent
-		}
+	for _, panel := range panels {
+		weights[panel.ID] = float64(a.teamWeight(panel))
 	}
-	pairs := pairStatisticsTeams(teams, weights, fallback)
-	return map[string]any{"pairs": pairs, "uid": owned.Role.UID, "note": "按固定参考的角色/武器等级与最高天赋加权，再以样本使用数量排序；缺失武器或天赋按参考默认1并标记，不是实战伤害预测。", "source": "Yshelper"}, nil
+	pairs, _ := abyssTeamPairs(data, a.Catalog, weights)
+	named := []map[string]any{}
+	for _, pair := range pairs {
+		half := func(team AbyssTeam) map[string]any {
+			names := []string{}
+			for _, id := range team.IDs {
+				entry, _ := a.Catalog.Get(id)
+				names = append(names, entry.Name)
+			}
+			return map[string]any{"names": names, "owned": team.Owned}
+		}
+		named = append(named, map[string]any{"up": half(pair.Up), "down": half(pair.Down), "count": pair.Count})
+	}
+	return map[string]any{"pairs": named, "note": "按 miao 的深渊配队：角色与武器较低等级乘 100 加最高原始天赋乘 1000 作为权重，队伍按样本出场数乘权重排序，缺少角色的队伍只按出场数计。", "source": "Yshelper"}, nil
 }

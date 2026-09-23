@@ -29,20 +29,23 @@ func TestPublicStatisticsPreserveZeroAndSeparateDenominators(t *testing.T) {
 		t.Fatal("missing values changed to zero")
 	}
 }
-func TestStatisticsTeamsNeverReuseCharacterAcrossHalves(t *testing.T) {
-	n := 10.0
-	teams := []PublicTeam{{Names: []string{"A", "B"}, IDs: []string{"1", "2"}, Up: &n, Down: &n}, {Names: []string{"C", "D"}, IDs: []string{"3", "4"}, Up: &n, Down: &n}, {Names: []string{"A", "C"}, IDs: []string{"1", "3"}, Up: &n, Down: &n}}
-	pairs := pairStatisticsTeams(teams, map[string]float64{"1": 100, "2": 90, "3": 80, "4": 70}, map[string]bool{})
-	if len(pairs) == 0 {
-		t.Fatal("no pair")
+func TestAbyssTeamPairsFollowMiao(t *testing.T) {
+	catalog := Catalog{Entries: []Entry{{ID: "1", Name: "甲", Kind: "character"}, {ID: "2", Name: "乙", Kind: "character"}, {ID: "3", Name: "丙", Kind: "character"}, {ID: "4", Name: "丁", Kind: "character"}}}
+	data := map[string]any{
+		"has_list": []any{map[string]any{"avatar": "a", "name": "甲"}, map[string]any{"avatar": "b", "name": "乙"}, map[string]any{"avatar": "c", "name": "丙"}, map[string]any{"avatar": "d", "name": "丁"}},
+		"result": []any{[]any{map[string]any{"rank_name": "S"}}, []any{
+			map[string]any{"role": []any{map[string]any{"avatar": "b"}, map[string]any{"avatar": "a"}}, "up_use_num": 10, "down_use_num": 0},
+			map[string]any{"role": []any{map[string]any{"avatar": "a"}, map[string]any{"avatar": "c"}}, "up_use_num": 0, "down_use_num": 50},
+			map[string]any{"role": []any{map[string]any{"avatar": "c"}, map[string]any{"avatar": "d"}}, "up_use_num": 0, "down_use_num": 5},
+		}},
 	}
-	for _, p := range pairs {
-		for _, a := range p.Up.Team.IDs {
-			for _, b := range p.Down.Team.IDs {
-				if a == b {
-					t.Fatal("character reused")
-				}
-			}
-		}
+	// 丁 is missing, so its team counts only its uses.
+	pairs, missing := abyssTeamPairs(data, catalog, map[string]float64{"1": 1000, "2": 1000, "3": 1000})
+	if !missing["4"] || len(missing) != 1 {
+		t.Fatalf("missing = %v", missing)
+	}
+	// 甲乙 cannot pair with 甲丙, which shares 甲, so it pairs with 丙丁.
+	if len(pairs) != 1 || pairs[0].Up.IDs[0] != "1" || pairs[0].Up.IDs[1] != "2" || pairs[0].Down.IDs[0] != "3" || pairs[0].Down.Owned || pairs[0].Mark != 15 || pairs[0].Count != 5 {
+		t.Fatalf("pairs = %+v", pairs)
 	}
 }
