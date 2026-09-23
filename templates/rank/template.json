@@ -6,7 +6,7 @@
   "entry_html": "template.html",
   "stylesheet": "styles.css",
   "input_schema": "input.schema.json",
-  "width": 1190,
+  "width": 1442,
   "height": 3000,
   "fit_width": true
 }

@@ -13,6 +13,7 @@
     "width": { "type": "integer" },
     "limit": { "type": "string" },
     "number": { "type": "integer" },
+    "totals": { "type": "boolean" },
     "render_footer": { "type": "string" }
   },
   "additionalProperties": false

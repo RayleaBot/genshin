@@ -168,3 +168,64 @@ func rankCurve(answer any, own RankCurve, damage bool) *RankCurve {
 	}
 	return curve
 }
+
+// groupTotalRanks is ark-plugin's groupRank (its renderCharRankList): a
+// character's group ranking by damage or artifacts also shows the global
+// rank ark gives each listed panel, sent with localGroupRank, else read from
+// the UIDs ark keeps. A row without damage shows none, as upstream writes the
+// rank into the damage cell; the column is left out when ark ranks none of
+// them. Upstream asks for the first row's character on the list of every
+// character's best too, which ranks the other rows as the wrong character;
+// that list shows no column here.
+func (a *App) groupTotalRanks(ctx context.Context, event *rayleabot.EventContext, character Entry, mode string, entries []RankEntry) (string, []string) {
+	ark := settings(event).Ark
+	if !ark.GroupRank || character.ID == "" || mode != "dmg" && mode != "mark" {
+		return "", nil
+	}
+	id, _ := strconv.Atoi(character.ID)
+	uids, panels := []string{}, []any{}
+	for _, entry := range entries {
+		uids = append(uids, entry.UID)
+		if ark.LocalGroupRank {
+			// A panel the plugin cannot write out goes as null, as upstream
+			// sends a UID without player data.
+			var panel any
+			if _, raw, err := officialCloudAvatar(ctx, a.Game, *entry.Panel, entry.Panel.Official); err == nil {
+				panel = json.RawMessage(raw)
+			}
+			panels = append(panels, panel)
+		}
+	}
+	body := map[string]any{"id": id, "uids": uids, "update": 2, "query": mode, "data": nil}
+	if len(panels) > 0 {
+		body["data"] = panels
+	}
+	decoded, err := a.arkRequest(ctx, event, "rank/group", body)
+	if err != nil {
+		return "", nil
+	}
+	return groupRankColumn(ark, mode, entries, asObject(decoded))
+}
+
+// groupRankColumn reads ark's rank/group answer, one rank per listed UID in
+// order, as the column's title and texts.
+func groupRankColumn(ark ArkSettings, mode string, entries []RankEntry, result map[string]any) (string, []string) {
+	if asText(result["retcode"]) != "100" {
+		return "", nil
+	}
+	title := map[string]string{"dmg": "伤害", "mark": "圣遗物"}[mode] + "排名"
+	if ark.MarkRankType && ark.LocalGroupRank {
+		title += "(本地)"
+	}
+	ranks, ranked := make([]string, len(entries)), false
+	for index, item := range asList(result["rank"]) {
+		if index < len(entries) && entries[index].Damage != nil {
+			rank := asText(asObject(item)["rank"])
+			ranks[index], ranked = cmpOr(rank, "暂无数据"), ranked || rank != ""
+		}
+	}
+	if !ranked {
+		return "", nil
+	}
+	return title, ranks
+}

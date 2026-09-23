@@ -145,6 +145,10 @@ type RankImage struct {
 	Character  Entry
 	Entries    []RankEntry
 	SinceMS    int64
+	// Totals are ark's global ranks of the entries under TotalTitle, nil
+	// when they are not shown.
+	TotalTitle string
+	Totals     []string
 }
 
 // RankImageBuilder draws a group ranking with the plugin's template, or

@@ -67,6 +67,7 @@
     <div class="char-dmg line">
       {{ with .damage }}<div class="dmg-title">{{ .title }}</div><div class="dmg-value">{{ .value }}</div>{{ end }}
     </div>
+    {{ if $.totals }}<div class="char-dmg line" style="width: 150px;">{{ with .total }}<div class="dmg-title">{{ .title }}</div><div class="dmg-value">{{ .rank }}</div>{{ end }}</div>{{ end }}
   </div>
   {{ end }}
 </div>

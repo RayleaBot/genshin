@@ -267,7 +267,9 @@ func (a *App) rankCommand(ctx context.Context, event *rayleabot.EventContext, co
 				entries[index].Avatar = "https://q1.qlogo.cn/g?b=qq&nk=" + entries[index].ActorID + "&s=100"
 			}
 		}
-		if drawn, ok := a.rankImage(a.imageContext(ctx), RankImage{Word: word, Mode: mode, Character: character, Entries: entries, SinceMS: data.RankSinceMS}); ok {
+		image := RankImage{Word: word, Mode: mode, Character: character, Entries: entries, SinceMS: data.RankSinceMS}
+		image.TotalTitle, image.Totals = a.groupTotalRanks(ctx, event, character, mode, entries)
+		if drawn, ok := a.rankImage(a.imageContext(ctx), image); ok {
 			view.Image = &drawn
 		}
 	}

@@ -30,6 +30,8 @@
       "rank_type": 2,
       "local_panel_rank": true,
       "mark_rank_type": false,
+      "group_rank": true,
+      "local_group_rank": true,
       "stygian_rank": true,
       "stygian_data_from": 2,
       "new_user_panel": false

@@ -26,10 +26,11 @@ var rankArtwork = [][2]string{
 }
 
 // Rank draws a group ranking the way miao's character/rank-profile-list
-// does: the title and the ranking notes, then a row per entry with its place
-// (or, listing every character's best, the character), the member's avatar,
-// constellation, name and UID, talents, weapon, artifact sets with their score
-// and grade, and the default detail's damage.
+// does, as ark-plugin's copy of the page: the title and the ranking notes,
+// then a row per entry with its place (or, listing every character's best,
+// the character), the member's avatar, constellation, name and UID, talents,
+// weapon, artifact sets with their score and grade, the default detail's
+// damage, and ark's global rank when it gives them.
 func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(rank.Entries) == 0 {
 		return app.Image{}, false
@@ -72,6 +73,9 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 			}
 			row["damage"] = map[string]any{"title": app.RankDamageTitle(entry.Damage.Title), "value": value}
 		}
+		if index < len(rank.Totals) && rank.Totals[index] != "" {
+			row["total"] = map[string]any{"title": rank.TotalTitle, "rank": rank.Totals[index]}
+		}
 		rows = append(rows, row)
 	}
 	title := "最强排行"
@@ -82,7 +86,14 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		title = rank.Character.Name + map[string]string{"mark": "圣遗物评分"}[rank.Mode] + "排行"
 	}
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
-	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "time": since, "hash": context.Game.Prefix, "rows": rows, "width": 820}
+	// ark's renderCharRankList draws the page 850 wide, 180 wider with its
+	// column of global ranks.
+	width := 850
+	if rank.Totals != nil {
+		width += 180
+	}
+	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "time": since, "hash": context.Game.Prefix, "rows": rows, "width": width,
+		"totals": rank.Totals != nil}
 	return app.Image{Template: "rank", Data: data, Resources: resources.List}, true
 }
 

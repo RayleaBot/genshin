@@ -74,3 +74,21 @@ func cloudList(t *testing.T, s string) any {
 	}
 	return v
 }
+
+func TestGroupRankColumnFollowsArk(t *testing.T) {
+	damage := &RankDamage{Title: "重击", Value: 1}
+	entries := []RankEntry{{UID: "1", Damage: damage}, {UID: "2", Damage: damage}, {UID: "3"}}
+	answer := asObject(cloudList(t, `{"retcode":100,"rank":[{"retcode":100,"rank":"1148 / 60392"},{"retcode":102},{"retcode":100,"rank":"5 / 60392"}]}`))
+	title, ranks := groupRankColumn(ArkSettings{LocalGroupRank: true}, "dmg", entries, answer)
+	// A row without damage shows no rank, as upstream writes it in the damage cell.
+	if title != "伤害排名" || !reflect.DeepEqual(ranks, []string{"1148 / 60392", "暂无数据", ""}) {
+		t.Fatal(title, ranks)
+	}
+	if title, _ = groupRankColumn(ArkSettings{LocalGroupRank: true, MarkRankType: true}, "mark", entries, answer); title != "圣遗物排名(本地)" {
+		t.Fatal(title)
+	}
+	// Without any rank the column is left out.
+	if _, ranks = groupRankColumn(ArkSettings{}, "dmg", entries, asObject(cloudList(t, `{"retcode":100,"rank":[{"retcode":102}]}`))); ranks != nil {
+		t.Fatal(ranks)
+	}
+}

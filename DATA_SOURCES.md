@@ -32,7 +32,7 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 `templates/uid-list/` 按 Miao-Yunzai 原神插件的 html/user/uid-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），页面框架与样式沿用 miao-plugin 的 common/layout/elem 与 common/common.css（MIT，见 `LICENSES/miao-plugin-MIT.txt`），同 miao 的 1.4 倍缩放；图片地址改为宿主渲染资源。玩家的头像与名片按 miao 的 faceImgs 取该 UID 已保存面板中编号最小的角色，没有时用 miao 的通用头像与名片。
 
-`templates/rank/` 按 miao-plugin 的 character/rank-profile-list 改写（MIT），容器宽度同上游在页面内设置；ark-plugin 的自定义排行沿用这一页面（MIT，见 `LICENSES/ark-plugin-MIT.txt`），同 `apps/customRank.js` 写入“全服数据”、排序与筛选说明及请求行数，页面宽 850，评级按其平均单件分阈值（56 分以上为 MAX）。
+`templates/rank/` 按 miao-plugin 的 character/rank-profile-list 改写（MIT），容器宽度同上游在页面内设置，群排行按 ark-plugin 改写后的宽度 850，并同其备份的 `miao-plugin-rank/resources/character/rank-profile-list.html` 加上全服排名一栏（再宽 180）；ark-plugin 的自定义排行沿用这一页面（MIT，见 `LICENSES/ark-plugin-MIT.txt`），同 `apps/customRank.js` 写入“全服数据”、排序与筛选说明及请求行数，页面宽 850，评级按其平均单件分阈值（56 分以上为 MAX）。
 
 `templates/stygian-rank/` 按 ark-plugin 的 character/stygian-rank-list 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），样式为其 common/common.css（与 miao 相同）与 stygian-rank-list.css 的转换，页面宽度同 `apps/user.js` 按显示的排名栏计算；难度奖章取自“ark 插件图片”素材来源的 `resources/character/img/`，字体与背景取自 miao 的相同文件。上游样式引用的物品底图与名次徽标不在 ark 的资源中，上游页面上为空白，这里同样留空。akasha.cv 的排行按上游的查询读取（上游在查询中写死了一个开发者的 UID 参数，对结果没有影响，这里留空）。
 
