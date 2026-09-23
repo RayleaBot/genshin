@@ -9,7 +9,7 @@ Usage: python scripts/bundle-artwork.py --references <参考项目/2026-09-15>
 Run it before building a package. Official images are fetched file by file at
 render time, and the Atlas and xiaoyao 图鉴 libraries are downloaded on request,
 so none of them are bundled; the Atlas plugin's own copies of the library's
-alias files are.
+alias files and its help picture are.
 """
 import argparse
 import fnmatch
@@ -82,8 +82,8 @@ BUNDLES = {
     ]),
     "ark-plugin": ("ark-plugin", ["resources/graph/background.png", "resources/character/img/medal_*.png"]),
     # Atlas reads these othername files for the modules the library has none
-    # for.
-    "atlas": ("Atlas", ["resource/Forlibrary/Genshin-Atlas/othername/*"]),
+    # for; its help is one picture.
+    "atlas": ("Atlas", ["resource/Forlibrary/Genshin-Atlas/othername/*", "resource/img/help.png"]),
 }
 
 parser = argparse.ArgumentParser()

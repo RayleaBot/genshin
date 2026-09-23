@@ -24,7 +24,7 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 云面板装备解释沿用同一固定 miao 快照的 artifact 元数据与 ArtisAttr 公式，包含 299 项圣遗物映射。转换脚本为 `scripts/import-cloud-panel-data.mjs`，不加载上游机器人运行时；缺失档位明确显示未覆盖。
 
-原魔属性使用 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的文字数值资料：556 项条目、200 级曲线、102 项修饰因子。保留 `LICENSES/Atlas-GPL-3.0.txt`，转换器为 `scripts/import-enemy-data.py`；未引入其外部图鉴图片仓库（由管理员下载）。图鉴按同一提交 `resource/Forlibrary/Genshin-Atlas/rule_default/` 的模块规则查找，规则写在 `internal/assets/game.json`；Atlas 自带的原神图鉴别名文件（同目录的 `othername/`）由 `scripts/bundle-artwork.py` 随插件包分发。攻略合集编号来自上述固定 Yunzai 原神插件参考，运行时匿名读取官方文字与原图链接，不打包攻略图。
+原魔属性使用 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的文字数值资料：556 项条目、200 级曲线、102 项修饰因子。保留 `LICENSES/Atlas-GPL-3.0.txt`，转换器为 `scripts/import-enemy-data.py`；未引入其外部图鉴图片仓库（由管理员下载）。图鉴按同一提交 `resource/Forlibrary/Genshin-Atlas/rule_default/` 的模块规则查找，规则写在 `internal/assets/game.json`；Atlas 自带的原神图鉴别名文件（同目录的 `othername/`）与“图鉴帮助”发送的 `resource/img/help.png` 由 `scripts/bundle-artwork.py` 随插件包分发。攻略合集编号来自上述固定 Yunzai 原神插件参考，运行时匿名读取官方文字与原图链接，不打包攻略图。
 
 ## 图片模板
 

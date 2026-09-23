@@ -194,10 +194,12 @@
         "https://codeload.github.com/Nwflower/Atlas/tar.gz/HEAD"
       ],
       "include": [
-        "resource/Forlibrary/Genshin-Atlas/othername/"
+        "resource/Forlibrary/Genshin-Atlas/othername/",
+        "resource/img/"
       ],
       "extensions": [
-        ".yaml"
+        ".yaml",
+        ".png"
       ]
     },
     {
@@ -326,6 +328,10 @@
         "source": "yunzai-genshin",
         "path": "resources/logHelp/记录帮助.png"
       }
+    },
+    "atlas_help": {
+      "source": "atlas",
+      "path": "resource/img/help.png"
     }
   },
   "hints": {

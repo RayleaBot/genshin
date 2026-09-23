@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -27,6 +28,8 @@ type Pictures struct {
 	Xiaoyao PictureSource `json:"xiaoyao"`
 	// Static are commands answered with a fixed upstream image, by command.
 	Static map[string]StaticPicture `json:"static"`
+	// AtlasHelp is the picture Atlas's atlasHelp answers with.
+	AtlasHelp StaticPicture `json:"atlas_help"`
 }
 
 type PictureSource struct {
@@ -114,6 +117,12 @@ func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext)
 	// miao's accept checks run before every rule and hand the message on as
 	// their own command word, which no picture plugin answers.
 	msg := a.miaoAccept(yunzaiMessage(event), aliases)
+	// Atlas's atlasHelp comes at priority 9 and passes the message on.
+	if atlasHelpWords.MatchString(msg) {
+		if _, err := post(ctx, event, a.staticReply(a.Game.Pictures.AtlasHelp)); err != nil {
+			return true, err
+		}
+	}
 	run := atlasRun{app: a, owner: chatOwner(event), aliases: aliases}
 	ended := run.atlas(msg)
 	for _, answer := range run.answers {
@@ -131,6 +140,9 @@ func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext)
 	}
 	return false, nil
 }
+
+// atlasHelpWords are the words of Atlas's help, after # or /.
+var atlasHelpWords = regexp.MustCompile(`^[#/](图鉴|wiki|百科|Atlas)(\s*)(帮助|菜单|功能|help)`)
 
 // yunzaiMessage is a chat message as Yunzai's plugins read it (e.msg): the
 // text segments, each trimmed, with # for the prefix the host parsed.

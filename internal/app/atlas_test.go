@@ -242,3 +242,20 @@ func TestAtlasPagesFollowReplyMessageArray(t *testing.T) {
 		t.Fatal(len(pages), len(pages[0]), pages[21][len(pages[21])-1])
 	}
 }
+
+func TestAtlasHelpWords(t *testing.T) {
+	for msg, want := range map[string]bool{
+		"#图鉴帮助":       true,
+		"#图鉴 帮助":      true,
+		"/wiki菜单":     true,
+		"#Atlas help": true,
+		"#百科功能列表":     true,
+		"图鉴帮助":        false,
+		"#atlas帮助":    false,
+		"#图鉴":         false,
+	} {
+		if atlasHelpWords.MatchString(msg) != want {
+			t.Errorf("%q: %v", msg, !want)
+		}
+	}
+}

@@ -9,7 +9,7 @@ import (
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-// StaticPicture is a command upstream answers with an image it ships, as
+// StaticPicture is an image upstream ships and answers with, as
 // miao-plugin's 面板帮助.
 type StaticPicture struct {
 	Source string `json:"source"`
@@ -18,14 +18,20 @@ type StaticPicture struct {
 
 // staticCommand sends a static picture command's image.
 func (a *App) staticCommand(event *rayleabot.EventContext, static StaticPicture) error {
+	return event.Send(event.Event.Target.Type, event.Event.Target.ID, a.staticReply(static))
+}
+
+// staticReply is a static picture to send, or the text that tells why it
+// cannot be sent.
+func (a *App) staticReply(static StaticPicture) rayleabot.Segment {
 	if !a.Artwork.Ready(static.Source) {
-		return event.SendText("暂无图片素材。" + a.pictureHint(static.Source))
+		return rayleabot.Text("暂无图片素材。" + a.pictureHint(static.Source))
 	}
 	data, err := a.Artwork.Open(static.Source, static.Path)
 	if err != nil {
-		return event.SendText("图片素材不完整，请管理员重新下载素材。")
+		return rayleabot.Text("图片素材不完整，请管理员重新下载素材。")
 	}
-	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(data)))
+	return rayleabot.Image("base64://" + base64.StdEncoding.EncodeToString(data))
 }
 
 // sendForward sends parts as one forwarded message, as upstream's
