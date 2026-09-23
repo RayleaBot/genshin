@@ -15,7 +15,7 @@ func (a *App) assetCommand(ctx context.Context, event *rayleabot.EventContext, c
 		return a.sendView(ctx, event, a.codesView(data))
 	}
 	if len(args) < 1 || len(args) > 2 {
-		return event.SendText("使用“" + a.Game.Prefix + "兑换 代码 [UID]”确认兑换，或“" + a.Game.Prefix + "资产记录 类别 [UID]”查询；完整资产收集在插件管理页。")
+		return event.SendText("使用“" + a.Game.Prefix + "兑换 代码 [UID]”确认兑换，或“" + a.Game.Prefix + "资产记录 类别 [UID]”查询。")
 	}
 	uid := ""
 	if len(args) == 2 {
