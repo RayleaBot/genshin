@@ -13,7 +13,6 @@ import (
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"github.com/RayleaBot/plugin-genshin/internal/localdata"
-	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
 )
 
 type GroupScope struct {
@@ -255,8 +254,7 @@ func (a *App) manageGroups(action string, input map[string]any) (map[string]any,
 			return nil, gameError("input_invalid", "群列表页码无效。")
 		}
 		items, next, err := a.Groups.List(q.Page)
-		board := slices.ContainsFunc(a.Manifest.Commands, func(c pluginmeta.Command) bool { return c.ID == "challenge-rank" })
-		return map[string]any{"items": items, "next_page": next, "challenge_board": board}, err
+		return map[string]any{"items": items, "next_page": next}, err
 	}
 	if action == "groups.clear" || action == "groups.set" {
 		var value struct {

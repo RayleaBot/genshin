@@ -6,7 +6,7 @@ const props=defineProps<{invoke:<T>(action:string,payload?:Record<string,unknown
 const task=cloudTask(props.invoke,'content'), selection=ref(''), code=ref(''), confirmed=ref(false), busy=ref(false), error=ref(''), view=ref<View|null>(null)
 const rows=computed(()=>(task.job.value?.result?.items??[]) as {code:string;reward:string;expires_at?:string;expiry_estimated:boolean}[])
 const role=computed(()=>props.roles.find(v=>v.key===selection.value))
-const overseas=computed(()=>!!role.value&&!['cn_gf01','cn_qd01','prod_gf_cn','prod_qd_cn'].includes(role.value.role.region))
+const overseas=computed(()=>!!role.value&&!['cn_gf01','cn_qd01'].includes(role.value.role.region))
 async function redeem(){if(!role.value||!confirmed.value||busy.value)return;busy.value=true;error.value='';view.value=null;try{view.value=(await props.invoke<{view:View}>('redeem.run',{account_ref:role.value.account.ref,role_ref:role.value.role.ref,code:code.value.trim(),confirm:true})).view;confirmed.value=false}catch(e){error.value=e instanceof Error?e.message:'兑换未完成。'}finally{busy.value=false}}
 onUnmounted(task.dispose)
 </script>

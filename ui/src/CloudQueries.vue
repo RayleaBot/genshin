@@ -4,7 +4,7 @@ import BusinessView from './BusinessView.vue'
 import CloudOCRComparison from './CloudOCRComparison.vue'
 import CloudExchange from './CloudExchange.vue'
 import { cloudTask } from './cloud'
-const props = defineProps<{ game:string; prefix: string; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
+const props = defineProps<{ prefix: string; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
 const main = cloudTask(props.invoke), detail = cloudTask(props.invoke)
 const { job, busy, error } = main
 interface FilterField {key:string;label:string;kind:string;options?:string[]}
@@ -98,7 +98,7 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
     </section>
     <template v-if="panels.length"><label>云面板角色<select v-model="selected"><option v-for="p in panels" :key="p.id" :value="p.id">{{ p.name }} · {{ p.id }}</option></select></label><BusinessView v-if="panel" :value="panel.view" /></template>
     <p v-else-if="panelJob?.state === 'completed' && panelJob.panels" role="status">服务尚未保存此 UID 的角色面板。</p>
-    <CloudExchange :game="game" :authenticated="authenticated" :invoke="invoke" />
+    <CloudExchange :authenticated="authenticated" :invoke="invoke" />
   </section>
 </template>
 <style scoped>
