@@ -10,8 +10,9 @@ import (
 
 var (
 	hardDifficulties = map[int]string{1: "普通", 2: "进阶", 3: "困难", 4: "险恶", 5: "无畏", 6: "绝境"}
-	// hardCardTypes is how miao sizes the avatar cards of a team by its size.
-	hardCardTypes = map[int][]string{1: {"wide wide2"}, 2: {"wide", "wide"}, 3: {"wide", "mini", "mini"}, 4: {"mini", "mini", "mini", "mini"}}
+	// statCardTypes is how miao's stat pages size the avatar cards of a team
+	// by its size.
+	statCardTypes = map[int][]string{1: {"wide wide2"}, 2: {"wide", "wide"}, 3: {"wide", "mini", "mini"}, 4: {"mini", "mini", "mini", "mini"}}
 	hardColor     = regexp.MustCompile(`<color=([^>]+)>(.*?)</color>`)
 )
 
@@ -57,7 +58,7 @@ func HardChallenge(context app.ImageContext, result app.QueryResult) (app.Image,
 	}
 
 	resources := &app.ImageResources{Context: context}
-	for _, item := range hardArtwork {
+	for _, item := range statArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
 	challenges, _ := mode["challenge"].([]any)
@@ -102,7 +103,7 @@ func HardChallenge(context app.ImageContext, result app.QueryResult) (app.Image,
 		for position, rawAvatar := range teams {
 			avatar, _ := rawAvatar.(map[string]any)
 			entry := card(avatar)
-			if types := hardCardTypes[len(teams)]; position < len(types) {
+			if types := statCardTypes[len(teams)]; position < len(types) {
 				entry["type"] = types[position]
 			}
 			faces[app.Text(avatar["avatar_id"])] = app.Text(entry["face"])
@@ -160,10 +161,11 @@ func hardTrait(text string) []any {
 	return pieces
 }
 
-// hardArtwork maps the images named in the converted stylesheets (miao's
-// common, stat/common, common/tpl and stat/hard-summary) to their paths, and
-// the fonts to miao's family names.
-var hardArtwork = [][2]string{
+// statArtwork maps the images named in the converted stylesheets of miao's
+// stat pages (common, stat/common, common/tpl and the page's own, which adds
+// none but abyss-summary's star) to their paths, and the fonts to miao's
+// family names.
+var statArtwork = [][2]string{
 	{"Number", "resources/common/font/tttgbnumber.woff"},
 	{"NZBZ", "resources/common/font/NZBZ.woff"},
 	{"YS", "resources/common/font/HYWH-65W.woff"},

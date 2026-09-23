@@ -1280,14 +1280,25 @@
       }
     },
     {
-      "id": "abyss",
+      "id": "abyss-summary",
       "name": "深渊",
-      "description": "深境螺旋战绩",
-      "usage": "#[上期]深渊 [UID]",
+      "description": "按 miao 查看本期深境螺旋战绩",
+      "usage": "#深渊 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:喵喵|上传)*(?P<period>本期|上期|往期)?(?:深渊|深境螺旋|深境)(?:数据)?$"
+        "pattern": "^(?:喵喵|上传|本期)*(?:深渊|深境|深境螺旋)(?:数据)?$"
+      }
+    },
+    {
+      "id": "abyss",
+      "name": "上期深渊",
+      "description": "按 Yunzai 的深渊页查看上期深境螺旋战绩",
+      "usage": "#上期深渊 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<period>上期|往期)(?:深渊|深境螺旋|深境)$"
       }
     },
     {
@@ -1861,6 +1872,7 @@
       "id": "records",
       "title": "深渊与挑战战绩",
       "commands": [
+        "abyss-summary",
         "abyss",
         "abyss-floor",
         "theater",

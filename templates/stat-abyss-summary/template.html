@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container" id="container">
+  <div class="head-box type">
+    <div class="title">#上传深渊<span>{{ .month }} · {{ .total }}次战斗</span></div>
+    <div class="uid">UID:{{ .uid }}</div>
+  </div>
+  <div class="info_box">
+    <div class="abyss-stat-cont">
+      <div class="abyss-stat">
+        {{ range .stats }}
+        <div class="cont">
+          {{ if .shown }}
+          <div class="stat-title">
+            <span>{{ .title }}</span>
+            <strong>{{ .value }}</strong>
+          </div>
+          <div class="avatar-banner avatar-{{ .name }}"{{ with .banner }} data-render-resource="{{ . }}"{{ end }}></div>
+          {{ with .notes }}
+          <div class="stat-msg">{{ range . }}<div class="msg">{{ . }}</div>{{ end }}</div>
+          {{ end }}
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    {{ range .floors }}
+    <div class="cont">
+      <div class="cont-body">
+        <div class="abyss-title">
+          <strong>第{{ .index }}层</strong>
+          <span class="abyss-star">{{ .star }}/9</span>
+        </div>
+        <div class="abyss-floor-team">
+          <div class="abyss-team">{{ range .up }}{{ template "card" . }}{{ end }}</div>
+          <div class="line"></div>
+          <div class="abyss-team">{{ range .down }}{{ template "card" . }}{{ end }}</div>
+        </div>
+        <div class="abyss-detail">
+          {{ range .chambers }}
+          <div class="abyss-level">
+            <div class="info">
+              <div class="title">第{{ .index }}间</div>
+              <span class="star star{{ .star }}"></span>
+              <div class="time">{{ .time }}</div>
+            </div>
+            <div class="avatars">
+              <div class="avatar-list up">{{ range .up }}<div class="avatar-icon item-icon star{{ .star }}"><span class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></span></div>{{ end }}</div>
+              <div class="avatar-list down">{{ range .down }}<div class="avatar-icon item-icon star{{ .star }}"><span class="img"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></span></div>{{ end }}</div>
+            </div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+    {{ end }}
+    <div class="cont abyss-notice">
+      <div class="cont-body">
+        <ul class="cont-msg">
+          <li><strong>#上传深渊</strong>会上传你的角色列表及当期深渊挑战数据，<strong>不会上传其他信息</strong>，感谢支持，喵~</li>
+          <li>统计服务由DGP-Studio<strong>胡桃API</strong>提供，上传的数据将会用于排名以及<strong>#深渊使用率</strong><strong>#角色持有率</strong>等统计</li>
+          <li>深渊排行为本期深渊排行，更新时间{{ .updated }}。</li>
+          <li>角色装备与圣遗物为当前最新状态；排名会随时间而更新，数据排名仅供娱乐~</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
+{{ define "card" }}
+<div class="avatar-card elem-{{ .elem }} avatar-{{ .name }} card-{{ .type }}">
+  <div class="card">
+    {{ if .known }}
+    <div class="avatar-face item-icon star{{ .star }}">
+      <div class="img mini"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></div>
+      <div class="img wide avatar-{{ .name }}"{{ with .gacha }} data-render-resource="{{ . }}"{{ end }}></div>
+      <span class="cons cons-{{ .cons }} mini">{{ .cons }}</span>
+      <div class="avatar-level"><span>Lv</span>{{ .level }} {{ .abbr }}</div>
+    </div>
+    <div class="avatar-info">
+      <div class="avatar-name wide">
+        <strong>{{ .abbr }}</strong>
+        <div class="lv-info">
+          <span class="cons cons-{{ .cons }}">{{ .cons }}</span>
+          <span class="avatar-level">Lv{{ .level }}</span>
+        </div>
+        <div class="line"></div>
+      </div>
+      {{ with .talents }}
+      <div class="avatar-talent">{{ range . }}<span class="talent-item talent-{{ .key }} talent-{{ if .crown }}crown{{ else }}none{{ end }} talent-{{ if .plus }}plus{{ else }}none{{ end }}">{{ .level }}</span>{{ end }}</div>
+      {{ else }}
+      <div class="avatar-talent no-talent"><span>暂无天赋数据</span></div>
+      {{ end }}
+      <div class="line"></div>
+      <div class="avatar-detail">
+        <div class="item avatar-weapon">
+          {{ with .weapon }}
+          <div class="item-icon star{{ .star }}">
+            <span class="img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span>
+            <span class="cons cons-{{ .badge }}">{{ .affix }}</span>
+          </div>
+          {{ else }}
+          <div class="item-icon star"><span class="img"></span><span class="cons cons-"></span></div>
+          {{ end }}
+        </div>
+        <div class="item avatar-artis artis{{ len .artis }}">
+          <div class="artis item-icon">{{ range .artis }}<div class="img" data-render-resource="{{ . }}"></div>{{ end }}</div>
+          <div class="item-info wide"></div>
+        </div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}

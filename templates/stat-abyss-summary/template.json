@@ -1,0 +1,11 @@
+{
+  "id": "stat-abyss-summary",
+  "name": "原神深渊",
+  "description": "深渊命令的战绩图片，布局参照 miao-plugin stat/abyss-summary",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1164,
+  "height": 3000
+}

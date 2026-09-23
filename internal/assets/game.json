@@ -47,9 +47,15 @@
       "input": "characters"
     },
     {
+      "name": "genshin.abyss_summary",
+      "label": "深渊",
+      "command": "深渊",
+      "input": "none"
+    },
+    {
       "name": "genshin.abyss",
       "label": "深境螺旋",
-      "command": "深渊",
+      "command": "上期深渊",
       "input": "period"
     },
     {
