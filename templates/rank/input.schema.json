@@ -1,15 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["elem", "title", "mode", "max", "since", "hash", "rows"],
+  "required": ["elem", "title", "mode", "max", "time", "hash", "rows", "width"],
   "properties": {
     "elem": { "type": "string" },
     "title": { "type": "string" },
     "mode": { "type": "string" },
     "max": { "type": "boolean" },
-    "since": { "type": "string" },
+    "time": { "type": "string" },
     "hash": { "type": "string" },
     "rows": { "type": "array" },
+    "width": { "type": "integer" },
+    "limit": { "type": "string" },
+    "number": { "type": "integer" },
     "render_footer": { "type": "string" }
   },
   "additionalProperties": false

@@ -812,6 +812,6 @@ ul.cont-msg li strong,
   text-overflow: ellipsis;
 }
 
-body .container { width: 820px; }
+/* miao and ark set the container width inline; the page does too. */
 /* Upstream sets each row's pictures as inline backgrounds. */
 [data-render-resource]:not(img) { background-image: var(--render-resource, none) !important; }

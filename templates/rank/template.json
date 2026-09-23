@@ -1,11 +1,12 @@
 {
   "id": "rank",
   "name": "原神群排名",
-  "description": "排名命令的图片，布局参照 miao-plugin character/rank-profile-list",
+  "description": "排名与 ark 自定义排行命令的图片，布局参照 miao-plugin character/rank-profile-list，页面宽度同上游",
   "version": "1",
   "entry_html": "template.html",
   "stylesheet": "styles.css",
   "input_schema": "input.schema.json",
-  "width": 1148,
-  "height": 3000
+  "width": 1190,
+  "height": 3000,
+  "fit_width": true
 }

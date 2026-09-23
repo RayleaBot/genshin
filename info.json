@@ -1543,6 +1543,30 @@
       }
     },
     {
+      "id": "cloud-custom-rank",
+      "name": "ark自定义排行",
+      "description": "ark 收录的该角色面板全服排行，可按命座等筛选、指定条数，按 miao 排行图出图",
+      "usage": "#ark<角色>[伤害|圣遗物]排行 [筛选] [数量:N]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^ark.+(?:排行|排名)$"
+      }
+    },
+    {
+      "id": "cloud-custom-rank-help",
+      "name": "ark自定义排行帮助",
+      "description": "ark 自定义排行的写法与可用筛选列",
+      "usage": "#ark自定义排行帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "ark自定义排行帮助"
+        ]
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1848,6 +1872,8 @@
         "cloud-character-rank",
         "cloud-total-rank",
         "cloud-rank-stats",
+        "cloud-custom-rank",
+        "cloud-custom-rank-help",
         "panel-export",
         "cloud-export",
         "cloud-import",

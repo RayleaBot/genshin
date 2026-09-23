@@ -365,6 +365,30 @@ func (c *CloudClient) request(ctx context.Context, route string, body map[string
 	}
 	return decoded, nil
 }
+
+// arkRequest sends a chat command's request the way ark-plugin's ArkApi.req
+// does: with the ark token when the accounts plugin keeps one, otherwise
+// anonymously. A refusal from ark itself is not retried without the token.
+func (a *App) arkRequest(ctx context.Context, event *rayleabot.EventContext, route string, body map[string]any) (any, error) {
+	body["version"] = "0.1.0"
+	decoded, err := a.accountClient(event).Ark(ctx, route, body)
+	if err == nil {
+		return decoded, nil
+	}
+	if code := PublicError(err).Code; strings.HasPrefix(code, "plugin.account_ark_") && code != "plugin.account_ark_unconfigured" {
+		return nil, err
+	}
+	return a.Cloud.request(ctx, route, body)
+}
+
+// arkConfigured is whether ark requests carry the token, as ark-plugin reads
+// it before offering what needs it; an unreachable accounts plugin counts as
+// none.
+func (a *App) arkConfigured(ctx context.Context, event *rayleabot.EventContext) bool {
+	configured, err := a.accountClient(event).ArkConfigured(ctx)
+	return err == nil && configured
+}
+
 func (c *CloudClient) fetchResult(ctx context.Context, game Game, input CloudInput, route string, body map[string]any) (CloudResult, error) {
 	if input.Mode == "akasha_stygian" {
 		return c.akashaStygian(ctx, input)

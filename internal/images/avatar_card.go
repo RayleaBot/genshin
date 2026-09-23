@@ -105,17 +105,21 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 	}
 	sets := []any{}
 	for _, name := range order {
-		if counts[name] < 2 {
-			continue
+		if counts[name] >= 2 {
+			sets = append(sets, c.setIcon(name))
 		}
-		icon := c.miao("resources/meta-gs/artifact/imgs/" + name + "/1.webp")
-		if icon == "" {
-			icon = c.miao("resources/meta-gs/artifact/imgs/" + name + "/5.webp")
-		}
-		sets = append(sets, icon)
 	}
 	card["artis"] = sets
 	return card, true
+}
+
+// setIcon is miao's picture of a set: its flower, or its circlet when the set
+// has no flower.
+func (c *avatarCards) setIcon(name string) string {
+	if icon := c.miao("resources/meta-gs/artifact/imgs/" + name + "/1.webp"); icon != "" {
+		return icon
+	}
+	return c.miao("resources/meta-gs/artifact/imgs/" + name + "/5.webp")
 }
 
 // guest is the card miao draws for a character the requester does not own at

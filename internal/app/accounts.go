@@ -103,6 +103,15 @@ func (c AccountsClient) Ark(ctx context.Context, route string, body map[string]a
 	return result.Data, err
 }
 
+// ArkConfigured is whether the accounts plugin keeps an ark token.
+func (c AccountsClient) ArkConfigured(ctx context.Context) (bool, error) {
+	var result struct {
+		Configured bool `json:"configured"`
+	}
+	err := c.call(ctx, "ark.status", map[string]any{}, &result)
+	return result.Configured, err
+}
+
 func (c AccountsClient) ExecuteConfirmed(ctx context.Context, choice Selection, operation string, input map[string]any) (QueryResult, error) {
 	result := QueryResult{}
 	if input == nil {
