@@ -63,6 +63,11 @@ type PanelImage struct {
 	DamageMode bool
 	// Rank is where ark ranks the panel, nil when it is not shown.
 	Rank *PanelRank
+	// Original is the damage of the kept panel a change started from, which
+	// ark compares each changed result with; LongTitles is its
+	// DealLongDmgTitle for the changed panel's titles (1 cut, 2 wrap).
+	Original   *BuildResult
+	LongTitles int
 }
 
 // PanelImageBuilder draws a single-character panel with the plugin's

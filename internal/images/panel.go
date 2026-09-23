@@ -213,16 +213,28 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 		data["weapon"] = weaponData(context, weapon, add)
 	}
 	if image.Damage != nil {
+		// A changed panel compares each result with the kept panel's of the
+		// same title, as ark does.
+		original := map[string]app.BuildSkillResult{}
+		if image.Original != nil {
+			for _, result := range image.Original.Baseline.Results {
+				if _, seen := original[result.Title]; !seen {
+					original[result.Title] = result
+				}
+			}
+		}
 		rows := []any{}
 		for index, result := range image.Damage.Baseline.Results {
 			row := map[string]any{"index": index + 1, "title": result.Title}
-			switch {
-			case result.Critical != nil && result.Expected != nil:
-				row["dmg"], row["avg"] = comma(*result.Critical), comma(*result.Expected)
-			case result.Expected != nil:
-				row["full"] = comma(*result.Expected)
-			default:
-				row["full"] = result.Text
+			dmg, avg := damageTexts(result)
+			if dmg != "" {
+				row["dmg"], row["avg"] = dmg, avg
+			} else {
+				row["full"] = avg
+			}
+			if old, ok := original[result.Title]; ok {
+				oldDmg, oldAvg := damageTexts(old)
+				row["dmg_diff"], row["avg_diff"] = damageDiff(dmg, oldDmg), damageDiff(avg, oldAvg)
 			}
 			rows = append(rows, row)
 		}
@@ -240,13 +252,26 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 					"charts": []any{panelRankChart("damage", chart.Damage, "伤害评分", 100, 20), panelRankChart("artis", chart.Artis, "圣遗物评分", artisMax, 50)}}
 			}
 		}
+		// ark's DealLongDmgTitle for a changed panel, over every row with its
+		// own: 1 cuts a title past 20 widths, 2 lets them wrap.
+		wrap := false
+		for _, row := range rows {
+			item := row.(map[string]any)
+			title := strings.TrimSpace(item["title"].(string))
+			switch image.LongTitles {
+			case 1:
+				item["title"] = cutDamageTitle(title)
+			case 2:
+				wrap = wrap || damageTitleWidth(title) > 20
+			}
+		}
 		baseline := image.Damage.Baseline
 		enemy := baseline.EnemyName
 		if enemy == "" {
 			enemy = "小宝"
 		}
 		data["damage"] = map[string]any{"rows": rows, "enemy_level": image.Damage.EnemyLevel, "enemy_name": enemy, "created_by": baseline.CreatedBy,
-			"enemy_hint": context.Game.Prefix + "敌人等级" + strconv.Itoa(image.Damage.EnemyLevel)}
+			"enemy_hint": context.Game.Prefix + "敌人等级" + strconv.Itoa(image.Damage.EnemyLevel), "wrap": wrap}
 		if image.DamageMode {
 			data["mode"] = "dmg"
 			if matrix := baseline.Matrix; matrix != nil {
@@ -267,6 +292,77 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 		data["change"] = image.Change
 	}
 	return app.Image{Template: "panel", Data: data, Resources: resources}, true
+}
+
+// damageTexts are a result's critical and average damage as the table shows
+// them; a result with one number or a text shows it as the average.
+func damageTexts(result app.BuildSkillResult) (string, string) {
+	switch {
+	case result.Critical != nil && result.Expected != nil:
+		return comma(*result.Critical), comma(*result.Expected)
+	case result.Expected != nil:
+		return "", comma(*result.Expected)
+	}
+	return "", result.Text
+}
+
+// damageNumber reads a shown damage as ark's getDiff does: without its
+// thousands separators, the number it starts with, NaN when none.
+var damageNumber = regexp.MustCompile(`^\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?`)
+
+// damageDiff is ark's getDiff: the change from the kept panel's value in
+// percent to one place, with an up or down arrow, or -- when either value is
+// not a number or the kept one is 0. Upstream compares the fixed text with
+// the number 0, so an unchanged value reads " ↓0%"; it reads 0.0% here, as
+// meant.
+func damageDiff(current, original string) map[string]any {
+	read := func(text string) float64 {
+		number, err := strconv.ParseFloat(damageNumber.FindString(strings.ReplaceAll(text, ",", "")), 64)
+		if err != nil {
+			return math.NaN()
+		}
+		return number
+	}
+	now, was := read(current), read(original)
+	if math.IsNaN(now) || math.IsNaN(was) || was == 0 {
+		return map[string]any{"text": "--", "class": "same"}
+	}
+	change := math.Round((now-was)/was*1000) / 10
+	switch {
+	case change > 0:
+		return map[string]any{"text": " ↑" + strconv.FormatFloat(change, 'f', -1, 64) + "%", "class": "up"}
+	case change < 0:
+		return map[string]any{"text": " ↓" + strconv.FormatFloat(-change, 'f', -1, 64) + "%", "class": "down"}
+	}
+	return map[string]any{"text": "0.0%", "class": "same"}
+}
+
+// damageTitleWidth is how wide ark counts a title: 1, ( and ) take half.
+func damageTitleWidth(title string) float64 {
+	width := 0.0
+	for _, char := range title {
+		width += damageCharWidth(char)
+	}
+	return width
+}
+
+func damageCharWidth(char rune) float64 {
+	if char == '1' || char == '(' || char == ')' {
+		return 0.5
+	}
+	return 1
+}
+
+// cutDamageTitle cuts a title before the character that takes it past 20
+// widths and adds "...", as ark's truncTitle.
+func cutDamageTitle(title string) string {
+	width := 0.0
+	for index, char := range title {
+		if width += damageCharWidth(char); width > 20 {
+			return title[:index] + "..."
+		}
+	}
+	return title
 }
 
 // panelRankXs are the x of the points ark draws in 排名统计: the bottom, the

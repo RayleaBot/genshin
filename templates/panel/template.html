@@ -126,7 +126,7 @@
 
   {{ with .damage }}
   <div>
-    <div class="dmg-cont dmg-list cont">
+    <div class="dmg-cont dmg-list cont{{ if .wrap }} dmg-wrap{{ end }}">
       <div class="cont-title">伤害计算<span class="not-dmg-mode dmg-desc">使用<strong>{{ $.damage_hint }}</strong>命令可以查看伤害详情</span></div>
       <div class="cont-table">
         <div class="tr thead">
@@ -139,7 +139,9 @@
         <div class="dmg tr">
           <div class="title dmg-idx">{{ $row.index }}</div>
           <div class="title dmg-title">{{ $row.title }}</div>
-          {{ if $row.full }}<div class="value value-full">{{ $row.full }}</div><div class="value value-none"></div>{{ else }}<div class="value">{{ $row.dmg }}</div><div class="value">{{ $row.avg }}</div>{{ end }}
+          {{ if $row.full }}<div class="value value-full" style="position: relative;">{{ with $row.avg_diff }}<span class="dmg-diff-full diff-{{ .class }}">{{ .text }}</span>{{ end }}<span>{{ $row.full }}</span></div><div class="value value-none"></div>
+          {{ else if $row.dmg_diff }}<div class="value dmg-diff-value"><span class="dmg-diff diff-{{ $row.dmg_diff.class }}">{{ $row.dmg_diff.text }}</span><span>{{ $row.dmg }}</span></div><div class="value dmg-diff-value"><span class="dmg-diff diff-{{ $row.avg_diff.class }}">{{ $row.avg_diff.text }}</span><span>{{ $row.avg }}</span></div>
+          {{ else }}<div class="value">{{ $row.dmg }}</div><div class="value">{{ $row.avg }}</div>{{ end }}
         </div>
         {{ end }}
       </div>

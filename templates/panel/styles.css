@@ -1632,7 +1632,38 @@ body {
 .copyright.ad {
   font-size: 12px;
 }
-/* ark-plugin's additions to character/profile-detail: the 排名统计 block. */
+/* ark-plugin's additions to character/profile-detail: a changed panel's
+   damage changes, written inline upstream, and its titles let wrap. */
+.dmg-cont .tr > .dmg-diff-value {
+  text-align: left;
+  padding-left: 15px;
+  white-space: nowrap;
+}
+.dmg-diff {
+  float: right;
+  font-size: 12px;
+  opacity: 0.9;
+  padding-right: 15px;
+}
+.dmg-diff-full {
+  position: absolute;
+  right: 32px;
+  font-size: 12px;
+}
+.diff-up {
+  color: #43ff43;
+}
+.diff-down {
+  color: #ff4e4e;
+}
+.diff-same {
+  color: #999;
+}
+.dmg-wrap .dmg-title {
+  white-space: normal !important;
+  word-break: break-all;
+}
+/* The 排名统计 block. */
 .no-data {
   position: absolute;
   top: 50%;

@@ -137,6 +137,12 @@ type ArkSettings struct {
 	// MarkRankType is markRankType: ranks of local data are marked (本地),
 	// or (面板变换) for a changed panel.
 	MarkRankType bool `json:"mark_rank_type"`
+	// ProfileChangeDiff is profileChangeDiff: a changed panel shows how each
+	// damage differs from the kept panel's.
+	ProfileChangeDiff bool `json:"profile_change_diff"`
+	// DealLongDmgTitle is DealLongDmgTitle, what a changed panel does with
+	// damage titles past 20 widths: 0 nothing, 1 cut them, 2 wrap them.
+	DealLongDmgTitle int `json:"deal_long_dmg_title"`
 	// GroupRank is groupRank: a group ranking shows ark's global ranks.
 	GroupRank bool `json:"group_rank"`
 	// LocalGroupRank is localGroupRank: ark ranks the listed panels
@@ -262,7 +268,7 @@ func New(assets Assets, directory string) (*App, error) {
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},
-		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, GroupRank: true, LocalGroupRank: true, StygianRank: true, StygianDataFrom: 2}}
+		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, GroupRank: true, LocalGroupRank: true, StygianRank: true, StygianDataFrom: 2}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }

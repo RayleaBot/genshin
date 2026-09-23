@@ -146,3 +146,43 @@ func TestPanelDrawsArkRanks(t *testing.T) {
 		t.Fatalf("stops = %v", stops)
 	}
 }
+
+func TestPanelComparesChangedDamageAsArk(t *testing.T) {
+	application, err := app.New(assets.Load(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var image app.PanelImage
+	for _, record := range application.Game.Calc.Metadata().Characters {
+		if record.Key == "gs_10000046" {
+			image.Record = record
+		}
+	}
+	f := func(v float64) *float64 { return &v }
+	long := "一二三四五六七八九十(1)二三四五六七八九十二三"
+	image.Panel = app.CharacterPanel{ID: "10000046", Level: 90, Element: "pyro"}
+	image.Damage = &app.BuildResult{Baseline: app.BuildScenario{Results: []app.BuildSkillResult{
+		{Title: "重击", Critical: f(110), Expected: f(55)}, {Title: "治疗", Text: "12,345"}, {Title: long, Expected: f(1)},
+	}}}
+	image.Original = &app.BuildResult{Baseline: app.BuildScenario{Results: []app.BuildSkillResult{{Title: "重击", Critical: f(100), Expected: f(55)}, {Title: "治疗", Text: "12,000"}}}}
+	image.LongTitles = 1
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Now: time.Now()}
+	drawn, _ := images.Panel(context, image)
+	rows := drawn.Data["damage"].(map[string]any)["rows"].([]any)
+	first, second, third := rows[0].(map[string]any), rows[1].(map[string]any), rows[2].(map[string]any)
+	diff := func(row map[string]any, key string) string { return row[key].(map[string]any)["text"].(string) }
+	// An unchanged value reads 0.0% (upstream: " ↓0%"); a text has no critical
+	// damage to compare.
+	if diff(first, "dmg_diff") != " ↑10%" || diff(first, "avg_diff") != "0.0%" || diff(second, "avg_diff") != " ↑2.9%" || diff(second, "dmg_diff") != "--" || third["avg_diff"] != nil {
+		t.Fatalf("rows = %v", rows)
+	}
+	// 1, ( and ) count half: the title is cut before its 21st width.
+	if third["title"] != "一二三四五六七八九十(1)二三四五六七八九..." {
+		t.Fatalf("title = %v", third["title"])
+	}
+	image.LongTitles = 2
+	drawn, _ = images.Panel(context, image)
+	if damage := drawn.Data["damage"].(map[string]any); damage["wrap"] != true || damage["rows"].([]any)[2].(map[string]any)["title"] != long {
+		t.Fatalf("damage = %v", damage)
+	}
+}

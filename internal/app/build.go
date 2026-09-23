@@ -442,6 +442,18 @@ func (a *App) panelView(ctx context.Context, event *rayleabot.EventContext, pane
 		damage := BuildView(a.Game, result)
 		view.Sections = append(view.Sections, Section{Title: "参考伤害 · " + result.Version, Rows: damage.Rows})
 		image.Damage = &result
+		if ark := settings(event).Ark; change != "" && ark.ProfileChangeDiff {
+			// As ark, a changed panel is compared with the UID's kept panel
+			// of the character.
+			if saved, err := a.Profiles.Read(uid); err == nil {
+				if kept, ok := saved.Panels[panel.ID]; ok {
+					if original, err := a.panelDamage(ctx, kept.panel(), a.enemyLevel(event), nil); err == nil {
+						image.Original = &original
+					}
+				}
+			}
+			image.LongTitles = ark.DealLongDmgTitle
+		}
 		if settings(event).Ark.PanelRank {
 			image.Rank = a.panelRank(ctx, event, panel, uid, change != "")
 			rows := image.Rank.Rows
