@@ -34,6 +34,7 @@ BUNDLES = {
         "resources/help/theme/default/*",
         "resources/stat/imgs/bg1.png",
         "resources/stat/imgs/footer.png",
+        "resources/gacha/imgs/*",
         # Panels, rankings, rosters, the calendar and the wiki draw every
         # character's portraits and icons; the Traveler's element icons sit
         # under 旅行者/<element>/.

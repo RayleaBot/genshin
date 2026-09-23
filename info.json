@@ -22,7 +22,8 @@
     "image_replies": true,
     "custom_aliases": {},
     "alias_permission": 0,
-    "poke_card": true
+    "poke_card": true,
+    "miao_gacha": false
   },
   "commands": [
     {
@@ -326,7 +327,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:喵喵)?(?:抽卡|抽奖|角色|角色联动|武器|武器联动|集录|常驻|up|新手|光锥|光锥联动|全部)+池*(?:记录|祈愿|分析)$"
+        "pattern": "^(?:原神)?(?:全部)?(?:抽卡|抽奖|角色|角色联动|武器|武器联动|集录|常驻|up|新手|光锥|光锥联动|全部)池*(?:记录|祈愿|分析)$"
       }
     },
     {
@@ -592,6 +593,28 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:原神)?(?:抽卡|抽奖|角色|武器|集录|常驻|up|新手|光锥)池*统计$"
+      }
+    },
+    {
+      "id": "gacha-detail",
+      "name": "喵喵抽卡记录",
+      "description": "按 miao 列出所选卡池每个五星的日期、是否 UP 与所用抽数",
+      "usage": "#喵喵抽卡记录 / #喵喵武器记录 / #喵喵常驻记录 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:喵喵)?(?:抽卡|抽奖|角色|武器|光锥|常驻|集录|up)+池?(?:记录|祈愿|分析)$"
+      }
+    },
+    {
+      "id": "gacha-stat",
+      "name": "喵喵抽卡统计",
+      "description": "按 miao 逐期列出卡池的 UP、抽数与所得四星、五星",
+      "usage": "#喵喵抽卡统计 / #喵喵角色统计 / #喵喵全部统计 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:喵喵)?(?:全部|抽卡|抽奖|角色|武器|光锥|常驻|集录|up|版本)+池?统计$"
       }
     },
     {
@@ -1888,6 +1911,8 @@
         "gacha-progress",
         "gacha-stop",
         "gacha-versions",
+        "gacha-detail",
+        "gacha-stat",
         "gacha-export",
         "gacha-import",
         "gacha-help",

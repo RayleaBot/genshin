@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+<div class="basic">
+  <div class="user-banner" data-render-resource="{{ .banner }}">
+    <div class="face">
+      <span data-render-resource="{{ .face }}"></span>
+    </div>
+    <div class="user-info">
+      <div class="name">
+        <strong>{{ .name }}</strong>
+      </div>
+      <div class="uid">
+        {{ if .uid }}<span> #{{ .uid }}</span>{{ end }}
+      </div>
+    </div>
+    <div class="stat">
+      {{ range .stats }}
+      <div class="stat-li">
+        <strong>{{ .value }}</strong>
+        <span>{{ .title }}</span>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="ck-notice">
+    <strong>{{ .mark }}角色统计/{{ .mark }}武器统计</strong>角色/武器池统计，
+    <strong>{{ .mark }}常驻统计/{{ .mark }}集录统计</strong>常驻/集录池统计
+  </div>
+  <div class="ck-notice">
+    <strong>{{ .mark }}全部统计</strong>全部抽卡统计，
+    <strong>{{ .mark }}抽卡帮助</strong> 获取帮助
+  </div>
+  {{ range .versions }}
+  <div class="cont avatar-cont">
+    <div class="cont-title">
+      <div class="gacha-pool">
+        <div class="version">
+          {{ if .from }}
+          <div class="version-name line">
+            {{ .version }} {{ .half }}
+          </div>
+          <div class="pool-name {{ if $.mix }}mix{{ else }}non-mix{{ end }}">
+            <div class="name">{{ .name }}</div>
+            <div class="time">{{ .from }}~{{ .to }}</div>
+          </div>
+          {{ else }}
+          <div class="version-name all-version"> {{ .version }}</div>
+          {{ end }}
+        </div>
+        <div class="stat-info">
+          {{ range .stats }}
+          <div class="info line">
+            <div class="num">{{ .value }}</div>
+            <div class="title">{{ .title }}</div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+    <div class="gacha-stat card-list">
+      {{ range .items }}
+      <div class="gacha-item">
+        <div class="item-card {{ if .up }}up-card{{ else }}normal-card{{ end }}" style="width:{{ $.card_width }}px">
+          <div class="item-icon  star{{ .star }}">
+            <div class="item-bg"{{ with .img }} data-render-resource="{{ . }}"{{ end }}></div>
+            <div class="item-life {{ if .up }}life5{{ else }}life1{{ end }}">{{ .num }}</div>
+          </div>
+          <div class="item-name">{{ .name }}</div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

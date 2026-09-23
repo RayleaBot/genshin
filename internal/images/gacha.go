@@ -88,6 +88,12 @@ var gachaAllPools = [][2]string{{"301", "角色"}, {"302", "武器"}, {"500", "�
 // pull count, or, for 全部记录, gacha-all-log's block for every pool with
 // records, each five-star row padded to the longest.
 func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
+	if image.Miao && strings.HasSuffix(image.Word, "统计") {
+		return GachaStat(context, image)
+	}
+	if image.Miao {
+		return GachaDetail(context, image)
+	}
 	if strings.HasSuffix(image.Word, "统计") {
 		return GachaCount(context, image)
 	}

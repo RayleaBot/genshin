@@ -103,6 +103,9 @@ type Settings struct {
 	CustomAliases   map[string]string `json:"custom_aliases"`
 	// PokeCard is miao's avatarPoke: a poke shows a character card.
 	PokeCard bool `json:"poke_card"`
+	// MiaoGacha is miao's gachaStat: 抽卡记录 and 抽卡统计 without 喵喵
+	// draw miao's pages instead of Yunzai's.
+	MiaoGacha bool `json:"miao_gacha"`
 	// AliasPermission is who may change custom aliases, as Yunzai's
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
@@ -578,24 +581,43 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.gachaHelpPort(event)
 	case "accounts", "select", "uid-remove":
 		return a.uidCommand(ctx, event, command, args)
-	case "gacha", "gacha-versions":
+	case "gacha", "gacha-versions", "gacha-detail", "gacha-stat":
+		// miao's words start with 喵喵, or are Yunzai's while its setting is
+		// on; others it has only then.
+		word := event.Event.Command()
+		miao := (a.commands.matches("gacha-detail", word) || a.commands.matches("gacha-stat", word)) && (strings.HasPrefix(word, "喵喵") || settings(event).MiaoGacha)
+		if !miao && (command == "gacha-detail" || command == "gacha-stat") {
+			return event.Result(map[string]any{"handled": false})
+		}
 		uid := ""
 		if len(args) > 0 {
 			uid = args[0]
 		}
 		archive, role, readErr := a.chatArchive(ctx, event, uid)
+		missing := "UID:" + role.UID + " 本地暂无抽卡信息，请通过【" + prefix + "抽卡帮助】获得绑定帮助..."
 		if readErr != nil {
+			if miao && PublicError(readErr).Code == "archive_missing" {
+				return event.SendText(missing)
+			}
 			err = readErr
 			break
 		}
 		game := a.Game
 		view = GachaView(game, archive)
-		if command == "gacha-versions" {
+		if strings.HasSuffix(word, "统计") {
 			view = versionDrawView(game, versionDraws(game, archive))
 		}
 		if a.gacha != nil {
-			if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: role.UID, Role: role, Word: event.Event.Command(), Archive: archive, Group: event.Event.Target.Type == "group"}); ok {
+			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Group: event.Event.Target.Type == "group", Miao: miao}
+			if miao {
+				saved, _ := a.Profiles.Read(role.UID)
+				image.Nickname, image.Face = saved.Nickname, saved.Face
+			}
+			drawn, ok := a.gacha(a.imageContext(ctx), image)
+			if ok {
 				view.Image = &drawn
+			} else if miao {
+				return event.SendText(missing)
 			}
 		}
 	default:

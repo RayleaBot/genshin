@@ -48,6 +48,7 @@ type SavedProfiles struct {
 	UID           string                `json:"uid"`
 	Nickname      string                `json:"nickname,omitempty"`
 	Level         int                   `json:"level,omitempty"`
+	Face          string                `json:"face,omitempty"`
 	RefreshedAtMS int64                 `json:"refreshed_at_ms,omitempty"`
 	Service       string                `json:"service,omitempty"`
 	Panels        map[string]SavedPanel `json:"panels"`
@@ -117,6 +118,9 @@ func (s *PanelStore) Keep(uid string, panels []CharacterPanel, service string, p
 		value.RefreshedAtMS, value.Service = now, service
 		if player.Nickname != "" {
 			value.Nickname, value.Level = player.Nickname, player.Level
+		}
+		if player.Face != "" {
+			value.Face = player.Face
 		}
 	}
 	file, _ := s.file(uid)

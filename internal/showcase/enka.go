@@ -21,8 +21,11 @@ var Source = app.ShowcaseSource{Name: "Enka", URL: func(uid string) string { ret
 type enkaAnswer struct {
 	TTL        int `json:"ttl"`
 	PlayerInfo *struct {
-		Nickname string `json:"nickname"`
-		Level    int    `json:"level"`
+		Nickname       string `json:"nickname"`
+		Level          int    `json:"level"`
+		ProfilePicture struct {
+			AvatarID int `json:"avatarId"`
+		} `json:"profilePicture"`
 	} `json:"playerInfo"`
 	AvatarInfoList []enkaAvatar `json:"avatarInfoList"`
 }
@@ -128,6 +131,9 @@ func Parse(_ context.Context, game app.Game, catalog app.Catalog, raw []byte) (a
 		return app.ShowcaseProfile{}, &app.ShowcaseFailure{Status: 200}
 	}
 	profile := app.ShowcaseProfile{Nickname: answer.PlayerInfo.Nickname, Level: answer.PlayerInfo.Level, TTL: time.Duration(answer.TTL) * time.Second}
+	if id := answer.PlayerInfo.ProfilePicture.AvatarID; id != 0 {
+		profile.Face = strconv.Itoa(id)
+	}
 	if len(answer.AvatarInfoList) == 0 || answer.AvatarInfoList[0].PropMap == nil {
 		return profile, app.ErrShowcaseEmpty
 	}

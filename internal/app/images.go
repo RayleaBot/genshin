@@ -76,6 +76,11 @@ type GachaImage struct {
 	Archive gacha.Archive
 	// Group is a group chat, where 抽卡统计 shows fewer pools.
 	Group bool
+	// Miao draws miao's 喵喵抽卡记录 or 喵喵抽卡统计 page.
+	Miao bool
+	// Nickname and Face are the player's kept name and profile-picture
+	// character, which miao's pages show.
+	Nickname, Face string
 }
 
 // GachaImageBuilder draws a gacha record reply with the plugin's template, or

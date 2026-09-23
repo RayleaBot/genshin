@@ -1,0 +1,11 @@
+{
+  "id": "gacha-detail",
+  "name": "原神喵喵抽卡记录",
+  "description": "喵喵抽卡记录命令的图片，布局参照 miao-plugin gacha/gacha-detail",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1036,
+  "height": 16000
+}

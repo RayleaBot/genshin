@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "elem",
+    "uid",
+    "name",
+    "face",
+    "banner",
+    "stats",
+    "mark",
+    "mix",
+    "card_width",
+    "versions"
+  ],
+  "properties": {
+    "elem": {
+      "type": "string"
+    },
+    "uid": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "face": {
+      "type": "string"
+    },
+    "banner": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "array"
+    },
+    "mark": {
+      "type": "string"
+    },
+    "mix": {
+      "type": "boolean"
+    },
+    "card_width": {
+      "type": "integer"
+    },
+    "versions": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

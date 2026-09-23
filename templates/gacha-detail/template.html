@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+<div class="basic">
+  <div class="user-banner" data-render-resource="{{ .banner }}">
+    <div class="face">
+      <span data-render-resource="{{ .face }}"></span>
+    </div>
+    <div class="user-info">
+      <div class="name">
+        <strong>{{ .name }}</strong>
+      </div>
+      <div class="uid">
+        {{ if .uid }}<span> #{{ .uid }}</span>{{ end }}
+      </div>
+    </div>
+    <div class="stat">
+      {{ range .stats }}
+      <div class="stat-li">
+        <strong>{{ .value }}</strong>
+        <span>{{ .title }}</span>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="ck-notice">
+    <strong>{{ .mark }}抽卡帮助</strong>获取抽卡链接，<strong>{{ .mark }}更新抽卡记录</strong>更新抽卡信息，<strong>{{ .mark }}抽卡统计</strong><strong>{{ .mark }}角色统计</strong>可查看按卡池分析结果
+  </div>
+  <div class="cont avatar-cont">
+    <div class="gacha-list">
+      {{ range .items }}
+      <div class="gacha-item {{ if .has_date }}has-date{{ else }}no-date{{ end }} {{ if .up }}up{{ else }}wai{{ end }}{{ if .drawn }} no-avatar{{ end }}">
+        <div class="date ">
+          <div class="dot{{ if .first }} first{{ end }}"></div>
+          <div class="txt">{{ .date }}</div>
+        </div>
+        <div class="name" style="width:{{ $.name_width }}px">{{ .name }}</div>
+        <div class="icon">
+          <div class="icon-bg star{{ .star }}">
+            <span class="img mini"{{ with .img }} data-render-resource="{{ . }}"{{ end }}></span>
+          </div>
+        </div>
+        <div class="process">
+          <div class="bar  {{ .bar }}" style="width:{{ .width }}%">{{ .count }}
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

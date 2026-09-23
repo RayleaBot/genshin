@@ -33,8 +33,10 @@ type ShowcaseParser func(ctx context.Context, game Game, catalog Catalog, raw []
 type ShowcaseProfile struct {
 	Nickname string
 	Level    int
-	Panels   []CharacterPanel
-	TTL      time.Duration
+	// Face is the character ID of the player's profile picture.
+	Face   string
+	Panels []CharacterPanel
+	TTL    time.Duration
 }
 
 // ErrShowcaseEmpty is the answer of a player who shows no character.
