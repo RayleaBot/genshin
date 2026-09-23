@@ -1351,7 +1351,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:评分|(?P<character>.+?)圣遗物)$"
+        "pattern": "^(?:评分|(?P<character>.+?)圣遗物(?P<uid>[0-9]{9,10})?)$"
       }
     },
     {
@@ -1744,7 +1744,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<character>.+?)(?:面板|面版|详情|详细)$"
+        "pattern": "^(?P<character>.+?)(?:面板|面版|详情|详细)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {

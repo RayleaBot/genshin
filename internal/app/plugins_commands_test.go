@@ -256,6 +256,13 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"今日素材100000001", "daily-material", []string{"100000001"}},
 			{"每日天赋100000001", "daily-material", []string{"100000001"}},
 			{"周三材料100000001", "daily-material", []string{"100000001"}},
+			{"雷神面板100000001", "character", []string{"雷神", "100000001"}},
+			{"雷神详情100000001", "character", []string{"雷神", "100000001"}},
+			{"胡桃圣遗物100000001", "score", []string{"胡桃", "100000001"}},
+			{"胡桃伤害100000001", "build", []string{"胡桃", "100000001"}},
+			{"胡桃武器100000001", "build", []string{"胡桃", "100000001"}},
+			{"五星武器100000001", "weapons", []string{"100000001"}},
+			{"角色面板100000001", "panel-list", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {
