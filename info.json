@@ -1656,6 +1656,18 @@
         "type": "pattern",
         "pattern": "^.+[换变改].+$"
       }
+    },
+    {
+      "id": "character-card",
+      "name": "角色卡片",
+      "description": "直接发送角色名（可带卡片、UID）出角色卡片：照片、等级、命座、武器、天赋与圣遗物；其他命令都不匹配时才生效",
+      "usage": "#雷神 / #雷神卡片",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^.+$",
+        "fallback": true
+      }
     }
   ],
   "command_groups": [
@@ -1686,6 +1698,7 @@
       "title": "角色面板",
       "commands": [
         "character",
+        "character-card",
         "panel-refresh",
         "panel-refresh-account",
         "talent-refresh",

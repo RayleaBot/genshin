@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "mode",
+    "width",
+    "zoom",
+    "name",
+    "uid",
+    "bg"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string"
+    },
+    "width": {
+      "type": "number"
+    },
+    "zoom": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "uid": {
+      "type": "string"
+    },
+    "fetter": {
+      "type": "integer"
+    },
+    "has_cons": {
+      "type": "boolean"
+    },
+    "cons": {
+      "type": "integer"
+    },
+    "level": {
+      "type": "integer"
+    },
+    "weapon": {
+      "type": "object"
+    },
+    "elem": {
+      "type": "string"
+    },
+    "talents": {
+      "type": "array"
+    },
+    "artis": {
+      "type": "array"
+    },
+    "artis_set": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "update_time": {
+      "type": "string"
+    },
+    "bg": {
+      "type": "string"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

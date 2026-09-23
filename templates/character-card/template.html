@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro {{ .mode }}-mode" style="width:{{ .width }}px;zoom:{{ .zoom }}">
+<div class="container" id="container" style="width:{{ .width }}px">
+<div>
+  <div class="char-title">
+    <div class="char-name">
+      <strong>{{ .name }}</strong>
+      {{ with .fetter }} <span class="fetter fetter{{ . }}"></span> {{ end }}
+      {{ if .has_cons }} <span class="cons cons-{{ .cons }}">{{ .cons }}命</span> {{ end }}
+    </div>
+    <div class="char-lv">
+      <span>Uid:{{ .uid }}</span>
+      {{ with .level }}<span>Lv.{{ . }}</span>{{ end }}
+    </div>
+  </div>
+  {{ if .level }}
+  <div class="char-detail cont">
+
+    <div class="cont weapon-cont left-line">
+      {{ with .weapon }}
+      <div class="img"{{ with .img }} data-render-resource="{{ . }}"{{ end }}></div>
+      <div class="weapon-info">
+        <strong>{{ .name }}</strong>
+        <div class="star star-{{ .star }}"></div>
+        <div>Lv.{{ .level }} <span
+            class="affix affix-{{ .affix }}">精{{ .affix }}</span></div>
+      </div>
+      {{ end }}
+    </div>
+
+    {{ if .talents }}
+    <div class="cont talent-cont elem-{{ .elem }}">
+      {{ range .talents }}
+      <div class="talent-item">
+        <div class="talent-icon
+               {{ if .plus }}talent-plus{{ end }}
+                {{ if .crown }}talent-crown{{ end }}">
+          <div class="talent-icon-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div>
+          <span>{{ .level }}</span>
+        </div>
+
+      </div>
+      {{ end }}
+    </div>
+    {{ else }}
+    <div class="cont notice-cont">
+      请绑定CK以获取天赋信息
+    </div>
+    {{ end }}
+
+    <div class="cont artis-cont right-line">
+      <div class="artis-list">
+        {{ range .artis }}
+        {{ if .level }}
+        <div class="item">
+          <div class="item-icon"{{ with .img }} data-render-resource="{{ . }}"{{ end }}></div>
+          <span class="lv">{{ .level }}</span>
+        </div>
+        {{ else }}
+        <div class="item no-item"></div>
+        {{ end }}
+        {{ end }}
+      </div>
+      <div class="artis-sets">{{ .artis_set }}</div>
+    </div>
+  </div>
+
+  <div class="copyright data-source">
+    数据源：{{ .source }} {{ .update_time }}
+  </div>
+  {{ else }}
+  <div class="no-info">未能获取到角色信息，请将角色放置在米游社角色展柜中</div>
+  {{ end }}
+  <div><img{{ with .bg }} data-render-resource="{{ . }}"{{ end }} class="bg"{{ if eq .mode "left" }} style="width:auto;height:480px"{{ end }} alt=""></div>
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

@@ -419,6 +419,27 @@ func rankView(game Game, character Entry, mode string, entries []RankEntry) View
 // when that fits in seven characters, otherwise up to two sets by their
 // abbreviations. Sets upstream gives no abbreviation keep their name.
 func RankSetName(catalog Catalog, panel CharacterPanel) string {
+	short, full := setLabels(catalog, panel)
+	if len(full) == 0 {
+		return ""
+	}
+	if len(short) > 1 || utf8.RuneCountInString(full[0]) > 7 {
+		return strings.Join(short[:min(2, len(short))], "+")
+	}
+	return full[0]
+}
+
+// SetShortName is miao's short set label: up to two worn sets by their
+// abbreviations and piece counts.
+func SetShortName(catalog Catalog, panel CharacterPanel) string {
+	short, _ := setLabels(catalog, panel)
+	return strings.Join(short[:min(2, len(short))], "+")
+}
+
+// setLabels are the sets worn as two or four pieces, as miao's ArtisSet
+// labels them: by abbreviation, which is the name for sets upstream gives
+// none, and by name, each with its count.
+func setLabels(catalog Catalog, panel CharacterPanel) (short, full []string) {
 	counts, order := map[string]int{}, []string{}
 	for _, piece := range panel.Equipment {
 		if piece.SetName == "" {
@@ -429,7 +450,6 @@ func RankSetName(catalog Catalog, panel CharacterPanel) string {
 		}
 		counts[piece.SetName]++
 	}
-	short, full := []string{}, []string{}
 	for _, name := range order {
 		if counts[name] < 2 {
 			continue
@@ -444,13 +464,7 @@ func RankSetName(catalog Catalog, panel CharacterPanel) string {
 		}
 		short, full = append(short, abbr+count), append(full, name+count)
 	}
-	if len(full) == 0 {
-		return ""
-	}
-	if len(short) > 1 || utf8.RuneCountInString(full[0]) > 7 {
-		return strings.Join(short[:min(2, len(short))], "+")
-	}
-	return full[0]
+	return short, full
 }
 
 // RankDamageTitle shortens a detail title as miao's rank list does: past ten

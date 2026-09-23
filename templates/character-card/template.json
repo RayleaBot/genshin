@@ -1,0 +1,12 @@
+{
+  "id": "character-card",
+  "name": "原神角色卡片",
+  "description": "角色名命令的图片，布局参照 miao-plugin character/character-card；页面宽度随立绘比例变化",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 3000,
+  "height": 3000,
+  "fit_width": true
+}

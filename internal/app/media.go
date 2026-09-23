@@ -393,6 +393,11 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 			if err = os.Remove(s.file(ref)); err != nil {
 				return nil, err
 			}
+			// Cached copies drawn on character cards go with the image.
+			cached, _ := filepath.Glob(filepath.Join(filepath.Dir(s.Directory), "media-cache", ref+"-*"))
+			for _, file := range cached {
+				_ = os.Remove(file)
+			}
 			return map[string]any{"removed": true}, nil
 		}
 		if err = validateMediaEntry(q.MediaEntry, a.Catalog); err != nil {
