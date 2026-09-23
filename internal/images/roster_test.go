@@ -85,7 +85,8 @@ func TestCharactersFollowMiao(t *testing.T) {
 
 // As miao draws a UID's player data, a kept panel stands in where the
 // account gives no detail, the list's level counts over it, the kept
-// profile picture heads the page and the last 更新面板 is dated.
+// profile picture heads the page and the last 更新面板 is dated; a UID read
+// without its account carries miao's notice.
 func TestCharactersDrawKeptPanels(t *testing.T) {
 	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
@@ -104,8 +105,8 @@ func TestCharactersDrawKeptPanels(t *testing.T) {
 		"10000046": {Panel: app.CharacterPanel{ID: "10000046", Level: 80, Rank: 1, Weapon: &app.PanelEquipment{ID: "13501", Level: 90, Rarity: "5", Refinement: 1}}},
 	}}
 	characters := decode(t, `{"list":[{"id":10000046,"level":90,"actived_constellation_num":0},{"id":10000025,"level":90,"actived_constellation_num":6}]}`)["list"].([]any)
-	image, ok := images.Characters(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept})
-	if !ok {
+	image, ok := images.Characters(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept, Public: true})
+	if !ok || image.Data["notice"] != true {
 		t.Fatal("characters")
 	}
 	hutao := image.Data["avatars"].([]any)[0].(map[string]any)

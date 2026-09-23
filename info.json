@@ -80,12 +80,12 @@
     {
       "id": "characters",
       "name": "角色",
-      "description": "已拥有的角色列表",
-      "usage": "#角色 / #五星角色 [UID]",
+      "description": "角色列表；不在本人账号上的 UID 读取公共查询池与该 UID 已保存的面板",
+      "usage": "#角色 / #五星角色 [UID] / #uid<UID>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:喵喵(?:角色|查询)|(?:五|四|5|4|星)*(?:角色|查询|查询角色|角色查询|人物))(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:喵喵(?:角色|查询)|(?:五|四|5|4|星)*(?:角色|查询|查询角色|角色查询|人物))(?P<uid>[0-9]{9,10})?$|^(?:uid|UID)\\+*(?P<uid>(?:18|[1-9])[0-9]{8})$|^[+＋]*(?P<uid>(?:18|[1-9])[0-9]{8})"
       }
     },
     {
@@ -1229,17 +1229,6 @@
       }
     },
     {
-      "id": "public-profile",
-      "name": "uid+UID",
-      "description": "用本人主动共享的查询账号查看任意 UID 的公开资料",
-      "usage": "#uid+<UID>",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:公开信息|(?:uid|UID)?[+＋]*(?P<uid>(?:18|[1-9])[0-9]{8}))$"
-      }
-    },
-    {
       "id": "pool-help",
       "name": "卡池帮助",
       "description": "卡池查询的写法",
@@ -1789,8 +1778,7 @@
         "training",
         "theater-training",
         "weapons",
-        "talent-stat",
-        "public-profile"
+        "talent-stat"
       ]
     },
     {

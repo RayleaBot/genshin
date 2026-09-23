@@ -49,10 +49,11 @@ var rosterArtwork = [][2]string{
 
 // Characters draws the character list the way miao's character/avatar-list
 // does: the profile banner with the player's profile-picture character,
-// nickname, level, days active and counts, each region's exploration, the
-// chests, every character as an avatar card, strongest first, and when the
-// panels and the official data were read; 五星角色 and 四星角色 list only that
-// rarity, while the counts stay the whole roster's.
+// nickname, level, days active and counts, the notice of a UID read without
+// its account, each region's exploration, the chests, every character as an
+// avatar card, strongest first, and when the panels and the official data
+// were read; 五星角色 and 四星角色 list only that rarity, while the counts stay
+// the whole roster's.
 func Characters(context app.ImageContext, image app.CharactersImage) (app.Image, bool) {
 	if len(image.Characters) == 0 {
 		return app.Image{}, false
@@ -147,7 +148,7 @@ func Characters(context app.ImageContext, image app.CharactersImage) (app.Image,
 		player["face"] = cards.miao(portraits + "imgs/face.webp")
 	}
 	data := map[string]any{"uid": image.Role.UID, "player": player, "stats": shown, "exploration": exploration, "chests": chests,
-		"avatars": avatars, "prefix": context.Game.Prefix, "updated": context.Now.In(chinaTime).Format("01-02 15:04")}
+		"avatars": avatars, "notice": image.Public, "prefix": context.Game.Prefix, "updated": context.Now.In(chinaTime).Format("01-02 15:04")}
 	if saved.RefreshedAtMS > 0 {
 		data["profile_updated"] = time.UnixMilli(saved.RefreshedAtMS).In(chinaTime).Format("01-02 15:04")
 	}

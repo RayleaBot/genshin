@@ -12,7 +12,7 @@ import (
 var helpIcons = map[string]int{
 	"profile": 61, "characters": 61, "note": 15, "training": 62, "talent-stat": 62, "accounts": 10, "select": 10,
 	"monthly": 5, "monthly-history": 5, "monthly-save": 5,
-	"character": 66, "build": 66, "showcase": 63, "public-profile": 63, "score": 65,
+	"character": 66, "build": 66, "showcase": 63, "score": 65,
 	"abyss-summary": 64, "abyss": 64, "abyss-floor": 64, "theater": 64, "hard_challenge": 64, "challenge-submit": 77,
 	"gacha-detail": 6, "gacha-background": 6, "gacha-stat": 21, "simulation": 8, "simulation-fate": 8,
 	"catalog": 60, "talent-wiki": 53, "materials": 67, "guides": 20, "photo": 88, "image-library": 88, "interaction": 59,

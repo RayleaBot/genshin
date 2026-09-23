@@ -464,21 +464,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.privateCloudPanelCommand(ctx, event, args)
 	case "cloud-verify":
 		return a.cloudVerifyCommand(event, args)
-	case "public-profile":
-		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + prefix + "公开信息 UID [区服]”查询官方公开资料；需要有本人主动加入的公共查询账号。")
-		}
-		region := a.Game.Region
-		if len(args) == 2 {
-			region = args[1]
-		}
-		result, queryErr := a.accountClient(event).PublicProfile(ctx, args[0], region)
-		if queryErr != nil {
-			err = queryErr
-			break
-		}
-		view = BusinessView(a.Game, Operation{Name: a.Game.ID + ".profile", Label: a.Game.Name + "公开资料"}, result, a.Catalog)
-		view.Note = "通过已获所有者授权的公共查询池读取官方公开资料，不代表目标 UID 已绑定。"
 	case "signin-task":
 		return a.signinTaskCommand(ctx, event, args)
 	case "signin", "signin-status":

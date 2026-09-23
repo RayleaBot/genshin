@@ -17,6 +17,9 @@
     {{ end }}
   </div>
   {{ end }}
+  {{ if .notice }}
+  <div class="ck-notice">未绑定CK或CK失效，信息可能不完全。发送<strong>{{ .prefix }}体力帮助</strong>查看CK绑定方法，发送<strong>{{ .prefix }}更新面板</strong>更新游戏内角色展柜信息</div>
+  {{ end }}
   {{ if .exploration }}
   <div class="exploration">
     {{ range .exploration }}<div class="item" style="background-position:{{ .position }}"><span>{{ .name }}</span><strong>{{ .value }}</strong></div>{{ end }}

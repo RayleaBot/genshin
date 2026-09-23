@@ -13,60 +13,81 @@ import (
 // the UID with what the account gives for it, Characters the player's
 // characters as official list entries, Index the official index (nil when it
 // could not be read) and Saved the UID's kept panels, last 更新面板 and
-// player.
+// player. Public is a UID read without its account, as miao reads another
+// player's with the public cookie pool and notes the data may be incomplete.
 type CharactersImage struct {
 	Role       Role
 	Characters []any
 	Index      map[string]any
 	Saved      SavedProfiles
+	Public     bool
 }
 
 type CharactersImageBuilder func(ImageContext, CharactersImage) (Image, bool)
 
-// characters answers miao's 角色 list of the UID written after the word or
-// the one in use. As miao, it reads the index and then the character list,
-// answers the first query that fails, and draws what it has with the panels
-// kept for the UID.
+// noQueryAccount are the failures of a query that found no account to read
+// with, miao's 暂无可用CK.
+var noQueryAccount = []string{"plugin.service_unavailable", "plugin.account_public_unavailable", "plugin.account_region_unsupported"}
+
+// characters answers miao's 角色 list of the UID written in the command, a
+// mentioned user's or the one in use. As miao, it reads the index and then
+// the character list, answers the first query that fails, and draws what it
+// has with the panels kept for the UID. miao reads a UID with its owner's
+// cookie, else with the public cookie pool: a UID on the requester's account
+// is read with it, any other through the accounts plugin's public query,
+// which reads the index alone.
 func (a *App) characters(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	uid := ""
 	if len(args) > 0 {
 		uid = args[0]
 	}
+	owner, err := a.panelOwner(ctx, event, uid)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	saved, err := a.Profiles.Read(owner.UID)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
 	client := a.accountClient(event)
-	listed, err := client.List(ctx, 0)
-	if err != nil {
-		return event.SendText(friendlyError(err))
+	image := CharactersImage{Role: Role{UID: owner.UID}, Saved: saved, Public: !owner.Owned}
+	var list []any
+	var failed error
+	if owner.Owned {
+		image.Role = owner.Role
+		var index, result QueryResult
+		index, failed = client.Execute(ctx, owner.Choice, a.Game.ID+".profile", nil)
+		result, err = client.Execute(ctx, owner.Choice, a.Game.ID+".characters", nil)
+		if failed == nil {
+			failed = err
+		}
+		image.Index, list = index.Data, asList(result.Data["list"])
+	} else {
+		var index QueryResult
+		index, failed = client.PublicProfile(ctx, owner.UID, uidRegion(owner.UID))
+		image.Index = index.Data
 	}
-	choice, role, err := Choose(listed, a.Game.ID, uid)
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	saved, err := a.Profiles.Read(role.UID)
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	index, failed := client.Execute(ctx, choice, a.Game.ID+".profile", nil)
-	result, err := client.Execute(ctx, choice, a.Game.ID+".characters", nil)
-	if failed == nil {
-		failed = err
-	}
-	image := CharactersImage{Role: role, Characters: playerCharacters(index.Data, asList(result.Data["list"]), saved.Panels), Index: index.Data, Saved: saved}
+	image.Characters = playerCharacters(image.Index, list, saved.Panels)
 	if failed != nil {
-		if len(image.Characters) == 0 {
+		// The answer to a failed query stands in for 查询失败, which still
+		// follows 暂无可用CK.
+		if len(image.Characters) == 0 && !slices.Contains(noQueryAccount, PublicError(failed).Code) {
 			return event.SendText(friendlyError(failed))
 		}
 		notice(ctx, event, friendlyError(failed))
 	}
 	if len(image.Characters) == 0 {
-		return event.SendText(a.noCharacters(role.UID))
+		return event.SendText(a.noCharacters(owner.UID))
 	}
 	operation, _ := a.operation(a.Game.ID + ".characters")
-	view := BusinessView(a.Game, operation, QueryResult{Role: role, Data: map[string]any{"list": image.Characters}}, a.Catalog)
+	view := BusinessView(a.Game, operation, QueryResult{Role: image.Role, Data: map[string]any{"list": image.Characters}}, a.Catalog)
 	if a.charactersImage != nil {
 		imageContext := a.imageContext(ctx)
 		imageContext.Word = event.Event.Command()
-		imageContext.Query = func(operation string, input map[string]any) (QueryResult, error) {
-			return client.Execute(ctx, choice, operation, input)
+		if owner.Owned {
+			imageContext.Query = func(operation string, input map[string]any) (QueryResult, error) {
+				return client.Execute(ctx, owner.Choice, operation, input)
+			}
 		}
 		if drawn, ok := a.charactersImage(imageContext, image); ok {
 			view.Image = &drawn

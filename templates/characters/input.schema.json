@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["uid", "player", "stats", "exploration", "chests", "avatars", "prefix", "updated"],
+  "required": ["uid", "player", "stats", "exploration", "chests", "avatars", "notice", "prefix", "updated"],
   "properties": {
     "uid": { "type": "string" },
     "player": { "type": "object" },
@@ -9,6 +9,7 @@
     "exploration": { "type": ["array", "null"] },
     "chests": { "type": ["array", "null"] },
     "avatars": { "type": "array" },
+    "notice": { "type": "boolean" },
     "prefix": { "type": "string" },
     "profile_updated": { "type": "string" },
     "updated": { "type": "string" },
