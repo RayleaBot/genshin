@@ -74,7 +74,7 @@ func (a *App) dailyMaterial(ctx context.Context, event *rayleabot.EventContext, 
 		}
 	}
 	if len(saved.Panels) == 0 {
-		return event.SendText("查询失败，暂未获得" + a.Game.Prefix + owner.UID + "角色数据，请绑定CK或 " + a.Game.Prefix + "更新面板")
+		return event.SendText(a.noCharacters(owner.UID))
 	}
 	panels := saved.Sorted(a.Catalog, nil)
 	week := day%3 + 1

@@ -1,11 +1,14 @@
 package images_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/plugin-genshin/internal/artwork"
 	"github.com/RayleaBot/plugin-genshin/internal/assets"
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
@@ -20,23 +23,22 @@ func TestCharactersFollowMiao(t *testing.T) {
 		{"id":10000046,"level":90,"rarity":5,"actived_constellation_num":1,"fetter":10},
 		{"id":10000007,"level":90,"rarity":5,"actived_constellation_num":6,"fetter":10},
 		{"id":10000089,"level":90,"rarity":5,"actived_constellation_num":2,"fetter":8}]}`)
+	index := decode(t, `{"role":{"nickname":"旅行者","level":60},"stats":{"achievement_number":900,"way_point_number":400,"avatar_number":4,"active_day_number":800,"common_chest_number":3000,"magic_chest_number":500},
+		"world_explorations":[{"name":"蒙德","exploration_percentage":1000},{"name":"层岩巨渊","exploration_percentage":10},{"name":"层岩巨渊·地下矿区","exploration_percentage":987}]}`)
 	asked := []string{}
 	context := app.ImageContext{Game: application.Game, Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC), Query: func(operation string, input map[string]any) (app.QueryResult, error) {
 		asked = append(asked, operation)
-		if operation == "genshin.profile" {
-			return app.QueryResult{Data: decode(t, `{"role":{"nickname":"旅行者","level":60},"stats":{"achievement_number":900,"way_point_number":400,"avatar_number":4,"active_day_number":800,"common_chest_number":3000,"magic_chest_number":500},
-				"world_explorations":[{"name":"蒙德","exploration_percentage":1000},{"name":"层岩巨渊","exploration_percentage":10},{"name":"层岩巨渊·地下矿区","exploration_percentage":987}]}`)}, nil
-		}
 		// Hu Tao wears a five-star weapon at refinement 2; Furina's detail is
 		// missing and falls back to the list.
 		return app.QueryResult{Data: decode(t, `{"list":[{"base":{"id":10000046,"level":90,"actived_constellation_num":1},"weapon":{"id":13501,"level":90,"affix_level":2,"rarity":5},
 			"skills":[{"skill_id":10461,"skill_type":1,"level":10},{"skill_id":10462,"skill_type":1,"level":10},{"skill_id":10463,"skill_type":1,"level":10}]}]}`)}, nil
 	}}
-	image, ok := images.Characters(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	characters := list["list"].([]any)
+	image, ok := images.Characters(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Index: index})
 	if !ok {
 		t.Fatal("characters")
 	}
-	if strings.Join(asked, ",") != "genshin.character,genshin.profile" {
+	if strings.Join(asked, ",") != "genshin.character" {
 		t.Errorf("asked = %v", asked)
 	}
 	// Level, rarity, then talents: Hu Tao's talents put her before the
@@ -72,11 +74,49 @@ func TestCharactersFollowMiao(t *testing.T) {
 	// 四星角色 lists only the four-stars, under the strongest of them, and
 	// keeps the whole roster's counts.
 	context.Word = "四星角色"
-	image, _ = images.Characters(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Characters(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Index: index})
 	if avatars := image.Data["avatars"].([]any); len(avatars) != 1 || avatars[0].(map[string]any)["name"] != "行秋" {
 		t.Errorf("四星角色 avatars = %v", avatars)
 	}
 	if stats := image.Data["stats"].([]any); len(stats) != 5 {
 		t.Errorf("四星角色 stats = %v", stats)
+	}
+}
+
+// As miao draws a UID's player data, a kept panel stands in where the
+// account gives no detail, the list's level counts over it, the kept
+// profile picture heads the page and the last 更新面板 is dated.
+func TestCharactersDrawKeptPanels(t *testing.T) {
+	application, err := app.New(assets.Load(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	banner := filepath.Join(root, "miao-plugin", filepath.FromSlash("resources/meta-gs/character/芙宁娜/imgs/banner.webp"))
+	if err := os.MkdirAll(filepath.Dir(banner), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(banner, []byte("webp"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC), Artwork: &artwork.Store{Root: root}}
+	kept := app.SavedProfiles{Face: "10000089", Nickname: "展柜", RefreshedAtMS: time.Date(2026, 9, 20, 1, 30, 0, 0, time.UTC).UnixMilli(), Panels: map[string]app.SavedPanel{
+		"10000046": {Panel: app.CharacterPanel{ID: "10000046", Level: 80, Rank: 1, Weapon: &app.PanelEquipment{ID: "13501", Level: 90, Rarity: "5", Refinement: 1}}},
+	}}
+	characters := decode(t, `{"list":[{"id":10000046,"level":90,"actived_constellation_num":0},{"id":10000025,"level":90,"actived_constellation_num":6}]}`)["list"].([]any)
+	image, ok := images.Characters(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept})
+	if !ok {
+		t.Fatal("characters")
+	}
+	hutao := image.Data["avatars"].([]any)[0].(map[string]any)
+	if hutao["name"] != "胡桃" || hutao["level"] != 90 || hutao["cons"] != 1 || hutao["weapon"] == nil {
+		t.Errorf("胡桃 = %v", hutao)
+	}
+	player := image.Data["player"].(map[string]any)
+	if player["name"] != "展柜" || image.Data["profile_updated"] != "09-20 09:30" || image.Data["updated"] != "09-21 20:00" {
+		t.Errorf("player = %v, dates %v %v", player, image.Data["profile_updated"], image.Data["updated"])
+	}
+	if player["banner"] == "" {
+		t.Error("the kept profile picture's banner is missing")
 	}
 }

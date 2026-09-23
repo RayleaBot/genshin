@@ -13,7 +13,7 @@ import (
 
 // Builders lists the image builders by the operation they draw.
 func Builders() map[string]app.ImageBuilder {
-	return map[string]app.ImageBuilder{"genshin.note": Note, "genshin.abyss_summary": AbyssSummary, "genshin.abyss": Abyss, "genshin.theater": RoleSummary, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.characters": Characters, "genshin.training": Training, "genshin.talent_stat": Training, "genshin.monthly": Ledger,
+	return map[string]app.ImageBuilder{"genshin.note": Note, "genshin.abyss_summary": AbyssSummary, "genshin.abyss": Abyss, "genshin.theater": RoleSummary, "genshin.hard_challenge": HardChallenge, "genshin.abyss_floor": AbyssFloor, "genshin.training": Training, "genshin.talent_stat": Training, "genshin.monthly": Ledger,
 		"genshin.tcg_decks": TCGDecks, "genshin.tcg_cards": TCGCards, "genshin.profile": Profile, "genshin.weapons": Weapons}
 }
 

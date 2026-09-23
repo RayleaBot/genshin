@@ -99,7 +99,7 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 	for _, item := range trainingArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	entries, cards := buildRoster(context, resources, list)
+	entries, cards := buildRoster(context, resources, list, nil)
 	// 剧诗练度统计 keeps who may enter instead.
 	keep := rosterFilter(context.Word)
 	if theater, ok := context.Input["theater"].(map[string]any); ok {
