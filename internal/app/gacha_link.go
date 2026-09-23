@@ -77,7 +77,7 @@ func (j *gachaLinkJobs) take(ref string) *gachaLinkJob {
 
 // parseGachaLink reads a wish history link as Yunzai's dealUrl does: 〈= is a
 // mangled &lang=, only the query after getGachaLog? or index.html? counts
-// and the page fragment is cut from the authkey. A Star Rail or Zenless link
+// and the page fragment (#/log) is cut off. A Star Rail or Zenless link
 // is left to its own plugin and a customer service link to 充值记录, as
 // Yunzai's payLog takes those first; ok is false when the text holds no
 // Genshin wish history link.
@@ -99,8 +99,9 @@ func parseGachaLink(text string) (link gachaLink, ok bool, err error) {
 	if _, after, found := strings.Cut(text, "?"); found && !strings.HasPrefix(text, "authkey") {
 		text = after
 	}
+	text, _, _ = strings.Cut(text, "#")
 	params, _ := url.ParseQuery(text)
-	key := strings.NewReplacer("#/log", "", "#/", "").Replace(params.Get("authkey"))
+	key := params.Get("authkey")
 	if len(key) < 8 || len(key) > 16384 || strings.ContainsAny(key, " \r\n\t") {
 		return gachaLink{}, true, gameError("gacha_link_invalid", "链接复制错误")
 	}
