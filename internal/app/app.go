@@ -129,6 +129,9 @@ type ArkSettings struct {
 	// StygianDataFrom is stygianDataFrom, where 幽境危战排名 reads global
 	// places: 0 ark, 1 akasha.cv, 2 both.
 	StygianDataFrom int `json:"stygian_data_from"`
+	// NewUserPanel is newUserPanel: 更新面板 of a UID without kept panels
+	// first takes the panels ark keeps for it.
+	NewUserPanel bool `json:"new_user_panel"`
 }
 type App struct {
 	Manifest pluginmeta.Manifest

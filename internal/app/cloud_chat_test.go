@@ -20,3 +20,17 @@ func TestArkUsageTextFollowsArk(t *testing.T) {
 		}
 	}
 }
+
+func TestArkPlayerPanelsReadArkPlayerData(t *testing.T) {
+	a := pluginApp(t)
+	player := cloudObject(t, `{"uid":"100000001","avatars":{"10000046":{"id":10000046,"elem":"pyro","level":90,"promote":6,"cons":0,"talent":{"a":10,"e":10,"q":10},
+		"weapon":{"name":"护摩之杖","level":90,"promote":6,"affix":1},"artis":{"1":{"level":20,"name":"魔女的炎之花","star":5,"mainId":14001,"attrIds":[501033,501201]}}}}}`)
+	panels := a.arkPlayerPanels(t.Context(), "100000001", player)
+	if len(panels) != 1 || panels[0].ID != "10000046" || panels[0].Source != "share" || panels[0].Weapon == nil || panels[0].Weapon.Name != "护摩之杖" {
+		t.Fatalf("panels = %+v", panels)
+	}
+	// Player data of another UID is not kept.
+	if panels := a.arkPlayerPanels(t.Context(), "100000002", player); len(panels) != 0 {
+		t.Fatalf("kept another UID's panels: %+v", panels)
+	}
+}

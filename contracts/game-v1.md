@@ -186,6 +186,10 @@ ark 群查询按返回顺序对应请求 UID，单角色批量排名按返回顺
 
 聊天“游戏[top]幽境危战排名[版本]”只在群内处理（私聊不回复）：列出本群本期的登记；写 5.7 及以后的其他版本时，本期登记在前，再补入该版本中本期没有的 UID，页面显示所写版本。`ark.stygian_data_from` 为 0 或 2 时向 `rank/stygian` 发送这些 UID（只查本期；已配置令牌时携带），为 1 或 2 时匿名请求 akasha.cv 的该版本排行（按这些 UID 取 50 行，另取一行得总人数），两者并行。每个 UID 的难度与用时分别取 akasha.cv、ark（`hard`，没有时取现在返回的 `index`）与登记分数中已知的最小值，缺少任一项的 UID 不列出；ark 名次写“名次 / 总数”，akasha.cv 写“名次 / 总人数”，缺失处为“?”。名称与头像取登记该 UID 的成员（OneBot11 为其 QQ 头像，其他协议用 akasha.cv 的头像）。按“用时 + (6 - 难度) × 2048”升序，按 ark 的 character/stygian-rank-list 出图，只显示有回应的服务的排名栏；没有可列的 UID 时回复“当前版本无排名....”。
 
+### 更新面板时的 ark 请求
+
+沿用 ark-plugin 的 refreshPanel：聊天“更新面板”（不含米游社更新面板）在处理之前，取发送者当前使用的 UID（与命令中写的 UID 无关，没有时跳过）。管理页的 `ark.new_user_panel` 开启且该 UID 没有保存的面板时，OneBot11 发送者以 `{uid, type, qq}` 请求 `panel/data`，`retcode` 为 100 时按导入面板数据的方式重新计算其中能读取的角色、以来源 share 存入该 UID，并回复“[ark-plugin]已自动从API获取N个数据”（N 为 ark 返回的角色数）。随后以 `{uid, type}` 请求 `panel/refresh`，最多等待五秒，结果不影响更新面板。两者在已配置令牌时携带令牌。
+
 ### 装备 OCR 与试算
 
 `cloud.start` 的 `mode=ocr` 接收公开 HTTPS `image_url`、装备 `slot` 和 `forge`（是否识别前后两件），并要求明确外发同意。图片 URL 发给固定 `ark.ivny.cn/ocr/profilechange/gs`；不接受 localhost、字面私有 IP、URL 认证或含 CK/AuthKey 字段的 URL。本地不下载图片，也不把 QQ/CK 发给 OCR 服务。结果只保留已校验装备字段和固定资料能解释的主副词条；缺失或不兼容装备保持明确失败。

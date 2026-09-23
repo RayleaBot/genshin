@@ -26,7 +26,8 @@
     "miao_gacha": false,
     "ark": {
       "stygian_rank": true,
-      "stygian_data_from": 2
+      "stygian_data_from": 2,
+      "new_user_panel": false
     }
   },
   "commands": [

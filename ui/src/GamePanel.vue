@@ -66,8 +66,8 @@ const removeCandidate = ref<SavedArchive | null>(null), removeDialog = ref<HTMLD
 const provider = ref('raylea.mihoyo-accounts'), imageReplies = ref(true), aliasPermission = ref(0), pokeCard = ref(true), miaoGacha = ref(false), aliases = ref<Record<string, string>>({})
 const aliasConflicts=ref<{name:string;target:string;builtin:string[]}[]>([])
 // ark-plugin's settings, under its names and with its defaults.
-type ArkSettings = { stygian_rank: boolean; stygian_data_from: number }
-const arkDefaults: ArkSettings = { stygian_rank: true, stygian_data_from: 2 }
+type ArkSettings = { stygian_rank: boolean; stygian_data_from: number; new_user_panel: boolean }
+const arkDefaults: ArkSettings = { stygian_rank: true, stygian_data_from: 2, new_user_panel: false }
 const ark = ref<ArkSettings>({ ...arkDefaults })
 const aliasName = ref(''), aliasTarget = ref('')
 let disposed = false
@@ -253,7 +253,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
         <PanelDetails v-if="detailPanel" :panel="detailPanel" />
         <BuildCalculator v-if="detailPanel && selectedRole" :key="`build:${selection}:${detailPanel.id}`" :character-id="detailPanel.id" :character-name="detailPanel.name" :account-ref="selectedRole.account.ref" :role-ref="selectedRole.role.ref" :invoke="invoke" />
         <details class="settings"><summary>查询设置</summary><form @submit.prevent="saveSettings()"><label>账号服务插件 ID<input v-model="provider" required :disabled="busy"></label><label class="check"><input v-model="imageReplies" type="checkbox" :disabled="busy">聊天查询优先发送图片</label><label class="check"><input v-model="pokeCard" type="checkbox" :disabled="busy">戳一戳展示角色卡片</label><label class="check"><input v-model="miaoGacha" type="checkbox" :disabled="busy">抽卡记录、抽卡统计使用喵喵版</label><label>聊天设置别名<select v-model.number="aliasPermission" :disabled="busy"><option :value="0">所有群员</option><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
-        <details class="settings"><summary>ark 扩展设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="ark.stygian_rank" type="checkbox" :disabled="busy">群内更新面板时登记幽境危战排名</label><label>幽境危战数据源<select v-model.number="ark.stygian_data_from" :disabled="busy"><option :value="0">ark</option><option :value="1">akasha.cv</option><option :value="2">二者混合</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+        <details class="settings"><summary>ark 扩展设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="ark.new_user_panel" type="checkbox" :disabled="busy">首次更新面板时自动从 ark 获取面板（需在 ark 验证 UID，会发送 QQ 与 UID）</label><label class="check"><input v-model="ark.stygian_rank" type="checkbox" :disabled="busy">群内更新面板时登记幽境危战排名</label><label>幽境危战数据源<select v-model.number="ark.stygian_data_from" :disabled="busy"><option :value="0">ark</option><option :value="1">akasha.cv</option><option :value="2">二者混合</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
       </template>
 
       <template v-else-if="page === 'content'"><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>

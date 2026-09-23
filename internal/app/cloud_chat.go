@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -265,4 +266,68 @@ func arkUsageText(decoded any) string {
 		"自定义排名普通请求剩余额度：" + remaining(custom["normal"]),
 		"自定义排名高级请求剩余额度：" + remaining(custom["advanced"]),
 	}, "\n")
+}
+
+// arkPanelRefresh is ark-plugin's refreshPanel, which runs before miao's
+// 更新面板 for the sender's current UID, whatever UID the words name: with
+// newUserPanel a UID without kept panels first takes the panels ark keeps for
+// it (ark hands them over to the QQ that verified the UID), then ark is told
+// to refresh its own copy. Upstream does not wait for ark's answer; the
+// accounts plugin answers only while the event is open, so the notice is
+// waited for, five seconds at most.
+func (a *App) arkPanelRefresh(ctx context.Context, event *rayleabot.EventContext) {
+	listed, err := a.accountClient(event).List(ctx, 0)
+	if err != nil {
+		return
+	}
+	uid := a.currentUID(listed)
+	if uid == "" {
+		return
+	}
+	if settings(event).Ark.NewUserPanel {
+		a.arkNewUserPanel(ctx, event, uid)
+	}
+	notified, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	_, _ = a.arkRequest(notified, event, "panel/refresh", map[string]any{"uid": uid, "type": arkGame})
+}
+
+// arkNewUserPanel keeps the panels ark keeps for a UID that has none kept,
+// and says how many characters ark sent. ark checks the UID against the QQ
+// that verified it, so only OneBot11 senders are asked for.
+func (a *App) arkNewUserPanel(ctx context.Context, event *rayleabot.EventContext, uid string) {
+	if event.Event.SourceProtocol != "onebot11" || !cloudQQPattern.MatchString(event.Event.Actor.ID) {
+		return
+	}
+	if saved, err := a.Profiles.Read(uid); err != nil || len(saved.Panels) > 0 {
+		return
+	}
+	decoded, err := a.arkRequest(ctx, event, "panel/data", map[string]any{"uid": uid, "type": arkGame, "qq": event.Event.Actor.ID})
+	result := asObject(decoded)
+	if err != nil || asText(result["retcode"]) != "100" {
+		return
+	}
+	player := asObject(asObject(result["data"])["playerData"])
+	if panels := a.arkPlayerPanels(ctx, uid, player); len(panels) > 0 {
+		if _, err := a.Profiles.Keep(uid, panels, "share", nil); err == nil {
+			notice(ctx, event, "[ark-plugin]已自动从API获取"+strconv.Itoa(len(asObject(player["avatars"])))+"个数据")
+		}
+	}
+}
+
+// arkPlayerPanels are the panels of the player data ark keeps for a UID,
+// calculated from their parts as 导入面板数据 does; characters that cannot be
+// read are left out.
+func (a *App) arkPlayerPanels(ctx context.Context, uid string, player map[string]any) []CharacterPanel {
+	panels := []CharacterPanel{}
+	avatars, err := cleanCloudPlayer(uid, player)
+	if err != nil {
+		return panels
+	}
+	for _, raw := range avatars {
+		if panel, err := a.cloudAvatarPanel(ctx, raw); err == nil {
+			panels = append(panels, panel)
+		}
+	}
+	return panels
 }

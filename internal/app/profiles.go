@@ -372,6 +372,9 @@ func (a *App) panelCommand(ctx context.Context, event *rayleabot.EventContext, c
 	if command == "panel-delete" {
 		return a.panelDelete(ctx, event, uid)
 	}
+	if command == "panel-refresh" {
+		a.arkPanelRefresh(ctx, event)
+	}
 	owner, err := a.panelOwner(ctx, event, uid)
 	if err != nil {
 		return event.SendText(friendlyError(err))
