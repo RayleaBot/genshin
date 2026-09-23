@@ -92,6 +92,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"挑战排行", "challenge-rank", nil},
 			{"100000001", "public-profile", []string{"100000001"}},
 			{"开启公告推送", "subscribe", []string{"公告"}},
+			{"原神开启到期活动推送", "subscribe", []string{"到期"}},
+			{"推送资讯", "content-push", nil},
 			{"2025年札记统计", "monthly-history", nil},
 			{"原神帮助", "help", nil},
 			{"刷新天赋", "talent-refresh", nil},
