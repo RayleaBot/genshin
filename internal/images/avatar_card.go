@@ -82,14 +82,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 		card["talents"] = talents
 	}
 	if weapon := panel.Weapon; weapon != nil {
-		entry := c.weapons[weapon.ID]
-		// miao colours refinement 5 with the constellation 6 badge.
-		badge := weapon.Refinement
-		if badge > 4 {
-			badge++
-		}
-		card["weapon"] = map[string]any{"icon": c.miao("resources/meta-gs/weapon/" + entry.Type + "/" + entry.Name + "/icon.webp"),
-			"star": app.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge, "level": weapon.Level}
+		card["weapon"] = c.weapon(*weapon)
 	}
 	// miao shows each set worn as two or four pieces, by its flower (or its
 	// circlet when the set has no flower).
@@ -111,6 +104,19 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 	}
 	card["artis"] = sets
 	return card, true
+}
+
+// weapon is what a card shows of the weapon worn: its icon, rarity,
+// refinement and level.
+func (c *avatarCards) weapon(weapon app.PanelEquipment) map[string]any {
+	entry := c.weapons[weapon.ID]
+	// miao colours refinement 5 with the constellation 6 badge.
+	badge := weapon.Refinement
+	if badge > 4 {
+		badge++
+	}
+	return map[string]any{"icon": c.miao("resources/meta-gs/weapon/" + entry.Type + "/" + entry.Name + "/icon.webp"),
+		"star": app.Int(weapon.Rarity), "affix": weapon.Refinement, "badge": badge, "level": weapon.Level}
 }
 
 // setIcon is miao's picture of a set: its flower, or its circlet when the set

@@ -172,11 +172,13 @@ func activeDays(days int) string {
 	return text
 }
 
-// rosterEntry is one owned character with what miao sorts rosters by.
+// rosterEntry is one owned character with what miao sorts rosters by. weapon
+// is the weapon shown: the list's, else the panel's.
 type rosterEntry struct {
 	id                                  string
 	card                                map[string]any
 	panel                               *app.CharacterPanel
+	weapon                              *app.PanelEquipment
 	level, star, aeq, cons              int
 	weaponLevel, weaponStar, refinement int
 	fetter                              int
@@ -186,7 +188,9 @@ type rosterEntry struct {
 // or the panels kept for them where the details lack them, as avatar cards
 // in miao's order: level, rarity, original talents, constellation, weapon
 // level, rarity and refinement, then friendship, highest first. miao sorts
-// ascending and reverses, so equal characters come higher ID first.
+// ascending and reverses, so equal characters come higher ID first. As
+// miao's player data takes the character list after the panels, the weapon
+// a list entry names is worn over the panel's.
 func buildRoster(context app.ImageContext, resources *app.ImageResources, list []any, kept map[string]app.SavedPanel) ([]rosterEntry, *avatarCards) {
 	ids := []string{}
 	for _, raw := range list {
@@ -219,7 +223,14 @@ func buildRoster(context app.ImageContext, resources *app.ImageResources, list [
 		card["type"] = "mini"
 		item := rosterEntry{id: id, card: card, level: app.Int(card["level"]), star: app.Int(card["star"]), cons: app.Int(card["cons"]), fetter: app.Int(avatar["fetter"])}
 		if panel, ok := cards.panels[id]; ok {
-			item.panel = &panel
+			item.panel, item.weapon = &panel, panel.Weapon
+		}
+		// miao's setWeapon leaves the weapon as it was when it does not know
+		// the list's.
+		if weapon := listWeapon(avatar); weapon != nil {
+			if _, known := cards.weapons[weapon.ID]; known {
+				item.weapon, card["weapon"] = weapon, cards.weapon(*weapon)
+			}
 		}
 		// Without talents miao counts three.
 		item.aeq = 3
@@ -246,6 +257,16 @@ func buildRoster(context app.ImageContext, resources *app.ImageResources, list [
 		return x > y
 	})
 	return entries, cards
+}
+
+// listWeapon is the weapon a character list entry names, nil when it names
+// none.
+func listWeapon(avatar map[string]any) *app.PanelEquipment {
+	weapon, _ := avatar["weapon"].(map[string]any)
+	if app.Text(weapon["id"]) == "" {
+		return nil
+	}
+	return &app.PanelEquipment{ID: app.Text(weapon["id"]), Name: app.Text(weapon["name"]), Level: app.Int(weapon["level"]), Rarity: app.Text(weapon["rarity"]), Refinement: app.Int(weapon["affix_level"])}
 }
 
 // traveler reports the two travelers, whom miao leaves out of gold cards

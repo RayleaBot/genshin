@@ -84,9 +84,10 @@ func TestCharactersFollowMiao(t *testing.T) {
 }
 
 // As miao draws a UID's player data, a kept panel stands in where the
-// account gives no detail, the list's level counts over it, the kept
-// profile picture heads the page and the last 更新面板 is dated; a UID read
-// without its account carries miao's notice.
+// account gives no detail, the list's level and the weapon it names count
+// over it unless miao does not know the weapon, the kept profile picture
+// heads the page and the last 更新面板 is dated; a UID read without its
+// account carries miao's notice.
 func TestCharactersDrawKeptPanels(t *testing.T) {
 	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
@@ -103,15 +104,26 @@ func TestCharactersDrawKeptPanels(t *testing.T) {
 	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC), Artwork: &artwork.Store{Root: root}}
 	kept := app.SavedProfiles{Face: "10000089", Nickname: "展柜", RefreshedAtMS: time.Date(2026, 9, 20, 1, 30, 0, 0, time.UTC).UnixMilli(), Panels: map[string]app.SavedPanel{
 		"10000046": {Panel: app.CharacterPanel{ID: "10000046", Level: 80, Rank: 1, Weapon: &app.PanelEquipment{ID: "13501", Level: 90, Rarity: "5", Refinement: 1}}},
+		"10000089": {Panel: app.CharacterPanel{ID: "10000089", Level: 90, Weapon: &app.PanelEquipment{ID: "11513", Level: 90, Rarity: "5", Refinement: 1}}},
 	}}
-	characters := decode(t, `{"list":[{"id":10000046,"level":90,"actived_constellation_num":0},{"id":10000025,"level":90,"actived_constellation_num":6}]}`)["list"].([]any)
+	characters := decode(t, `{"list":[{"id":10000046,"level":90,"actived_constellation_num":0,"weapon":{"id":13415,"name":"「渔获」","rarity":4,"level":90,"affix_level":5}},
+		{"id":10000025,"level":90,"actived_constellation_num":6,"weapon":{"id":11401,"name":"西风剑","rarity":4,"level":80,"affix_level":2}},
+		{"id":10000089,"level":90,"weapon":{"id":19999,"name":"未知","rarity":4,"level":1,"affix_level":1}}]}`)["list"].([]any)
 	image, ok := images.Characters(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept, Public: true})
 	if !ok || image.Data["notice"] != true {
 		t.Fatal("characters")
 	}
-	hutao := image.Data["avatars"].([]any)[0].(map[string]any)
-	if hutao["name"] != "胡桃" || hutao["level"] != 90 || hutao["cons"] != 1 || hutao["weapon"] == nil {
+	avatars := map[string]map[string]any{}
+	for _, raw := range image.Data["avatars"].([]any) {
+		avatar := raw.(map[string]any)
+		avatars[avatar["name"].(string)] = avatar
+	}
+	weapon := func(name string) map[string]any { return avatars[name]["weapon"].(map[string]any) }
+	if hutao := avatars["胡桃"]; hutao["level"] != 90 || hutao["cons"] != 1 || weapon("胡桃")["star"] != 4 || weapon("胡桃")["badge"] != 6 {
 		t.Errorf("胡桃 = %v", hutao)
+	}
+	if weapon("行秋")["affix"] != 2 || weapon("芙宁娜")["star"] != 5 {
+		t.Errorf("行秋 = %v, 芙宁娜 = %v", avatars["行秋"], avatars["芙宁娜"])
 	}
 	player := image.Data["player"].(map[string]any)
 	if player["name"] != "展柜" || image.Data["profile_updated"] != "09-20 09:30" || image.Data["updated"] != "09-21 20:00" {

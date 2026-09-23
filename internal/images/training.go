@@ -150,10 +150,10 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 				"plus": app.Int(level) > original})
 		}
 		row := map[string]any{"no": len(rows) + 1, "star": item.star, "face": card["face"], "name": card["abbr"], "level": item.level, "cons": item.cons, "fetter": fetter, "talents": talents}
-		if weapon, _ := card["weapon"].(map[string]any); weapon != nil && item.panel != nil && item.panel.Weapon != nil {
+		if weapon, _ := card["weapon"].(map[string]any); weapon != nil && item.weapon != nil {
 			// miao shortens names longer than four characters.
-			name := item.panel.Weapon.Name
-			if entry, ok := context.Catalog.Get(item.panel.Weapon.ID); ok {
+			name := item.weapon.Name
+			if entry, ok := context.Catalog.Get(item.weapon.ID); ok {
 				name = entry.Name
 				if utf8.RuneCountInString(name) > 4 && entry.Abbr != "" {
 					name = entry.Abbr

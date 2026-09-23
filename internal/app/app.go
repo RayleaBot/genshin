@@ -843,7 +843,7 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
 	switch action {
 	case "public.query":
-		result, err := a.accountClient(event).PublicProfile(ctx, asText(input["uid"]), asText(input["region"]))
+		result, err := a.accountClient(event).Public(ctx, "profile", asText(input["uid"]), asText(input["region"]))
 		if err != nil {
 			return nil, err
 		}

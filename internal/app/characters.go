@@ -34,8 +34,7 @@ var noQueryAccount = []string{"plugin.service_unavailable", "plugin.account_publ
 // the character list, answers the first query that fails, and draws what it
 // has with the panels kept for the UID. miao reads a UID with its owner's
 // cookie, else with the public cookie pool: a UID on the requester's account
-// is read with it, any other through the accounts plugin's public query,
-// which reads the index alone.
+// is read with it, any other through the accounts plugin's public query.
 func (a *App) characters(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	uid := ""
 	if len(args) > 0 {
@@ -51,23 +50,22 @@ func (a *App) characters(ctx context.Context, event *rayleabot.EventContext, arg
 	}
 	client := a.accountClient(event)
 	image := CharactersImage{Role: Role{UID: owner.UID}, Saved: saved, Public: !owner.Owned}
-	var list []any
+	var index, list QueryResult
 	var failed error
 	if owner.Owned {
 		image.Role = owner.Role
-		var index, result QueryResult
 		index, failed = client.Execute(ctx, owner.Choice, a.Game.ID+".profile", nil)
-		result, err = client.Execute(ctx, owner.Choice, a.Game.ID+".characters", nil)
-		if failed == nil {
-			failed = err
-		}
-		image.Index, list = index.Data, asList(result.Data["list"])
+		list, err = client.Execute(ctx, owner.Choice, a.Game.ID+".characters", nil)
 	} else {
-		var index QueryResult
-		index, failed = client.PublicProfile(ctx, owner.UID, uidRegion(owner.UID))
-		image.Index = index.Data
+		region := uidRegion(owner.UID)
+		index, failed = client.Public(ctx, "profile", owner.UID, region)
+		list, err = client.Public(ctx, "characters", owner.UID, region)
 	}
-	image.Characters = playerCharacters(image.Index, list, saved.Panels)
+	if failed == nil {
+		failed = err
+	}
+	image.Index = index.Data
+	image.Characters = playerCharacters(image.Index, asList(list.Data["list"]), saved.Panels)
 	if failed != nil {
 		// The answer to a failed query stands in for 查询失败, which still
 		// follows 暂无可用CK.

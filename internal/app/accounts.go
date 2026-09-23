@@ -76,9 +76,11 @@ func (c AccountsClient) Select(ctx context.Context, choice Selection) error {
 	return c.call(ctx, "select", map[string]any{"account_ref": choice.AccountRef, "role_ref": choice.RoleRef}, nil)
 }
 
-func (c AccountsClient) PublicProfile(ctx context.Context, uid, region string) (QueryResult, error) {
+// Public reads a UID through the public query pool: operation is profile,
+// the index, or characters, the character list.
+func (c AccountsClient) Public(ctx context.Context, operation, uid, region string) (QueryResult, error) {
 	result := QueryResult{}
-	err := c.call(ctx, "public.execute", map[string]any{"game": c.Game, "uid": uid, "region": region}, &result)
+	err := c.call(ctx, "public.execute", map[string]any{"game": c.Game, "uid": uid, "region": region, "operation": operation}, &result)
 	return result, err
 }
 func (c AccountsClient) Execute(ctx context.Context, choice Selection, operation string, input map[string]any) (QueryResult, error) {
