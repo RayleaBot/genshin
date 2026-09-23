@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "uid",
+    "lines",
+    "total",
+    "bar",
+    "pie",
+    "legend"
+  ],
+  "properties": {
+    "uid": {
+      "type": "string"
+    },
+    "lines": {
+      "type": "array"
+    },
+    "total": {
+      "type": "string"
+    },
+    "bar": {
+      "type": "object"
+    },
+    "pie": {
+      "type": "array"
+    },
+    "legend": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -23,5 +24,17 @@ func TestEChartsLineFollowsEChartsScale(t *testing.T) {
 	// Points on a straight line keep their control points on it.
 	if line := chart["line"].(string); !strings.HasPrefix(line, "M 80 30 C 80 30 ") || !strings.HasSuffix(line, "1080 470 1080 470") {
 		t.Fatal(line)
+	}
+}
+
+func TestEChartsPieRoundsPercentsToAHundred(t *testing.T) {
+	if got := echartsPercents([]float64{1, 1, 1}, 2); !reflect.DeepEqual(got, []float64{33.34, 33.33, 33.33}) {
+		t.Fatal(got)
+	}
+	// Twelve months of labels too wide for their bands keep every other one.
+	chart := EChartsBar([]string{"1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"}, make([]float64, 12), 470, 300, [4]float64{60, 47, 60, 47}, 5, func(label string) float64 { return float64(len([]rune(label))) * 12 })
+	bars := chart["bars"].([]any)
+	if bars[0].(map[string]any)["label"] != "1月" || bars[1].(map[string]any)["label"] != nil || bars[2].(map[string]any)["label"] != "3月" {
+		t.Fatal(bars[:3])
 	}
 }

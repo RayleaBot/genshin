@@ -1,0 +1,114 @@
+/* Converted from Yunzai html/payLog/payLog.css. */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+  }
+  body {
+    font-size: 16px;
+    width: 530px;
+    color: #1e1f20;
+    zoom: 1.3;
+  }
+  .container {
+    width: 530px;
+    padding: 20px 15px 10px 15px;
+    background-color: #f5f6fb;
+  }
+  .head_box {
+    border-radius: 15px;
+    font-family: tttgbnumber;
+    padding: 10px 20px;
+    position: relative;
+    box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
+  }
+  .head_box .id_text {
+    font-size: 24px;
+  }
+  .head_box .day_text {
+    font-size: 20px;
+  }
+  .head_box .genshin_logo {
+    position: absolute;
+    top: 1px;
+    right: 15px;
+    width: 97px;
+  }
+  .base_info {
+    position: relative;
+    padding-left: 10px;
+  }
+  .uid {
+    font-family: tttgbnumber;
+  }
+  
+  .data_box {
+    border-radius: 15px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 20px 15px 5px 15px;
+    background: #fff;
+    box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
+    position: relative;
+  }
+  .tab_lable {
+    position: absolute;
+    top: -10px;
+    left: -8px;
+    background: #d4b98c;
+    color:#fff;
+    font-size: 14px;
+    padding: 3px 10px;
+    border-radius: 15px 0px 15px 15px;
+    z-index: 20;
+  }
+  .data_line {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 14px;
+  }
+  .data_line_item {
+    width: 100px;
+    text-align: center;
+    /*margin: 0 20px;*/
+  }
+  .num {
+    font-family: tttgbnumber;
+    font-size: 24px;
+  }
+  .data_box .lable {
+    font-size: 14px;
+    color: #7f858a;
+    line-height: 1;
+    margin-top: 3px;
+  }
+  #chartContainer{
+    width: 100%;
+    height: 300px;
+  }
+  
+  #chartContainer2{
+    width: 100%;
+    height: 300px;
+  }
+  
+  .logo {
+    font-size: 14px;
+    font-family: "tttgbnumber";
+    text-align: center;
+    color: #7994a7;
+  }
+
+/* The charts upstream draws with ECharts 5 defaults. */
+#chartContainer svg, #chartContainer2 svg { display: block; }
+.split { stroke: #E0E6F1; stroke-width: 1; }
+.axis-x, .axis-tick { stroke: #6E7079; stroke-width: 1; }
+.axis-y-label { fill: #6E7079; font-size: 12px; text-anchor: end; dominant-baseline: central; }
+.axis-x-label { fill: #6E7079; font-size: 12px; text-anchor: middle; dominant-baseline: text-before-edge; }
+.bar-value { fill: #1e1f20; font-size: 14px; font-family: tttgbnumber; text-anchor: middle; dominant-baseline: text-after-edge; }
+.legend-text { fill: #333; font-size: 12px; dominant-baseline: central; }
+.label-line { fill: none; stroke-width: 1; }
+.pie-label { fill: #333; font-size: 12px; font-family: tttgbnumber; dominant-baseline: central; }
+.pie-title { fill: #464646; font-size: 18px; font-weight: bold; text-anchor: end; dominant-baseline: text-before-edge; }
+.pie-subtitle { fill: #6E7079; font-size: 12px; text-anchor: end; dominant-baseline: text-before-edge; }

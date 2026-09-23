@@ -1,0 +1,11 @@
+{
+  "id": "pay-log",
+  "name": "原神充值统计",
+  "description": "充值记录命令的图片，布局参照 Yunzai 原神插件 html/payLog",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 689,
+  "height": 4000
+}

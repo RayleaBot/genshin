@@ -53,21 +53,22 @@ type gachaLinkJob struct {
 	expires  time.Time
 }
 
-type gachaLinkJobs struct {
+// linkJobs are links whose records are still being read, by task.
+type linkJobs[T any] struct {
 	mu   sync.Mutex
-	jobs map[string]*gachaLinkJob
+	jobs map[string]*T
 }
 
-func (j *gachaLinkJobs) put(ref string, job *gachaLinkJob) {
+func (j *linkJobs[T]) put(ref string, job *T) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if j.jobs == nil {
-		j.jobs = map[string]*gachaLinkJob{}
+		j.jobs = map[string]*T{}
 	}
 	j.jobs[ref] = job
 }
 
-func (j *gachaLinkJobs) take(ref string) *gachaLinkJob {
+func (j *linkJobs[T]) take(ref string) *T {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	job := j.jobs[ref]

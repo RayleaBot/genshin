@@ -897,17 +897,36 @@
       }
     },
     {
+      "id": "pay-log",
+      "name": "充值记录",
+      "description": "按 Yunzai 出图显示私聊客服链接读取的充值统计：总消费、各月金额与各档位次数",
+      "usage": "#充值记录 / #消费统计",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:充值|消费)(?:记录|统计)$"
+      }
+    },
+    {
+      "id": "pay-log-update",
+      "name": "更新充值记录",
+      "description": "用一天内私聊发送的客服链接重新读取充值统计",
+      "usage": "#更新充值记录",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^更新(?:充值|消费)(?:记录|统计)$"
+      }
+    },
+    {
       "id": "pay-help",
       "name": "充值记录帮助",
       "description": "充值与消费记录的查询方法",
-      "usage": "#充值记录帮助",
+      "usage": "#充值记录帮助 / #消费统计帮助",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "充值记录帮助",
-          "消费统计帮助"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:充值|消费)(?:记录|统计)帮助$"
       }
     },
     {
@@ -1898,6 +1917,8 @@
         "monthly-history",
         "monthly-save",
         "billing",
+        "pay-log",
+        "pay-log-update",
         "pay-help"
       ]
     },
