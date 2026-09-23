@@ -480,20 +480,29 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	case "photo-upload", "panel-image-upload", "panel-image-remove", "panel-image-list":
 		return a.pictureCommand(ctx, event, command, args)
 	case "build":
-		if len(args) < 1 || len(args) > 2 {
+		// As miao, a number of fewer than nine digits picks the damage detail.
+		index, rest := 0, []string{}
+		for position, arg := range args {
+			if number, convErr := strconv.Atoi(arg); position > 0 && convErr == nil && len(arg) < 9 {
+				index = number
+				continue
+			}
+			rest = append(rest, arg)
+		}
+		if len(rest) < 1 || len(rest) > 2 {
 			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "胡桃伤害”）查看固定参考情境下的角色伤害。")
 		}
-		panel, _, panelErr := a.commandPanel(ctx, event, args)
+		panel, uid, panelErr := a.commandPanel(ctx, event, rest)
 		if panelErr != nil {
 			err = panelErr
 			break
 		}
-		built, buildErr := a.panelDamage(ctx, panel, a.enemyLevel(event))
+		built, buildErr := a.panelDamage(ctx, panel, a.enemyLevel(event), &index)
 		if buildErr != nil {
 			err = buildErr
 			break
 		}
-		view = BuildView(a.Game, built)
+		view = a.panelView(ctx, event, panel, uid, true, "", &built)
 	case "score":
 		if len(args) < 1 || len(args) > 2 {
 			return event.SendText("使用“" + prefix + "评分 角色 [UID]”，或按上游写法在角色名后接圣遗物。")

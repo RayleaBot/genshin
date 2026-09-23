@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
-<body class="elem-{{ .elem }} profile-mode">
+<body class="elem-{{ .elem }} {{ .mode }}-mode">
 <div class="container elem-bg">
 <div class="profile-cont game-gs">
   <div class="basic">
@@ -57,6 +57,7 @@
   </div>
   {{ end }}
 
+  {{ if eq .mode "profile" }}
   <div class="profile-detail">
     {{ with .rating }}
     <div class="cont arti-mark-cont">
@@ -121,6 +122,7 @@
       {{ end }}
     </div>
   </div>
+  {{ end }}
 
   {{ with .damage }}
   <div>
@@ -141,7 +143,74 @@
         </div>
         {{ end }}
       </div>
-      <div class="cont-footer dmg-desc"><span>目标为{{ .enemy_level }}级小宝，使用<strong>{{ .enemy_hint }}</strong>命令可指定等级</span></div>
+      <div class="cont-footer dmg-desc"><span>目标为{{ .enemy_level }}级{{ .enemy_name }}，使用<strong>{{ .enemy_hint }}</strong>命令可指定等级</span>{{ with .created_by }}<span class="dmg-created-by">伤害计算来源：<strong>{{ . }}</strong></span>{{ end }}</div>
+    </div>
+  </div>
+  {{ end }}
+
+  {{ if eq .mode "dmg" }}
+  <div>
+    {{ with .matrix }}
+    <div class="dmg-calc dmg-cont cont">
+      <div class="cont-title">
+        词条伤害计算<span>{{ $.damage_hint }}{{ .index }}: 当前计算为[{{ .title }}]</span>
+      </div>
+      <div class="cont-table">
+        <div class="tr thead ">
+          <div class="td">词条变化</div>
+          {{ range .attrs }}
+          <div class="td">
+            <strong>{{ .title }}</strong>
+            <span>+{{ .text }}</span>
+          </div>
+          {{ end }}
+        </div>
+        {{ range .rows }}
+        <div class="tr">
+          <div class="title">
+            <strong>{{ .title }}</strong>
+            <span>-{{ .text }}</span>
+          </div>
+          {{ range .cells }}
+          {{ if eq .type "na" }}
+          <div class="td na">
+            <strong>-</strong>
+            <span>{{ $.matrix.avg }}{{ with $.matrix.dmg }}/{{ . }}{{ end }}</span>
+          </div>
+          {{ else }}
+          <div class="td {{ .type }}">
+            <strong>{{ .val }}</strong>
+
+            <span>{{ .avg }}{{ with .dmg }}/{{ . }}{{ end }}</span>
+          </div>
+          {{ end }}
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+      <div class="cont-footer dmg-desc">
+        <ul>
+          <li>
+            大数字的含义为圣遗物副词条置换后<strong>平均伤害</strong>的变化，下方的详情数字为<strong>平均伤害</strong>/<strong>暴击伤害</strong>。
+          </li>
+          <li>关于<strong>平均伤害</strong>：是将暴击率计算在内的伤害期望，能反映综合的输出能力，不等于实际伤害数字。</li>
+          <li>可用于评估当前面板下圣遗物副词条的侧重方向。实际游戏情况更加复杂，结果供参考~</li>
+          <li>如需更换计算的伤害类型，可使用命令 <strong>{{ $.damage_hint }}+序号</strong>来切换，序号参见伤害计算板块</li>
+        </ul>
+      </div>
+    </div>
+    {{ end }}
+
+    <div class="dmg-cont dmg-msg cont">
+      <div class="cont-title">Buff列表<span>部分Buff的触发条件以及层数可能影响实际伤害结果</span></div>
+      <div class="cont-table">
+        {{ range .buffs }}
+        <div class="tr">
+          <div class="th">{{ .title }}</div>
+          <div class="td">{{ .text }}</div>
+        </div>
+        {{ end }}
+      </div>
     </div>
   </div>
   {{ end }}

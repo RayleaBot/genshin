@@ -20,6 +20,9 @@
     "artifacts": { "type": "array" },
     "weapon": { "type": "object" },
     "damage": { "type": "object" },
+    "mode": { "type": "string" },
+    "matrix": { "type": "object" },
+    "buffs": { "type": "array" },
     "render_footer": { "type": "string" }
   },
   "additionalProperties": false

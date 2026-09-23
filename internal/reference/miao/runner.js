@@ -151,7 +151,7 @@ function ruleValue(value, meta, fallback) {
 
 // calculateProfile runs the character's damage details as upstream's
 // ProfileDmg.calcData, with the static panel anchored to the official one.
-function calculateProfile(profile, observed, staticOriginal, enemyLevel, conditions) {
+function calculateProfile(profile, observed, staticOriginal, enemyLevel, conditions, dmgIndex) {
   const staticNow = new Attr(profile).calc();
   const anchored = { ...staticNow, staticAttr: staticNow.staticAttr };
   for (const [key, value] of Object.entries(observed)) {
@@ -171,6 +171,8 @@ function calculateProfile(profile, observed, staticOriginal, enemyLevel, conditi
   // Custom defence bonuses stay within upstream's 0–100%.
   const clampDefence = conditions && [conditions.bonuses, ...(conditions.team || []).map(t => t.bonuses)].some(b => b && (b.ignore || b.enemyDef));
   const results = [];
+  // resolved keeps each result's detail and parameters for 伤害 mode.
+  const resolved = [];
   for (const [index, configured] of (characterRule.details || []).entries()) {
     const isDefault = defKey ? configured.dmgKey === defKey : index === (defIdx > -1 ? defIdx : 0);
     let detail = configured;
@@ -205,13 +207,53 @@ function calculateProfile(profile, observed, staticOriginal, enemyLevel, conditi
       kind: calculated.type || 'damage',
       default: isDefault && !results.some(r => r.default),
     });
+    resolved.push({ detail, params, raw: calculated });
   }
   if (!results.length) throw Error('rule.empty');
+  const matrix = dmgIndex == null ? null : damageMatrix(profile, originalAttr, buffs, meta, talent, enemyLevel, results, resolved, dmgIndex, defIdx);
   const attributes = {};
   for (const key of ['hp', 'atk', 'def', 'hpBase', 'atkBase', 'defBase', 'cpct', 'cdmg', 'mastery', 'recharge', 'dmg', 'phy']) {
     if (Number.isFinite(anchored[key])) attributes[key] = anchored[key];
   }
-  return { weapon: profile.weapon, promote: profile.promote, attributes, results };
+  return { weapon: profile.weapon, promote: profile.promote, attributes, results, matrix,
+    enemy_name: String(characterRule.enemyName || ''), created_by: String(characterRule.createdBy || '') };
+}
+
+// damageMatrix is ProfileDmg.calcData's 伤害 mode: the detail the user
+// numbered (from 1), else the one at defDmgIdx, else the first, and for each
+// pair of the rule's main attributes the damage with one substat of the first
+// traded for one of the second.
+function damageMatrix(profile, originalAttr, buffs, meta, talent, enemyLevel, results, resolved, dmgIndex, defIdx) {
+  let chosen = 0;
+  if (dmgIndex > 0) {
+    chosen = dmgIndex - 1;
+    if (!results[chosen]) throw Error('dmg.index_range.' + results.length);
+  } else if (defIdx > -1 && (characterRule.details || [])[defIdx]) {
+    const position = results.findIndex(r => r.id === String(defIdx));
+    chosen = position > -1 ? position : (results[defIdx] ? defIdx : 0);
+  }
+  const { detail, params, raw } = resolved[chosen];
+  if (raw.type === 'text') return null;
+  const attrMap = Meta.getMeta(currentGame, 'arti').attrMap;
+  const mainAttr = String(ruleValue(characterRule.mainAttr, meta, 'atk,cpct,cdmg')).split(',');
+  const attrs = [];
+  const rows = [];
+  for (const reduceAttr of mainAttr) {
+    attrs.push({ title: String(attrMap[reduceAttr]?.title || ''), text: String(attrMap[reduceAttr]?.text || '') });
+    const row = [];
+    for (const incAttr of mainAttr) {
+      if (incAttr === reduceAttr) {
+        row.push({ type: 'na' });
+        continue;
+      }
+      const { attr } = DmgAttr.calcAttr({ originalAttr, buffs, artis: profile.artis, meta, params, incAttr, reduceAttr, talent: detail.talent || '', game: currentGame });
+      const ds = lodash.merge({ talent }, DmgAttr.getDs(attr, meta, params));
+      const calculated = detail.dmg(ds, DmgCalc.getDmgFn({ ds, attr, level: profile.level, enemyLv: enemyLevel, game: currentGame }));
+      row.push({ type: calculated.avg === raw.avg ? 'avg' : (calculated.avg > raw.avg ? 'gt' : 'lt'), avg: calculated.avg, dmg: calculated.dmg ?? null });
+    }
+    rows.push(row);
+  }
+  return { index: chosen + 1, title: results[chosen].title, avg: raw.avg, dmg: raw.dmg ?? null, attrs, rows };
 }
 
 // 面板换装 follows miao's ProfileChange: the changed panel's properties are
@@ -251,7 +293,7 @@ function runBuild(record, weapons, input) {
   };
   const original = inferPromotions(profile, input.attributes);
   if (input.resolve_identity === true) return { promote: profile.promote, weapon_promote: profile.weapon.promote };
-  const baseline = calculateProfile(profile, input.attributes, original, input.enemy_level);
+  const baseline = calculateProfile(profile, input.attributes, original, input.enemy_level, undefined, input.dmg_index);
   let candidate = null;
   if (input.candidate_weapon || input.candidate_equipment || input.conditions) {
     const proposed = input.candidate_weapon || profile.weapon;

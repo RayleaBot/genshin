@@ -1355,17 +1355,6 @@
       }
     },
     {
-      "id": "build",
-      "name": "伤害",
-      "description": "自动应用固定参考情境计算角色伤害",
-      "usage": "#<角色>伤害 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?P<character>.*?)伤害(?:[1-9][0-9]*)?$"
-      }
-    },
-    {
       "id": "enemy-level",
       "name": "敌人等级",
       "description": "设置自己的面板与伤害计算所用的敌人等级，默认 103",
@@ -1565,6 +1554,17 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:模拟)?(?:10|[武器池常驻]*十+|抽|单)[连抽卡奖][123武器池常驻]*$"
+      }
+    },
+    {
+      "id": "build",
+      "name": "伤害",
+      "description": "自动应用固定参考情境计算角色伤害",
+      "usage": "#胡桃伤害[序号] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.*?)(?:伤害|武器)(?P<index>[0-9]*)$"
       }
     },
     {
