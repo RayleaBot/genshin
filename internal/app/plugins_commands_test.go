@@ -108,6 +108,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"刻晴养成81", "growth", []string{"刻晴", "81"}},
 			{"尘歌壶模数养成", "blueprint", nil},
 			{"抽奖记录", "gacha", nil},
+			{"设置全量更新抽卡记录关", "gacha-full", nil},
 			{"武器池记录", "gacha", nil},
 			{"角色统计", "gacha-versions", nil},
 			{"喵喵武器记录", "gacha-detail", nil},

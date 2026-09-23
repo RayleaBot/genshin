@@ -140,7 +140,9 @@ type App struct {
 	// LinkJobs are gacha links whose records are still being fetched;
 	// LinkHTTP reads the official wish history (nil uses a default client).
 	LinkJobs linkJobs[gachaLinkJob]
-	LinkHTTP *http.Client
+	// fullLinks are the senders whose next link reads the whole history.
+	fullLinks fullLinks
+	LinkHTTP  *http.Client
 	// PayLogs keep each sender's 充值记录; PayKeys and PayJobs hold the
 	// customer service links' authkeys in memory.
 	PayLogs      *PayLogStore
@@ -599,6 +601,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			break
 		}
 		view = a.fullPanelView(ctx, event, panel, uid, true, "")
+	case "gacha-full":
+		return a.fullLinkCommand(event)
 	case "gacha-help-port":
 		return a.gachaHelpPort(event)
 	case "accounts", "select", "uid-remove":

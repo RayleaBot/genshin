@@ -531,6 +531,17 @@
       }
     },
     {
+      "id": "gacha-full",
+      "name": "设置全量更新抽卡记录",
+      "description": "十分钟内发送的抽卡链接重新读取全部记录，用于修复官方记录有效期内的错误",
+      "usage": "#设置全量更新抽卡记录 [开|关]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^设置全量(?:更新|获取)(?:抽卡|祈愿)记录(?:开|关|on|off)?$"
+      }
+    },
+    {
       "id": "gacha-background",
       "name": "更新抽卡记录",
       "description": "单次后台读取官方抽卡记录",
@@ -1939,6 +1950,7 @@
       "title": "抽卡记录",
       "commands": [
         "gacha",
+        "gacha-full",
         "gacha-background",
         "gacha-schedule",
         "gacha-progress",

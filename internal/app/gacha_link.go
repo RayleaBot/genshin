@@ -44,6 +44,7 @@ type gachaLink struct {
 // gachaLinkJob is a link whose records are still being fetched.
 type gachaLinkJob struct {
 	link     gachaLink
+	full     bool
 	uid      string
 	sync     string
 	sequence int
@@ -215,11 +216,16 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	notice(ctx, event, "链接发送成功，数据获取中……")
 	a.useLinkUID(ctx, event, uid)
 	before := gachaPoolCounts(a.archiveOrEmpty(uid, link.region))
-	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, false)
+	owner := Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}
+	full := a.fullLinks.active(owner)
+	if full {
+		notice(ctx, event, "开始获取角色记录，全量更新获取数据较多，请耐心等待...")
+	}
+	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, full)
 	if err != nil {
 		return true, event.SendText(friendlyError(syncError(err)))
 	}
-	job := &gachaLinkJob{link: link, uid: uid, sync: info.Ref, before: before, owner: Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}, target: event.Event.Target, expires: time.Now().Add(15 * time.Minute)}
+	job := &gachaLinkJob{link: link, full: full, uid: uid, sync: info.Ref, before: before, owner: Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}, target: event.Event.Target, expires: time.Now().Add(15 * time.Minute)}
 	result, err := a.stepGachaLink(ctx, job, time.Now().Add(40*time.Second))
 	switch {
 	case err != nil:
@@ -319,6 +325,13 @@ func (a *App) sendGachaLinkResult(ctx context.Context, event *rayleabot.EventCon
 	if err := send(rayleabot.Text(gachaLinkSummary(a.Game.Prefix, job.before, gachaPoolCounts(archive)))); err != nil {
 		return err
 	}
+	// As upstream, a whole read turns the setting off and says so.
+	if job.full {
+		a.fullLinks.set(job.owner, false)
+		if err := send(rayleabot.Text("已关闭全量更新抽卡记录")); err != nil {
+			return err
+		}
+	}
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
 		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: result.UID, Role: Role{Game: a.Game.ID, UID: result.UID, Region: result.Region}, Word: "角色记录", Archive: archive}); ok {
@@ -329,6 +342,43 @@ func (a *App) sendGachaLinkResult(ctx context.Context, event *rayleabot.EventCon
 		return send(rayleabot.Image(image))
 	}
 	return send(rayleabot.Text(view.Text()))
+}
+
+// fullLinks are Yunzai's 设置全量更新抽卡记录: for ten minutes the sender's
+// links read the whole history again rather than only the new records, to
+// mend records the official history still holds.
+type fullLinks struct {
+	mu    sync.Mutex
+	until map[Subject]time.Time
+}
+
+func (f *fullLinks) set(owner Subject, on bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.until == nil {
+		f.until = map[Subject]time.Time{}
+	}
+	delete(f.until, owner)
+	if on {
+		f.until[owner] = time.Now().Add(10 * time.Minute)
+	}
+}
+
+func (f *fullLinks) active(owner Subject) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return time.Now().Before(f.until[owner])
+}
+
+// fullLinkCommand turns 设置全量更新抽卡记录 on, or off with 关 or off.
+func (a *App) fullLinkCommand(event *rayleabot.EventContext) error {
+	word := event.Event.Command() + strings.Join(event.Event.Args(), "")
+	on := !strings.Contains(word, "关") && !strings.Contains(word, "off")
+	a.fullLinks.set(chatOwner(event), on)
+	if on {
+		return event.SendText("已开启全量更新抽卡记录，在10分钟内您的首次抽卡记录将全量更新，用于修复在官方记录有效期内可能发生的数据错误")
+	}
+	return event.SendText("已关闭全量更新抽卡记录")
 }
 
 // gachaLinkSummary is Yunzai's reply after a link: the records each pool
