@@ -244,6 +244,14 @@ func (a *App) monthlyCommand(ctx context.Context, event *rayleabot.EventContext,
 	return a.sendView(ctx, event, view)
 }
 
+// gluedMonth reports whether the first argument is the month written with
+// the command word, as 星琼7 or 星琼100000001: Yunzai's ledger rule reads any
+// digits there as the month, and a number no month has as this month, never
+// as a UID.
+func gluedMonth(word string, args []string) bool {
+	return len(args) > 0 && strings.HasSuffix(strings.TrimRight(word, "月"), args[0])
+}
+
 // ledgerMonths are the Chinese month words Yunzai's getMonth reads.
 var ledgerMonths = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
 

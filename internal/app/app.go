@@ -760,6 +760,10 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if !matched {
 			return event.Result(map[string]any{"handled": false})
 		}
+		if operation.Input == "month" && gluedMonth(event.Event.Command(), args) && uidPattern.MatchString(args[0]) {
+			// A number no month has, written with the word, is this month.
+			args = args[1:]
+		}
 		input, uid, parseErr := a.commandInput(operation, args, a.aliasMap(event))
 		if parseErr != nil {
 			err = parseErr
