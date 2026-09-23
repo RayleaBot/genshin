@@ -57,7 +57,8 @@ func (c *avatarCards) base(id string) map[string]any {
 	if star != 4 {
 		star = 5
 	}
-	path := "resources/meta-gs/character/" + record.Name + "/imgs/"
+	folder, _ := characterFolders(id, record.Name, record.Element)
+	path := folder + "imgs/"
 	return map[string]any{"known": record.Name != "", "name": record.Name, "abbr": abbreviation(c.catalog, record), "elem": record.Element, "star": star,
 		"face": c.miao(path + "face.webp"), "gacha": c.miao(path + "gacha.webp")}
 }

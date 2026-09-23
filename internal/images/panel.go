@@ -84,13 +84,13 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	add("common-bg-bg-"+elem, "resources/common/bg/bg-"+elem+".webp")
 	add("common-bg-talent-"+elem, "resources/common/bg/talent-"+elem+".webp")
 
-	characterPath := "resources/meta-gs/character/" + record.Name + "/"
+	characterPath, iconPath := characterFolders(panel.ID, record.Name, elem)
 	add("splash", characterPath+"imgs/splash.webp")
 	talentCons, _ := record.Data["talentCons"].(map[string]any)
 	talentIcon := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp"}
 	for _, key := range []string{"e", "q"} {
 		if cons := app.Int(talentCons[key]); cons > 0 {
-			talentIcon[key] = characterPath + "icons/cons-" + strconv.Itoa(cons) + ".webp"
+			talentIcon[key] = iconPath + "icons/cons-" + strconv.Itoa(cons) + ".webp"
 		} else {
 			talentIcon[key] = characterPath + "icons/talent-" + key + ".webp"
 		}
@@ -105,7 +105,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	cons := []any{}
 	for index := 1; index <= 6; index++ {
 		id := "cons-" + strconv.Itoa(index)
-		add(id, characterPath+"icons/"+id+".webp")
+		add(id, iconPath+"icons/"+id+".webp")
 		cons = append(cons, map[string]any{"icon": id, "off": index > panel.Rank})
 	}
 

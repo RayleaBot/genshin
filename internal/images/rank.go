@@ -58,12 +58,12 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		if entry.Avatar != "" {
 			row["avatar"] = resources.Remote("avatar-"+strconv.Itoa(index), entry.Avatar)
 		}
-		path := "resources/meta-gs/character/" + record.Name + "/icons/"
-		icons := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp", "e": path + "talent-e.webp", "q": path + "talent-q.webp"}
+		path, consPath := characterFolders(entry.Panel.ID, record.Name, record.Element)
+		icons := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp", "e": path + "icons/talent-e.webp", "q": path + "icons/talent-q.webp"}
 		talentCons, _ := record.Data["talentCons"].(map[string]any)
 		for _, key := range []string{"e", "q"} {
 			if cons := app.Int(talentCons[key]); cons > 0 {
-				icons[key] = path + "cons-" + strconv.Itoa(cons) + ".webp"
+				icons[key] = consPath + "icons/cons-" + strconv.Itoa(cons) + ".webp"
 			}
 		}
 		levels := app.PanelTalents(*entry.Panel, record)
