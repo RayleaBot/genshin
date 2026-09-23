@@ -760,19 +760,6 @@
       }
     },
     {
-      "id": "monthly-save",
-      "name": "保存月报",
-      "description": "读取并保存指定月报",
-      "usage": "#保存月报 [月份] [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "保存月报"
-        ]
-      }
-    },
-    {
       "id": "monthly-task",
       "name": "原石任务",
       "description": "为所有已绑定账号保存本月及官方仍提供月份的札记",
@@ -2017,7 +2004,6 @@
       "commands": [
         "monthly",
         "monthly-history",
-        "monthly-save",
         "monthly-task",
         "billing",
         "pay-log",
