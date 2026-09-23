@@ -9,9 +9,9 @@ import (
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-// CharactersImage is a UID's player data as miao keeps it, which its 角色
-// list (ProfileStat.avatarList) draws, and its 练度统计 for a UID read
-// without its account: Role is the UID with what the account gives for it,
+// CharactersImage is a UID's player data as miao keeps it, which its
+// ProfileStat pages draw: the 角色 list (avatarList), 练度统计, 天赋统计 and
+// 剧诗练度统计. Role is the UID with what the account gives for it,
 // Characters the player's characters as official list entries, Index the
 // official index (nil when it could not be read) and Saved the UID's kept
 // panels, last 更新面板 and player. Public is a UID read without its account,
@@ -47,29 +47,14 @@ func (a *App) characters(ctx context.Context, event *rayleabot.EventContext, arg
 		return err
 	}
 	operation, _ := a.operation(a.Game.ID + ".characters")
-	view := BusinessView(a.Game, operation, QueryResult{Role: image.Role, Data: map[string]any{"list": image.Characters}}, a.Catalog)
-	if a.charactersImage != nil {
-		imageContext := a.imageContext(ctx)
-		imageContext.Word = event.Event.Command()
-		if owner.Owned {
-			client := a.accountClient(event)
-			imageContext.Query = func(operation string, input map[string]any) (QueryResult, error) {
-				return client.Execute(ctx, owner.Choice, operation, input)
-			}
-		}
-		if drawn, ok := a.charactersImage(imageContext, image); ok {
-			view.Image = &drawn
-		}
-	}
-	return a.sendView(ctx, event, view)
+	return a.sendView(ctx, event, a.playerView(ctx, event, owner, image, operation, a.charactersImage, nil))
 }
 
 // training answers miao's 练度统计 and 天赋统计 (ProfileStat.stat) of the UID
-// written in the command, a mentioned user's or the one in use. A UID on the
-// requester's account draws the account's character list with its details.
-// miao reads any other UID with the public cookie pool and refreshes talents
-// only with the owner's cookie, so such a UID is drawn from its player data,
-// its talents and artifacts from the panels kept for it.
+// written in the command, a mentioned user's or the one in use, drawn from
+// its player data as miao draws it. miao refreshes talents only with the
+// owner's cookie: a UID on the requester's account has the account's
+// details, any other the panels kept for it.
 func (a *App) training(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	uid := ""
 	if len(args) > 0 {
@@ -79,32 +64,36 @@ func (a *App) training(ctx context.Context, event *rayleabot.EventContext, comma
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	// The text reply reads as the character list both pages draw on.
-	operation, _ := a.operation(a.Game.ID + "." + strings.ReplaceAll(command, "-", "_"))
-	query, textOperation := a.routedQuery(operation, operation.Name)
-	if owner.Owned {
-		client := a.accountClient(event)
-		result, err := client.Execute(ctx, owner.Choice, query, nil)
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		view := BusinessView(a.Game, textOperation, result, a.Catalog)
-		view.Image = a.featureImage(ctx, client, owner.Choice, operation.Name, event.Event.Command(), nil, result)
-		return a.sendView(ctx, event, view)
-	}
 	image, answered, err := a.playerData(ctx, event, owner)
 	if answered {
 		return err
 	}
-	view := BusinessView(a.Game, textOperation, QueryResult{Role: image.Role, Data: map[string]any{"list": image.Characters}}, a.Catalog)
-	if a.playerTraining != nil {
-		imageContext := a.imageContext(ctx)
-		imageContext.Word = event.Event.Command()
-		if drawn, ok := a.playerTraining(imageContext, image); ok {
-			view.Image = &drawn
+	// The text reply reads as the character list both pages draw on.
+	operation, _ := a.operation(a.Game.ID + "." + strings.ReplaceAll(command, "-", "_"))
+	_, textOperation := a.routedQuery(operation, operation.Name)
+	return a.sendView(ctx, event, a.playerView(ctx, event, owner, image, textOperation, a.trainingImage, nil))
+}
+
+// playerView is a ProfileStat page of a UID's player data: its text reads as
+// operation, and build draws it with the command's word and input. A UID on
+// the requester's account lends the image the account's character details.
+func (a *App) playerView(ctx context.Context, event *rayleabot.EventContext, owner panelOwner, image CharactersImage, operation Operation, build CharactersImageBuilder, input map[string]any) View {
+	view := BusinessView(a.Game, operation, QueryResult{Role: image.Role, Data: map[string]any{"list": image.Characters}}, a.Catalog)
+	if build == nil {
+		return view
+	}
+	imageContext := a.imageContext(ctx)
+	imageContext.Word, imageContext.Input = event.Event.Command(), input
+	if owner.Owned {
+		client := a.accountClient(event)
+		imageContext.Query = func(operation string, input map[string]any) (QueryResult, error) {
+			return client.Execute(ctx, owner.Choice, operation, input)
 		}
 	}
-	return a.sendView(ctx, event, view)
+	if drawn, ok := build(imageContext, image); ok {
+		view.Image = &drawn
+	}
+	return view
 }
 
 // playerData reads a UID's player data as miao's ProfileStat does. As miao,

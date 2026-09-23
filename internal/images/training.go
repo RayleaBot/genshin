@@ -82,31 +82,19 @@ func talentBook(book string) (int, string) {
 	return 0, name
 }
 
-// Training draws 练度统计 the way miao's character/profile-stat does: every
-// character in miao's order with level, constellation, friendship, the three
-// talents coloured by their original level, the weapon, and the artifact
-// sets with the pinned scoring's grade and score. 天赋统计 is the same page's
-// talent mode: the weekly boss material and talent book in place of the
-// weapon and artifacts, today's books highlighted (the day turns at 04:00),
-// with miao's weekday filter from the command word. Both modes keep the
-// stars and elements the word names, as 五星列表 and 火角色统计.
-func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
-	list, _ := result.Data["list"].([]any)
-	return training(context, result.Role.UID, list, app.SavedProfiles{})
-}
-
-// PlayerTraining draws the same page from a UID's player data, as miao draws
-// a UID read without its account: the characters of its index and character
-// list, with the panels kept for it giving their talents and artifacts, and
-// the last 更新面板 dated beside the official data.
-func PlayerTraining(context app.ImageContext, image app.CharactersImage) (app.Image, bool) {
-	return training(context, image.Role.UID, image.Characters, image.Saved)
-}
-
-// training draws the page of the UID's characters listed, the panels saved
-// for it standing in where the details lack them.
-func training(context app.ImageContext, uid string, list []any, saved app.SavedProfiles) (app.Image, bool) {
-	if len(list) == 0 {
+// Training draws 练度统计 the way miao's character/profile-stat does from a
+// UID's player data: every character in miao's order with level,
+// constellation, friendship, the three talents coloured by their original
+// level, the weapon, and the artifact sets with the pinned scoring's grade
+// and score, the account's details or else the panels kept for the UID giving
+// talents and artifacts, and the last 更新面板 dated beside the official
+// data. 天赋统计 is the same page's talent mode: the weekly boss material and
+// talent book in place of the weapon and artifacts, today's books
+// highlighted (the day turns at 04:00), with miao's weekday filter from the
+// command word. Both modes keep the stars and elements the word names, as
+// 五星列表 and 火角色统计.
+func Training(context app.ImageContext, image app.CharactersImage) (app.Image, bool) {
+	if len(image.Characters) == 0 {
 		return app.Image{}, false
 	}
 	talent := strings.Contains(context.Word, "天赋") || strings.Contains(context.Word, "技能")
@@ -114,7 +102,7 @@ func training(context app.ImageContext, uid string, list []any, saved app.SavedP
 	for _, item := range trainingArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	entries, cards := buildRoster(context, resources, list, saved.Panels)
+	entries, cards := buildRoster(context, resources, image.Characters, image.Saved.Panels)
 	// 剧诗练度统计 keeps who may enter instead.
 	keep := rosterFilter(context.Word)
 	if theater, ok := context.Input["theater"].(map[string]any); ok {
@@ -201,9 +189,9 @@ func training(context app.ImageContext, uid string, list []any, saved app.SavedP
 		rows = append(rows, row)
 	}
 	// miao dates both as MM-DD HH:mm.
-	data := map[string]any{"uid": uid, "count": len(rows), "rows": rows, "prefix": context.Game.Prefix, "updated": context.Now.In(chinaTime).Format("01-02 15:04"), "talent": talent}
-	if saved.RefreshedAtMS > 0 {
-		data["profile_updated"] = time.UnixMilli(saved.RefreshedAtMS).In(chinaTime).Format("01-02 15:04")
+	data := map[string]any{"uid": image.Role.UID, "count": len(rows), "rows": rows, "prefix": context.Game.Prefix, "updated": context.Now.In(chinaTime).Format("01-02 15:04"), "talent": talent}
+	if image.Saved.RefreshedAtMS > 0 {
+		data["profile_updated"] = time.UnixMilli(image.Saved.RefreshedAtMS).In(chinaTime).Format("01-02 15:04")
 	}
 	return app.Image{Template: "training", Data: data, Resources: resources.List}, true
 }

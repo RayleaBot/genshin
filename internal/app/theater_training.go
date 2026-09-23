@@ -142,14 +142,11 @@ func (a *App) theaterConditions(ctx context.Context, month string) (map[string]a
 	return map[string]any{"initial": initial, "invite": invite, "elements": elements}, strings.Join(lines, "\n"), nil
 }
 
-// theaterTraining answers 剧诗练度统计 as miao: the month's conditions and the
-// narrowed 练度统计 in one forwarded message. A UID may follow the month's
-// word, as miao reads one from the message.
+// theaterTraining answers 剧诗练度统计 as miao's ProfileStat.roleStat: the
+// UID's player data read as for 练度统计, then the month's conditions, sent
+// with the 练度统计 narrowed to who may enter in one forwarded message. A UID
+// may follow the month's word, as miao reads one from the message.
 func (a *App) theaterTraining(ctx context.Context, event *rayleabot.EventContext, args []string) error {
-	theater, text, err := a.theaterConditions(ctx, args[0])
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
 	uid := ""
 	if len(args) > 1 {
 		uid = args[1]
@@ -159,18 +156,21 @@ func (a *App) theaterTraining(ctx context.Context, event *rayleabot.EventContext
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	choice, _, err := Choose(listed, a.Game.ID, uid)
+	choice, role, err := Choose(listed, a.Game.ID, uid)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	input := map[string]any{"theater": theater}
-	result, err := client.Execute(ctx, choice, a.Game.ID+".characters", nil)
+	owner := panelOwner{UID: role.UID, Choice: choice, Role: role, Owned: true}
+	image, answered, err := a.playerData(ctx, event, owner)
+	if answered {
+		return err
+	}
+	theater, text, err := a.theaterConditions(ctx, args[0])
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
 	operation, _ := a.operation(a.Game.ID + ".training")
-	view := BusinessView(a.Game, operation, result, a.Catalog)
-	view.Image = a.featureImage(ctx, client, choice, a.Game.ID+".training", event.Event.Command(), input, result)
+	view := a.playerView(ctx, event, owner, image, operation, a.trainingImage, map[string]any{"theater": theater})
 	path := a.renderView(ctx, event, view)
 	if path == "" {
 		return event.SendText(text + "\n\n" + view.Text())

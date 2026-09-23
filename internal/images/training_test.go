@@ -9,12 +9,17 @@ import (
 	"github.com/RayleaBot/plugin-genshin/internal/images"
 )
 
+// A UID on the requester's account is drawn with the account's details,
+// which count over the panels kept for it.
 func TestTrainingFollowsMiao(t *testing.T) {
 	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	list := decode(t, `{"list":[{"id":10000007,"level":90,"actived_constellation_num":6,"fetter":3},{"id":10000089,"level":90,"actived_constellation_num":2,"fetter":8}]}`)
+	list := decode(t, `{"list":[{"id":10000007,"level":90,"actived_constellation_num":6,"fetter":3},{"id":10000089,"level":90,"actived_constellation_num":2,"fetter":8}]}`)["list"].([]any)
+	player := app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: list, Saved: app.SavedProfiles{Panels: map[string]app.SavedPanel{
+		"10000089": {Panel: app.CharacterPanel{ID: "10000089", Level: 90, Skills: []app.PanelSkill{{SkillType: 1, ID: "10891", Level: 1}, {SkillType: 1, ID: "10892", Level: 1}, {SkillType: 1, ID: "10893", Level: 1}}}},
+	}}}
 	scored := 0
 	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Now: time.Now(),
 		Query: func(operation string, input map[string]any) (app.QueryResult, error) {
@@ -31,7 +36,7 @@ func TestTrainingFollowsMiao(t *testing.T) {
 			panel.ScoreDetail = &app.ScoreDetail{Mark: "210.5", Grade: "ACE"}
 			return panel, nil
 		}}
-	image, ok := images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	image, ok := images.Training(context, player)
 	if !ok || image.Data["count"] != 2 {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -57,14 +62,14 @@ func TestTrainingFollowsMiao(t *testing.T) {
 	// 天赋统计 keeps the characters whose book the weekday names and skips
 	// the scoring; Furina's 正义 books drop on Tuesday and Friday.
 	context.Word = "周二五星天赋统计"
-	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Training(context, player)
 	rows = image.Data["rows"].([]any)
 	book, _ := rows[0].(map[string]any)["book"].(map[string]any)
 	if image.Data["talent"] != true || len(rows) != 1 || book["label"] != "枫丹·正义" || book["week"] != "2/5" || scored != 1 {
 		t.Errorf("talent rows = %v", rows)
 	}
 	context.Word = "周一天赋统计"
-	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Training(context, player)
 	for _, raw := range image.Data["rows"].([]any) {
 		if raw.(map[string]any)["name"] == "芙宁娜" {
 			t.Error("周一 kept Furina's Tuesday book")
@@ -72,12 +77,12 @@ func TestTrainingFollowsMiao(t *testing.T) {
 	}
 	// miao's yzRule words keep the stars and elements they name.
 	context.Word = "水角色统计"
-	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Training(context, player)
 	if rows = image.Data["rows"].([]any); image.Data["talent"] != false || len(rows) != 1 || rows[0].(map[string]any)["name"] != "芙宁娜" {
 		t.Errorf("水角色统计 rows = %v", rows)
 	}
 	context.Word = "四星列表"
-	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	image, _ = images.Training(context, player)
 	if rows = image.Data["rows"].([]any); len(rows) != 0 {
 		t.Errorf("四星列表 rows = %v", rows)
 	}
@@ -87,7 +92,7 @@ func TestTrainingFollowsMiao(t *testing.T) {
 // draws it: a kept panel gives talents and scored artifacts under the weapon
 // the list names, a character only the list has shows no talents but its
 // weapon, and the last 更新面板 is dated beside the official data.
-func TestPlayerTrainingDrawsKeptPanels(t *testing.T) {
+func TestTrainingDrawsKeptPanels(t *testing.T) {
 	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +109,7 @@ func TestPlayerTrainingDrawsKeptPanels(t *testing.T) {
 	}}
 	characters := decode(t, `{"list":[{"id":10000089,"level":90,"actived_constellation_num":2,"weapon":{"id":11401,"name":"西风剑","rarity":4,"level":90,"affix_level":3}},
 		{"id":10000025,"level":80,"actived_constellation_num":6,"weapon":{"id":11501,"name":"风鹰剑","rarity":5,"level":90,"affix_level":1}}]}`)["list"].([]any)
-	image, ok := images.PlayerTraining(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept, Public: true})
+	image, ok := images.Training(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept, Public: true})
 	if !ok || image.Data["count"] != 2 || image.Data["profile_updated"] != "09-21 09:30" || image.Data["updated"] != "09-22 20:00" {
 		t.Fatalf("image = %v", image.Data)
 	}
