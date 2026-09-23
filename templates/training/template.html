@@ -62,7 +62,10 @@
         </div>
         {{ end }}
       </div>
-      <div class="cont-notice"><strong>数据更新时间</strong>{{ with .profile_updated }} <span>{{ $.prefix }}更新面板: {{ . }}</span>{{ end }} <span>米游社: {{ .updated }}</span></div>
+      <div class="cont-notice">
+        <strong>数据更新时间</strong>{{ with .profile_updated }} <span>{{ $.prefix }}更新面板: {{ . }}</span>{{ end }} <span>米游社: {{ .updated }}</span>
+        <div>天赋数据每2小时最多更新一次，可通过<strong>{{ .prefix }}刷新天赋</strong>来强制刷新天赋数据，需具备有效CK</div>
+      </div>
     </div>
   </div>
   {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
