@@ -2,8 +2,10 @@ package app
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func decoded(t *testing.T, source string) map[string]any {
@@ -39,7 +41,9 @@ func TestMonthlyAndChallengeViewsUseBusinessFields(t *testing.T) {
 }
 func TestExtendedCommandInputs(t *testing.T) {
 	app := &App{}
-	for _, tc := range []struct{ mode, valid, invalid, key string }{{"month", "9", "13", "month"}, {"period", "上期", "3", "schedule_type"}} {
+	// A month outside the last three is refused, as upstream.
+	now := int(time.Now().In(time.FixedZone("UTC+8", 28800)).Month())
+	for _, tc := range []struct{ mode, valid, invalid, key string }{{"month", strconv.Itoa(now), strconv.Itoa((now+5)%12 + 1), "month"}, {"period", "上期", "3", "schedule_type"}} {
 		input, uid, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.valid, "100000001"}, nil)
 		if err != nil || uid != "100000001" || input[tc.key] == nil {
 			t.Fatal("valid selector failed")
