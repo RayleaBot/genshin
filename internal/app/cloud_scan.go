@@ -23,6 +23,17 @@ type scannedGear struct {
 	Gear map[string]any
 }
 
+// quotedMessage is the ID of the message a command replies to, "" when it
+// quotes none. The host names it message_id, as in outgoing replies.
+func quotedMessage(event *rayleabot.EventContext) string {
+	for _, segment := range event.Event.Message.Segments {
+		if segment.Type == "reply" {
+			return asText(segment.Data["message_id"])
+		}
+	}
+	return ""
+}
+
 // messageImages lists the images of the message a command replies to, then
 // the command's own, as ark-plugin's collectImageUrls.
 func messageImages(ctx context.Context, event *rayleabot.EventContext) []string {
@@ -32,11 +43,8 @@ func messageImages(ctx context.Context, event *rayleabot.EventContext) []string 
 			urls = append(urls, url)
 		}
 	}
-	for _, segment := range event.Event.Message.Segments {
-		if segment.Type != "reply" || asText(segment.Data["id"]) == "" {
-			continue
-		}
-		if quoted, err := event.Actions().MessageGet(ctx, asText(segment.Data["id"])); err == nil {
+	if id := quotedMessage(event); id != "" {
+		if quoted, err := event.Actions().MessageGet(ctx, id); err == nil {
 			list, _ := quoted["message"].([]any)
 			for _, item := range list {
 				add(asText(asObject(item)["type"]), asObject(asObject(item)["data"]))

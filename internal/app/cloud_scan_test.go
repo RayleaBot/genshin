@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func TestScanGearReadsSlotsOfAReforge(t *testing.T) {
@@ -52,5 +54,20 @@ func TestDistributionKeepsArkPercentileScores(t *testing.T) {
 	}
 	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：98000") || !strings.Contains(text, "TOP 99%：30000") {
 		t.Fatal(text)
+	}
+}
+
+// The host hands a quoted message's ID over as message_id, OneBot's id
+// renamed.
+func TestQuotedMessageReadsTheHostReplySegment(t *testing.T) {
+	event := &rayleabot.EventContext{Event: rayleabot.Event{Message: rayleabot.Message{Segments: []rayleabot.Segment{
+		{Type: "reply", Data: map[string]any{"message_id": "98765"}}, rayleabot.Text("ark获取面板1"),
+	}}}}
+	if got := quotedMessage(event); got != "98765" {
+		t.Fatalf("quoted %q", got)
+	}
+	event.Event.Message.Segments = event.Event.Message.Segments[1:]
+	if got := quotedMessage(event); got != "" {
+		t.Fatalf("quoted %q without a reply", got)
 	}
 }
