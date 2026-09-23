@@ -280,6 +280,13 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			// both sides at once; only the period words on one side count.
 			{"期深渊", "character-card", nil},
 			{"上期深渊本期", "character-card", nil},
+			{"剧诗100000001", "theater", []string{"100000001"}},
+			{"上期剧诗100000001", "theater", []string{"100000001"}},
+			{"幻想真境剧诗100000001数据", "theater", []string{"100000001"}},
+			{"幽境危战单人100000001", "hard_challenge", []string{"100000001"}},
+			{"上期危战100000001数据", "hard_challenge", []string{"100000001"}},
+			{"月谕圣牌100000001", "role-cards", []string{"100000001"}},
+			{"幻想卡片收集100000001数据", "role-cards", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {
