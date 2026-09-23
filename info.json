@@ -1311,6 +1311,17 @@
       }
     },
     {
+      "id": "enemy-level",
+      "name": "敌人等级",
+      "description": "设置自己的面板与伤害计算所用的敌人等级，默认 103",
+      "usage": "#敌人等级 90",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:敌人|怪物)等级(?P<level>[0-9]{1,3})?$"
+      }
+    },
+    {
       "id": "growth-help",
       "name": "角色养成",
       "description": "养成计算的写法与参数说明",
@@ -1656,6 +1667,7 @@
       "title": "伤害与圣遗物评分",
       "commands": [
         "build",
+        "enemy-level",
         "score",
         "artifact-list",
         "panel-change"

@@ -154,7 +154,7 @@ func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfil
 		zero := 0
 		w = &PanelEquipment{Promote: &zero, Refinement: 1}
 	}
-	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: []string{}, Attributes: map[string]float64{}, Equipment: []BuildGear{}, EnemyLevel: 103}
+	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: []string{}, Attributes: map[string]float64{}, Equipment: []BuildGear{}, EnemyLevel: defaultEnemyLevel}
 	if w.ID != "" && (w.Level < 1 || w.Level > 90 || w.Refinement < 1 || w.Refinement > 5) {
 		return p, buildUnavailable("weapon")
 	}
@@ -309,14 +309,45 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 	result.Conditions = profile.Conditions
 	return map[string]any{"build": result}, nil
 }
+
+// defaultEnemyLevel is the enemy level miao calculates damage against when
+// the sender set none.
+const defaultEnemyLevel = 103
+
+// enemyLevel is the level the sender set with 敌人等级.
+func (a *App) enemyLevel(event *rayleabot.EventContext) int {
+	if profile, err := a.Interactions.Get(chatOwner(event)); err == nil && profile.EnemyLevel > 0 {
+		return profile.EnemyLevel
+	}
+	return defaultEnemyLevel
+}
+
+// enemyLevelCommand is miao's 敌人等级: the level the sender's panel and
+// damage replies calculate against from now on.
+func (a *App) enemyLevelCommand(event *rayleabot.EventContext, args []string) error {
+	level, err := strconv.Atoi(strings.Join(args, ""))
+	owner := chatOwner(event)
+	if err != nil || level < 0 || level > 999 || !validInteractionOwner(owner) {
+		return event.Result(map[string]any{"handled": false})
+	}
+	if err := a.Interactions.edit(owner, func(profile *InteractionProfile) error {
+		profile.EnemyLevel = level
+		return nil
+	}); err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	return event.SendText("敌人等级已经设置为" + strconv.Itoa(a.enemyLevel(event)))
+}
+
 func applyBuildIdentity(result *BuildResult, panel CharacterPanel) {
 	result.CharacterID = panel.ID
 	result.Character = panel.Name
 }
 
 // panelDamage calculates the reference damage of a panel already read from the
-// account, so a panel reply does not query it twice.
-func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResult, error) {
+// account, so a panel reply does not query it twice, against enemies of the
+// given level.
+func (a *App) panelDamage(ctx context.Context, panel CharacterPanel, enemyLevel int) (BuildResult, error) {
 	record, err := findBuildCharacter(a.Game.Calc, panel)
 	if err != nil {
 		return BuildResult{}, err
@@ -325,6 +356,7 @@ func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResul
 	if err != nil {
 		return BuildResult{}, err
 	}
+	profile.EnemyLevel = enemyLevel
 	result, err := referenceBuild(ctx, a.Game.Calc, record, profile)
 	if err != nil {
 		return BuildResult{}, err
@@ -351,7 +383,7 @@ func (a *App) fullPanelView(ctx context.Context, event *rayleabot.EventContext, 
 	if change != "" {
 		view.Note = "该面板为非实际数据。当前替换命令：" + change
 	}
-	if result, err := a.panelDamage(ctx, panel); err == nil {
+	if result, err := a.panelDamage(ctx, panel, a.enemyLevel(event)); err == nil {
 		damage := BuildView(a.Game, result)
 		view.Sections = append(view.Sections, Section{Title: "参考伤害 · " + result.Version, Rows: damage.Rows})
 		image.Damage = &result

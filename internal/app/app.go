@@ -460,6 +460,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = computed["view"].(View)
 	case "reminder", "reminder-stop":
 		return a.chatReminder(ctx, event, command, args)
+	case "enemy-level":
+		return a.enemyLevelCommand(event, args)
 	case "build":
 		if len(args) < 1 || len(args) > 2 {
 			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "胡桃伤害”）查看固定参考情境下的角色伤害。")
@@ -469,7 +471,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			err = panelErr
 			break
 		}
-		built, buildErr := a.panelDamage(ctx, panel)
+		built, buildErr := a.panelDamage(ctx, panel, a.enemyLevel(event))
 		if buildErr != nil {
 			err = buildErr
 			break

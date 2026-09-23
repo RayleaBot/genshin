@@ -218,7 +218,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 			}
 			rows = append(rows, row)
 		}
-		data["damage"] = map[string]any{"rows": rows, "enemy_level": image.Damage.EnemyLevel}
+		data["damage"] = map[string]any{"rows": rows, "enemy_level": image.Damage.EnemyLevel, "enemy_hint": context.Game.Prefix + "敌人等级" + strconv.Itoa(image.Damage.EnemyLevel)}
 	}
 	if image.Change != "" {
 		data["change"] = image.Change

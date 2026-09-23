@@ -364,7 +364,7 @@ func (a *App) rankRefresh(ctx context.Context, event *rayleabot.EventContext, sc
 				panel = scored
 			}
 			var damage *BuildResult
-			if result, err := a.panelDamage(ctx, panel); err == nil {
+			if result, err := a.panelDamage(ctx, panel, defaultEnemyLevel); err == nil {
 				damage = &result
 			}
 			a.rankScores(&refreshed[index], panel, damage)

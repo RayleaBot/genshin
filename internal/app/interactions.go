@@ -27,6 +27,9 @@ type InteractionProfile struct {
 	LastImageTargetID   string              `json:"last_image_target_id,omitempty"`
 	LastEvent           string              `json:"last_event,omitempty"`
 	LastPokeMS          int64               `json:"last_poke_ms,omitempty"`
+	// EnemyLevel is the level miao's 敌人等级 set for this sender's panel and
+	// damage replies; 0 is miao's default.
+	EnemyLevel int `json:"enemy_level,omitempty"`
 }
 type InteractionStore struct {
 	mu   sync.Mutex
