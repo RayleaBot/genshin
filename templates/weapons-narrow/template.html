@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body{{ if not .counted }} class="list8"{{ end }}>
+<div class="container" id="container">
+  <div class="main_box">
+    <div class="base_info">
+      <div class="uid">ID: {{ .uid }}</div>
+      {{ if .counted }}{{ with .count }}<div class="lab">
+        <div class="lab-item"><div class="lab-item-5"></div><div class="lab-item-text">五星：{{ index . "5" }}</div></div>
+        <div class="lab-item"><div class="lab-item-4"></div><div class="lab-item-text">四星：{{ index . "4" }}</div></div>
+        <div class="lab-item"><div class="lab-item-3"></div><div class="lab-item-text">三星：{{ index . "3" }}</div></div>
+        <div class="lab-item"><div class="lab-item-weapon"><img data-render-resource="item-sword" alt=""></div><div class="lab-item-text">单手剑：{{ .sword }}</div></div>
+        <div class="lab-item"><div class="lab-item-weapon"><img data-render-resource="item-claymore" alt=""></div><div class="lab-item-text">双手剑：{{ .claymore }}</div></div>
+        <div class="lab-item"><div class="lab-item-weapon"><img data-render-resource="item-bow" alt=""></div><div class="lab-item-text">弓：{{ .bow }}</div></div>
+        <div class="lab-item"><div class="lab-item-weapon"><img data-render-resource="item-polearm" alt=""></div><div class="lab-item-text">枪：{{ .polearm }}</div></div>
+        <div class="lab-item"><div class="lab-item-weapon"><img data-render-resource="item-catalyst" alt=""></div><div class="lab-item-text">法器：{{ .catalyst }}</div></div>
+      </div>{{ end }}{{ end }}
+    </div>
+    <div class="item_box">
+      {{ range .list }}<div class="item">
+        <span class="user item-icon"{{ with .side }} data-render-resource="{{ . }}"{{ end }}></span>
+        <div class="role_box">
+          {{ if .affix }}<span class="life {{ .affix_class }}">{{ .affix }}</span>{{ end }}
+          <div class="{{ .bg }}"></div>
+          <img class="role_img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+          <div class="desc">Lv.{{ .level }}</div>
+          <img class="fill_img" data-render-resource="fill" alt="">
+        </div>
+        <div class="role_name">{{ .name }}</div>
+      </div>
+      {{ end }}
+    </div>
+    <div class="tips">*仅显现已装备的武器</div>
+  </div>
+</div>
+</body>
+</html>

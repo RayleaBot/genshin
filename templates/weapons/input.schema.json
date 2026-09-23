@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "uid",
+    "list",
+    "count",
+    "counted"
+  ],
+  "properties": {
+    "uid": {
+      "type": "string"
+    },
+    "list": {
+      "type": "array"
+    },
+    "count": {
+      "type": "object"
+    },
+    "counted": {
+      "type": "boolean"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

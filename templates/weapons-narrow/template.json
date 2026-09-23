@@ -1,0 +1,11 @@
+{
+  "id": "weapons-narrow",
+  "name": "原神武器",
+  "description": "武器不超过 8 把时的武器列表，与 weapons 同一页面，宽度取上游收窄后的 342px",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 513,
+  "height": 3000
+}

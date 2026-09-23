@@ -130,6 +130,17 @@
       }
     },
     {
+      "id": "weapons",
+      "name": "武器",
+      "description": "已装备武器的列表",
+      "usage": "#武器 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:五星|四星|5星|4星)?武器(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
       "id": "talent-stat",
       "name": "天赋统计",
       "description": "全部角色的天赋等级、周本材料与天赋书，可按今日、明日、周几或星级筛选",
@@ -1592,6 +1603,7 @@
         "note",
         "characters",
         "training",
+        "weapons",
         "talent-stat",
         "public-profile"
       ]

@@ -29,6 +29,12 @@
       "input": "none"
     },
     {
+      "name": "genshin.weapons",
+      "label": "原神武器",
+      "command": "武器",
+      "input": "none"
+    },
+    {
       "name": "genshin.talent_stat",
       "label": "天赋统计",
       "command": "天赋统计",

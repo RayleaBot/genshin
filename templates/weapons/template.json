@@ -1,0 +1,11 @@
+{
+  "id": "weapons",
+  "name": "原神武器",
+  "description": "武器列表命令的图片，布局参照 Yunzai 原神插件 html/avatar/weapon",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 870,
+  "height": 3000
+}
