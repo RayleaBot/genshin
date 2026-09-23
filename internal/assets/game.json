@@ -90,7 +90,6 @@
     }
   ],
   "panels": {
-    "refresh_with_account": false,
     "replies": {
       "failed": "UID{uid}更新面板失败，当前面板服务{service}，\n可能是面板服务维护中，请稍后重试...\n或尝试使用【{prefix}米游社更新面板】",
       "empty": "请将角色放置在【游戏内】角色展柜，并打开【显示详情】，等待5分钟重新获取面板",

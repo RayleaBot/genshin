@@ -243,7 +243,7 @@ func calcRecord(game app.Game, id string, skills map[string]int) (reference.Char
 	}
 	traveler := id == "10000005" || id == "10000007"
 	for _, record := range game.Calc.Metadata().Characters {
-		if record.Game != "gs" || record.ID != id && !(traveler && record.ID == "10000007") {
+		if record.ID != id && !(traveler && record.ID == "10000007") {
 			continue
 		}
 		if !traveler {
@@ -276,7 +276,7 @@ func talents(record reference.Character, avatar enkaAvatar, rank int) ([]app.Pan
 		if talent == "" {
 			continue
 		}
-		skill := app.PanelSkill{HasSkillType: true, SkillType: 1, ID: key, Level: avatar.SkillLevelMap[key], Active: true, Name: text(asMap(names[talent])["name"])}
+		skill := app.PanelSkill{SkillType: 1, ID: key, Level: avatar.SkillLevelMap[key], Active: true, Name: text(asMap(names[talent])["name"])}
 		if need, _ := strconv.Atoi(text(cons[talent])); need > 0 && rank >= need {
 			skill.ExtraLevel = 3
 			skill.Level += 3

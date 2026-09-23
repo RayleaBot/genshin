@@ -29,7 +29,7 @@ func TestReminderPersistsAdmissionAndThresholdRearming(t *testing.T) {
 	send := func(Reminder, string) error { sent.Add(1); return nil }
 	tick := func(at int64) {
 		t.Helper()
-		if err := store.Tick(t.Context(), "task", at, query, send, Game{ID: "genshin"}); err != nil {
+		if err := store.Tick("task", at, query, send, Game{ID: "genshin"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -69,7 +69,7 @@ func TestReminderVerificationBackoffAndFailedSendNotRepeated(t *testing.T) {
 	query := func(Reminder) (QueryResult, error) {
 		return QueryResult{}, &rayleabot.ActionError{Code: "plugin.upstream_device_required"}
 	}
-	if err := store.Tick(t.Context(), "task", now, query, send, Game{ID: "genshin"}); err != nil {
+	if err := store.Tick("task", now, query, send, Game{ID: "genshin"}); err != nil {
 		t.Fatal(err)
 	}
 	items, _ := store.List()
@@ -79,12 +79,12 @@ func TestReminderVerificationBackoffAndFailedSendNotRepeated(t *testing.T) {
 	query = func(Reminder) (QueryResult, error) {
 		return QueryResult{Data: map[string]any{"current_resin": 200, "max_resin": 200}}, nil
 	}
-	_ = store.Tick(t.Context(), "task", items[0].NextCheckMS, query, send, Game{ID: "genshin"})
+	_ = store.Tick("task", items[0].NextCheckMS, query, send, Game{ID: "genshin"})
 	items, _ = store.List()
 	if items[0].LastCode != "notification_failed" || items[0].Armed {
 		t.Fatal(items)
 	}
-	_ = store.Tick(t.Context(), "task", items[0].NextCheckMS, query, send, Game{ID: "genshin"})
+	_ = store.Tick("task", items[0].NextCheckMS, query, send, Game{ID: "genshin"})
 	if sent != 1 {
 		t.Fatal("ambiguous send retried")
 	}

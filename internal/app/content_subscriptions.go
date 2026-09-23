@@ -57,7 +57,7 @@ func (s *ContentSubscriptions) edit(ref string, fn func(*[]ContentSubscription, 
 	}
 	return localdata.Write(s.Path, items)
 }
-func (s *ContentSubscriptions) Tick(ctx context.Context, ref string, now int64, fetch func(ContentSubscription) (map[string]any, error), send func(ContentSubscription, string) error, game Game) error {
+func (s *ContentSubscriptions) Tick(ref string, now int64, fetch func(ContentSubscription) (map[string]any, error), send func(ContentSubscription, string) error, game Game) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	items, err := s.read()
@@ -249,7 +249,7 @@ func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.Event
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	err := a.Subscriptions.Tick(ctx, asText(event.Event.Payload["task_id"]), time.Now().UnixMilli(), func(task ContentSubscription) (map[string]any, error) {
+	err := a.Subscriptions.Tick(asText(event.Event.Payload["task_id"]), time.Now().UnixMilli(), func(task ContentSubscription) (map[string]any, error) {
 		if task.TargetType == "group" {
 			config, err := a.Groups.Config(GroupScope{task.Owner.SourceProtocol, task.Owner.SourceAdapter, task.Owner.BotID, task.TargetID})
 			if err != nil {

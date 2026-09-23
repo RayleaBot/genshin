@@ -607,7 +607,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if query == a.Game.ID+".monthly" {
 			// Upstream keeps every month it reads; a month that cannot be kept
 			// still answers.
-			_, _ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
+			_ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
 		}
 		view = BusinessView(a.Game, textOperation, result, a.Catalog)
 		view.Image = a.featureImage(ctx, a.accountClient(event), choice, operation.Name, event.Event.Command(), input, result)

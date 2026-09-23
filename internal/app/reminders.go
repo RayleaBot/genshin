@@ -184,7 +184,7 @@ func stamina(data map[string]any) (float64, float64, bool) {
 
 // Tick runs one trigger of a task. The task's own kind decides what it
 // requests; the store's lock is not held while it does.
-func (s *ReminderStore) Tick(ctx context.Context, id string, now int64, query func(Reminder) (QueryResult, error), send func(Reminder, string) error, game Game) error {
+func (s *ReminderStore) Tick(id string, now int64, query func(Reminder) (QueryResult, error), send func(Reminder, string) error, game Game) error {
 	claimed, ok, err := s.claim(id)
 	if err != nil || !ok {
 		return err
@@ -262,7 +262,7 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	err := a.Reminders.Tick(ctx, asText(event.Event.Payload["task_id"]), time.Now().UnixMilli(), func(task Reminder) (QueryResult, error) {
+	err := a.Reminders.Tick(asText(event.Event.Payload["task_id"]), time.Now().UnixMilli(), func(task Reminder) (QueryResult, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var result QueryResult
 		params := map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}

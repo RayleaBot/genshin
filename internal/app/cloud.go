@@ -45,8 +45,7 @@ type CloudInput struct {
 	owner       *Subject
 }
 type CloudJob struct {
-	mode          string
-	authenticated bool
+	mode string
 	CloudResult
 	Ref         string `json:"ref"`
 	State       string `json:"state"`
@@ -239,7 +238,7 @@ func (c *CloudClient) Start(game Game, input CloudInput) (CloudJob, error) {
 		c.jobs = map[string]*CloudJob{}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	job := &CloudJob{mode: input.Mode, authenticated: input.Authenticated, Ref: rand.Text(), State: "running", CreatedAtMS: time.Now().UnixMilli(), cancel: cancel, game: game.ID, characterID: input.CharacterID}
+	job := &CloudJob{mode: input.Mode, Ref: rand.Text(), State: "running", CreatedAtMS: time.Now().UnixMilli(), cancel: cancel, game: game.ID, characterID: input.CharacterID}
 	if input.owner != nil {
 		owner := *input.owner
 		job.owner = &owner

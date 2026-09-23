@@ -22,8 +22,6 @@ type BuildWeapon struct {
 }
 type BuildProfile struct {
 	Conditions         *BuildConditions   `json:"conditions,omitempty"`
-	SubElement         *int               `json:"sub_element,omitempty"`
-	WeaponMain         []BuildStat        `json:"weapon_main,omitempty"`
 	CandidateEquipment *[]BuildGear       `json:"candidate_equipment,omitempty"`
 	Level              int                `json:"level"`
 	Promote            *int               `json:"promote"`
@@ -270,7 +268,7 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 			metadata := a.Game.Calc.Metadata()
 			valid := false
 			for _, weapon := range metadata.Weapons {
-				if weapon.Game == record.Game && weapon.ID == w.ID && weapon.Type == record.WeaponType {
+				if weapon.ID == w.ID && weapon.Type == record.WeaponType {
 					valid = true
 					break
 				}

@@ -123,8 +123,7 @@ func officialCloudGear(g Game, gear PanelEquipment, raw map[string]any) (map[str
 	}
 	out["mainId"] = id
 
-	listKey := "sub_property_list"
-	rows := asList(raw[listKey])
+	rows := asList(raw["sub_property_list"])
 	attrs := []any{}
 	for _, stat := range gear.Sub {
 		var times any
@@ -212,7 +211,7 @@ func officialCloudAvatar(ctx context.Context, g Game, panel CharacterPanel, raw 
 		if name == "" {
 			metadata := engine.Metadata()
 			for _, w := range metadata.Weapons {
-				if w.Game == "gs" && w.ID == profile.Weapon.ID {
+				if w.ID == profile.Weapon.ID {
 					name = w.Name
 					break
 				}
@@ -226,11 +225,9 @@ func officialCloudAvatar(ctx context.Context, g Game, panel CharacterPanel, raw 
 		avatar["weapon"] = weapon
 	}
 	rawGear := map[int]map[string]any{}
-	for _, field := range []string{"relics", "ornaments"} {
-		for _, v := range asList(raw[field]) {
-			gear := asObject(v)
-			rawGear[number(gear["pos"])] = gear
-		}
+	for _, v := range asList(raw["relics"]) {
+		gear := asObject(v)
+		rawGear[number(gear["pos"])] = gear
 	}
 	for _, gear := range panel.Equipment {
 		converted, err := officialCloudGear(g, gear, rawGear[gear.Slot])
@@ -272,17 +269,10 @@ func (a *App) captureCloudPanel(ctx context.Context, client AccountsClient, choi
 		return nil, gameError("character_missing", "官方未返回此角色。")
 	}
 	var raw map[string]any
-	for _, field := range []string{"list", "avatar_list"} {
-		for _, v := range asList(result.Data[field]) {
-			item := asObject(v)
-			base := asObject(item["base"])
-			if base == nil {
-				base = item
-			}
-			if asText(base["id"]) == id {
-				raw = item
-				break
-			}
+	for _, v := range asList(result.Data["list"]) {
+		if item := asObject(v); asText(asObject(item["base"])["id"]) == id {
+			raw = item
+			break
 		}
 	}
 	exportID, data, err := officialCloudAvatar(ctx, a.Game, *panel, raw)

@@ -54,24 +54,24 @@ func TestPublicSubscriptionBaselineFailureDedupRestartAndExpiry(t *testing.T) {
 	fetch := func(ContentSubscription) (map[string]any, error) { return map[string]any{"items": rows}, nil }
 	sent := 0
 	send := func(ContentSubscription, string) error { sent++; return errors.New("delivery failed") }
-	if err := s.Tick(t.Context(), "task", now, fetch, send, Game{Name: "原神"}); err != nil || sent != 0 {
+	if err := s.Tick("task", now, fetch, send, Game{Name: "原神"}); err != nil || sent != 0 {
 		t.Fatal("historical notification", err)
 	}
 	rows = append(rows, PublicPost{ID: "2", Title: "new"})
 	now += int64(16 * time.Minute / time.Millisecond)
-	_ = s.Tick(t.Context(), "task", now, fetch, send, Game{Name: "原神"})
+	_ = s.Tick("task", now, fetch, send, Game{Name: "原神"})
 	if sent != 1 {
 		t.Fatal(sent)
 	}
 	s = ContentSubscriptions{Path: s.Path}
 	now += int64(16 * time.Minute / time.Millisecond)
-	_ = s.Tick(t.Context(), "task", now, fetch, send, Game{Name: "原神"})
+	_ = s.Tick("task", now, fetch, send, Game{Name: "原神"})
 	if sent != 1 {
 		t.Fatal("failed send replayed")
 	}
 	now += int64(time.Hour / time.Millisecond)
-	_ = s.Tick(t.Context(), "task", now, fetch, send, Game{Name: "原神"})
-	_ = s.Tick(t.Context(), "task", now+int64(time.Hour/time.Millisecond), fetch, send, Game{Name: "原神"})
+	_ = s.Tick("task", now, fetch, send, Game{Name: "原神"})
+	_ = s.Tick("task", now+int64(time.Hour/time.Millisecond), fetch, send, Game{Name: "原神"})
 	if sent != 2 {
 		t.Fatal("expiry replayed")
 	}
@@ -81,7 +81,7 @@ func TestPublicExpirySkipsUnknownAndPastWindows(t *testing.T) {
 	s := ContentSubscriptions{Path: filepath.Join(t.TempDir(), "s.json")}
 	_ = localdata.Write(s.Path, []ContentSubscription{{Ref: "e", Kind: "expiry", Enabled: true, ExpiresMS: now + int64(2*time.Hour/time.Millisecond)}})
 	sent := ""
-	err := s.Tick(t.Context(), "e", now, func(ContentSubscription) (map[string]any, error) {
+	err := s.Tick("e", now, func(ContentSubscription) (map[string]any, error) {
 		return map[string]any{"items": []PublicActivity{{ID: "1", Title: "unknown", EndMS: now + 1000, TimeStatus: "unknown"}, {ID: "2", Title: "past", EndMS: now - 1000, TimeStatus: "explicit"}, {ID: "3", Title: "known", EndMS: now + 1000, TimeStatus: "explicit_end"}}}, nil
 	}, func(_ ContentSubscription, text string) error { sent = text; return nil }, Game{})
 	if err != nil || !strings.Contains(sent, "known") || strings.Contains(sent, "unknown") || strings.Contains(sent, "past") {

@@ -159,7 +159,8 @@ func gachaFours(archive gacha.Archive) map[string]int {
 // gachaFeatured tells whether a top-rarity pull was featured in an event
 // banner running when it was pulled.
 func gachaFeatured(game Game, pool string, rare gacha.Rare) bool {
-	if game.Data == nil || slices.Contains([]string{"100", "200", "1", "2", "5"}, pool) {
+	// Novice and standard wishes have no featured items.
+	if game.Data == nil || slices.Contains([]string{"100", "200"}, pool) {
 		return false
 	}
 	stamp := rare.Time

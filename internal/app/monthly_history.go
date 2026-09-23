@@ -266,7 +266,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 		return err
 	}
 	now := time.Now()
-	if _, err := a.Monthly.Keep(client.Provider, choice, current.Data, now); err != nil {
+	if err := a.Monthly.Keep(client.Provider, choice, current.Data, now); err != nil {
 		return err
 	}
 	archive, err := a.Monthly.Read(client.Provider, choice)
@@ -286,7 +286,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 		if err != nil {
 			continue
 		}
-		_, _ = a.Monthly.Keep(client.Provider, choice, result.Data, now)
+		_ = a.Monthly.Keep(client.Provider, choice, result.Data, now)
 	}
 	return nil
 }
@@ -304,12 +304,13 @@ func monthlyFinal(archive MonthlyArchive, key string) bool {
 
 // Keep saves a month over whatever archive is current, for reads the user did
 // not start from the archive page.
-func (s *MonthlyStore) Keep(provider string, choice Selection, data map[string]any, now time.Time) (string, error) {
+func (s *MonthlyStore) Keep(provider string, choice Selection, data map[string]any, now time.Time) error {
 	archive, err := s.Read(provider, choice)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return s.Save(provider, choice, archive.Revision, data, now)
+	_, err = s.Save(provider, choice, archive.Revision, data, now)
+	return err
 }
 
 func (s *MonthlyStore) Save(provider string, choice Selection, revision uint64, data map[string]any, now time.Time) (string, error) {

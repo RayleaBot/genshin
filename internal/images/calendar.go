@@ -80,17 +80,17 @@ var (
 
 // calendarItem is an announcement placed on the calendar.
 type calendarItem struct {
-	sort                  int
-	id, title, kind       string
-	merge                 int
-	banner, icon          string
-	left, width           float64
-	label                 string
-	duration              time.Duration
-	start                 string
-	character, face, elem string
-	card                  string
-	index                 int
+	sort         int
+	title, kind  string
+	merge        int
+	banner, icon string
+	left, width  float64
+	label        string
+	duration     time.Duration
+	start        string
+	face, elem   string
+	card         string
+	index        int
 }
 
 // Calendar draws 日历 the way miao's wiki/calendar does: the thirteen days
@@ -128,7 +128,7 @@ func Calendar(context app.ImageContext, calendar app.CalendarImage) (app.Image, 
 		if slices.Contains(calendarIgnoreIDs, id) || calendarIgnore.MatchString(title) {
 			return
 		}
-		item := calendarItem{id: id, title: title, kind: kind, sort: 10}
+		item := calendarItem{title: title, kind: kind, sort: 10}
 		if item.kind == "" {
 			item.kind = "normal"
 			if act {
@@ -153,7 +153,7 @@ func Calendar(context app.ImageContext, calendar app.CalendarImage) (app.Image, 
 						item.face = resources.Artwork("face-"+entry.ID, "miao-plugin", "resources/meta-gs/character/"+entry.Name+"/imgs/face.webp")
 						item.elem = calendarElements[entry.Element]
 					}
-					item.character, item.sort = match[1], 1
+					item.sort = 1
 				}
 			}
 		case strings.Contains(title, "纪行"):

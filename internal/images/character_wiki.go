@@ -190,7 +190,7 @@ func wikiStats(name string, catalog app.Catalog) (map[string]any, float64) {
 }
 
 // miaoPercent is miao's Format.percent: the fraction as a percentage.
-func miaoPercent(value float64, digits int) string { return jsFixed(value*100, digits) + "%" }
+func miaoPercent(value float64) string { return jsFixed(value*100, 1) + "%" }
 
 var wikiSetPart = regexp.MustCompile(`^(.*?)(4|2)$`)
 
@@ -212,11 +212,11 @@ func CharacterWiki(context app.ImageContext, character wikiCharacter) (app.Image
 	base := "meta-gs/character/" + character.Name + "/"
 	attrs := []any{}
 	for _, stat := range [][2]string{{"hp", "基础生命"}, {"atk", "基础攻击"}, {"def", "基础防御"}} {
-		attrs = append(attrs, map[string]any{"title": stat[1], "value": miaoComma(character.BaseAttr[stat[0]], 1)})
+		attrs = append(attrs, map[string]any{"title": stat[1], "value": miaoComma(character.BaseAttr[stat[0]])})
 	}
 	growth := strconv.FormatFloat(character.GrowAttr.Value, 'f', -1, 64)
 	if len(growth) > 10 {
-		growth = miaoComma(character.GrowAttr.Value, 1)
+		growth = miaoComma(character.GrowAttr.Value)
 	}
 	label := wikiGrowth[character.GrowAttr.Key]
 	if character.GrowAttr.Key == "dmg" {
@@ -257,11 +257,11 @@ func CharacterWiki(context app.ImageContext, character wikiCharacter) (app.Image
 			if index > 0 {
 				icon = miao(base + "icons/cons-" + strconv.Itoa(index) + ".webp")
 			}
-			shares = append(shares, map[string]any{"cons": index, "num": miaoPercent(share/100, 1), "icon": icon, "title": []string{"零", "一", "二", "三", "四", "五", "满"}[index] + "命"})
+			shares = append(shares, map[string]any{"cons": index, "num": miaoPercent(share / 100), "icon": icon, "title": []string{"零", "一", "二", "三", "四", "五", "满"}[index] + "命"})
 		}
 		// Upstream shows the block whenever lelaer lists the character; an
 		// unknown holding rate prints as 0.
-		data["holding"] = map[string]any{"num": miaoPercent(max(owned, 0), 1), "level": jsFixed(level, 1), "cons": jsFixed(cons, 2), "shares": shares}
+		data["holding"] = map[string]any{"num": miaoPercent(max(owned, 0)), "level": jsFixed(level, 1), "cons": jsFixed(cons, 2), "shares": shares}
 		data["weapons"] = wikiWeaponUsage(context, miao, role["weapon"])
 		data["artis"] = wikiSetUsage(context, miao, role["artifacts_set"])
 	}
@@ -354,7 +354,7 @@ func wikiWeaponUsage(context app.ImageContext, miao func(string) string, raw any
 	slices.SortStableFunc(usages, func(a, b usage) int { return compareDesc(a.value, b.value) })
 	out := []any{}
 	for _, item := range usages[:min(7, len(usages))] {
-		item.item["value"] = miaoPercent(item.value, 1)
+		item.item["value"] = miaoPercent(item.value)
 		out = append(out, item.item)
 	}
 	return out
@@ -395,7 +395,7 @@ func wikiSetUsage(context app.ImageContext, miao func(string) string, raw any) [
 	slices.SortStableFunc(usages, func(a, b usage) int { return compareDesc(a.value, b.value) })
 	out := []any{}
 	for _, item := range usages[:min(7, len(usages))] {
-		item.item["value"] = miaoPercent(item.value, 1)
+		item.item["value"] = miaoPercent(item.value)
 		out = append(out, item.item)
 	}
 	return out

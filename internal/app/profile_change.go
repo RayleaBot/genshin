@@ -479,7 +479,7 @@ func changedSkills(record reference.Character, talents map[string]int, rank int)
 		if !ok {
 			continue
 		}
-		skill := PanelSkill{HasSkillType: true, SkillType: 1, ID: ids[key], Level: level, ExtraLevel: talentBonus(record, key, rank), Active: true, Name: asText(asObject(asObject(record.Data["talent"])[key])["name"])}
+		skill := PanelSkill{SkillType: 1, ID: ids[key], Level: level, ExtraLevel: talentBonus(record, key, rank), Active: true, Name: asText(asObject(asObject(record.Data["talent"])[key])["name"])}
 		skills = append(skills, skill)
 	}
 	return skills

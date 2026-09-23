@@ -87,11 +87,11 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		if grade == "" {
 			grade = "D"
 		}
-		row["grade"], row["mark"] = grade, miaoComma(entry.Score, 1)
+		row["grade"], row["mark"] = grade, miaoComma(entry.Score)
 		if entry.Damage != nil {
 			value := entry.Damage.Text
 			if value == "" {
-				value = miaoComma(entry.Damage.Value, 1)
+				value = miaoComma(entry.Damage.Value)
 			}
 			row["damage"] = map[string]any{"title": app.RankDamageTitle(entry.Damage.Title), "value": value}
 		}

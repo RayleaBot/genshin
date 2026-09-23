@@ -74,7 +74,6 @@ func (s *BillingStore) Write(provider string, choice Selection, expected uint64,
 }
 
 type BillingJob struct {
-	lastUsed time.Time
 	Ref      string `json:"ref"`
 	State    string `json:"state"`
 	Sequence int    `json:"sequence"`
@@ -172,7 +171,6 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 			delete(a.BillingJobs.items, ref)
 			return map[string]any{"canceled": true}, nil
 		}
-		j.lastUsed = time.Now()
 		j.timer.Reset(15 * time.Minute)
 		client.Provider = j.Provider
 		role, err := authorizeCloudRole(ctx, client, j.Selection)
@@ -280,7 +278,6 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 			a.BillingJobs.items = map[string]*BillingJob{}
 		}
 		j := &BillingJob{Ref: rand.Text(), State: "running", Selection: choice, Provider: client.Provider, Role: role, Category: category, Direction: direction, revision: archive.Revision, cursor: "0", page: 1}
-		j.lastUsed = time.Now()
 		j.timer = time.AfterFunc(15*time.Minute, func() { a.BillingJobs.mu.Lock(); defer a.BillingJobs.mu.Unlock(); delete(a.BillingJobs.items, j.Ref) })
 		a.BillingJobs.items[j.Ref] = j
 		return map[string]any{"job": *j}, nil

@@ -85,11 +85,11 @@ func CharacterTalent(context app.ImageContext, character wikiCharacter, cons boo
 	image := func(id, path string) string { return resources.Artwork(id, "miao-plugin", path) }
 	line := []any{}
 	for _, stat := range [][2]string{{"hp", "基础生命"}, {"atk", "基础攻击"}, {"def", "基础防御"}} {
-		line = append(line, map[string]any{"num": miaoComma(character.BaseAttr[stat[0]], 1), "label": stat[1]})
+		line = append(line, map[string]any{"num": miaoComma(character.BaseAttr[stat[0]]), "label": stat[1]})
 	}
 	growth := strconv.FormatFloat(character.GrowAttr.Value, 'f', -1, 64)
 	if character.GrowAttr.Key == "mastery" {
-		growth = miaoComma(character.GrowAttr.Value, 1)
+		growth = miaoComma(character.GrowAttr.Value)
 	}
 	label := wikiGrowth[character.GrowAttr.Key]
 	if character.GrowAttr.Key == "dmg" {
@@ -194,20 +194,18 @@ func jsFixed(value float64, digits int) string {
 	return text[:len(text)-digits] + "." + text[len(text)-digits:]
 }
 
-// miaoComma is miao's Format.comma: toFixed decimals with thousands commas.
-func miaoComma(value float64, digits int) string {
-	fixed, _ := strconv.ParseFloat(jsFixed(value, digits), 64)
+// miaoComma is miao's Format.comma with its default one decimal: the value
+// to one decimal with thousands commas.
+func miaoComma(value float64) string {
+	fixed, _ := strconv.ParseFloat(jsFixed(value, 1), 64)
 	integer, decimal, _ := strings.Cut(strconv.FormatFloat(fixed, 'f', -1, 64), ".")
 	for index := len(integer) - 3; index > 0; index -= 3 {
 		integer = integer[:index] + "," + integer[index:]
 	}
-	if digits > 0 {
-		if decimal == "" {
-			decimal = strings.Repeat("0", digits)
-		}
-		return integer + "." + decimal
+	if decimal == "" {
+		decimal = "0"
 	}
-	return integer
+	return integer + "." + decimal
 }
 
 var (

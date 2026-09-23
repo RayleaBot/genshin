@@ -52,7 +52,7 @@ func TestCharacterTalentReadsMiaoData(t *testing.T) {
 // JavaScript's toFixed rounds an exact tie up, where Go's formatting rounds
 // it to even.
 func TestMiaoCommaRoundsLikeJavaScript(t *testing.T) {
-	if got := miaoComma(942.25, 1); got != "942.3" {
+	if got := miaoComma(942.25); got != "942.3" {
 		t.Errorf("miaoComma(942.25) = %s", got)
 	}
 }
