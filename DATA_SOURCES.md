@@ -34,7 +34,9 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 `templates/rank/` 按 miao-plugin 的 character/rank-profile-list 改写（MIT），容器宽度同上游在页面内设置；ark-plugin 的自定义排行沿用这一页面（MIT，见 `LICENSES/ark-plugin-MIT.txt`），同 `apps/customRank.js` 写入“全服数据”、排序与筛选说明及请求行数，页面宽 850，评级按其平均单件分阈值（56 分以上为 MAX）。
 
-`templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图取自“ark 插件图片”素材来源的 `resources/graph/`。
+`templates/stygian-rank/` 按 ark-plugin 的 character/stygian-rank-list 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），样式为其 common/common.css（与 miao 相同）与 stygian-rank-list.css 的转换，页面宽度同 `apps/user.js` 按显示的排名栏计算；难度奖章取自“ark 插件图片”素材来源的 `resources/character/img/`，字体与背景取自 miao 的相同文件。上游样式引用的物品底图与名次徽标不在 ark 的资源中，上游页面上为空白，这里同样留空。akasha.cv 的排行按上游的查询读取（上游在查询中写死了一个开发者的 UID 参数，对结果没有影响，这里留空）。
+
+`templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图取自“ark 插件图片”素材来源的 `resources/graph/`（该来源另含幽境危战排名的奖章 `resources/character/img/`）。
 
 面板帮助同 miao-plugin 的 character/profile-detail 帮助，直接发送该仓库的 `resources/character/imgs/help.jpg`（MIT），取自 miao 素材来源。
 

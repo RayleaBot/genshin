@@ -81,7 +81,7 @@ BUNDLES = {
         # Gacha link help pictures.
         "resources/logHelp/*",
     ]),
-    "ark-plugin": ("ark-plugin", ["resources/graph/background.png"]),
+    "ark-plugin": ("ark-plugin", ["resources/graph/background.png", "resources/character/img/medal_*.png"]),
 }
 
 parser = argparse.ArgumentParser()

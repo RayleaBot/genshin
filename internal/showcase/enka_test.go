@@ -11,7 +11,7 @@ import (
 
 // The fixture follows an Enka answer's shape with one artifact and the
 // weapon; its values are made up.
-const enkaFixture = `{"ttl":60,"playerInfo":{"nickname":"旅行者","level":60},"avatarInfoList":[{"avatarId":10000021,
+const enkaFixture = `{"ttl":60,"playerInfo":{"nickname":"旅行者","level":60,"stygianIndex":6,"stygianSeconds":27},"avatarInfoList":[{"avatarId":10000021,
 "propMap":{"4001":{"type":4001,"ival":"90","val":"90"},"1002":{"type":1002,"ival":"6","val":"6"}},"talentIdList":[211,212,213],
 "fightPropMap":{"1":9461.2,"4":897.4,"7":600.6,"2000":14241.2,"2001":2367.0,"2002":951.7,"20":0.519,"22":1.939,"23":1,"28":39.6,"30":1.083},
 "skillLevelMap":{"10017":10,"10032":10,"10041":9},
@@ -26,7 +26,7 @@ func TestParseReadsEnkaLikeMiao(t *testing.T) {
 		t.Fatal(err)
 	}
 	profile, err := showcase.Parse(t.Context(), application.Game, application.Catalog, []byte(enkaFixture))
-	if err != nil || profile.Nickname != "旅行者" || len(profile.Panels) != 1 {
+	if err != nil || profile.Nickname != "旅行者" || len(profile.Panels) != 1 || profile.StygianIndex != 6 || profile.StygianSeconds != 27 {
 		t.Fatal(profile, err)
 	}
 	panel := profile.Panels[0]

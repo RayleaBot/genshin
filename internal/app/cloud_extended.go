@@ -148,6 +148,43 @@ func extendedCloudResult(game Game, input CloudInput, result map[string]any) (Cl
 	}
 	return CloudResult{View: &v}, true, nil
 }
+
+// akasha reads akasha.cv's stygian leaderboard with the query ark-plugin's
+// AkashaApi sends.
+func (c *CloudClient) akasha(ctx context.Context, query url.Values) (map[string]any, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://akasha.cv/api/leaderboards/stygian?"+query.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "RayleaBot-game-plugin/0.1.0")
+	client := c.HTTP
+	if client == nil {
+		client = &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	}
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, gameError("cloud_unavailable", "Akasha 服务暂不可用。")
+	}
+	defer response.Body.Close()
+	if response.StatusCode == 429 {
+		return nil, gameError("cloud_rate_limited", "Akasha 请求过于频繁，请稍后再试。")
+	}
+	if response.StatusCode != 200 {
+		return nil, gameError("cloud_rejected", "Akasha 未提供所选版本的结果。")
+	}
+	raw, err := io.ReadAll(io.LimitReader(response.Body, 2*1024*1024+1))
+	if err != nil || len(raw) > 2*1024*1024 {
+		return nil, gameError("cloud_invalid", "Akasha 响应过大或无法读取。")
+	}
+	var result map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if decoder.Decode(&result) != nil || decoder.Decode(new(any)) != io.EOF {
+		return nil, gameError("cloud_invalid", "Akasha 数据格式暂不兼容。")
+	}
+	return result, nil
+}
+
 func (c *CloudClient) akashaStygian(ctx context.Context, input CloudInput) (CloudResult, error) {
 	if _, _, _, err := extendedCloudRequest(input); err != nil {
 		return CloudResult{}, err
@@ -157,35 +194,9 @@ func (c *CloudClient) akashaStygian(ctx context.Context, input CloudInput) (Clou
 		filter += "[uid]" + uid
 	}
 	q := url.Values{"sort": {"stygianScore"}, "order": {"-1"}, "size": {"50"}, "page": {"1"}, "uids": {filter}, "p": {""}, "fromId": {""}, "li": {""}, "uid": {""}, "version": {strings.ReplaceAll(input.Version, ".", "_")}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://akasha.cv/api/leaderboards/stygian?"+q.Encode(), nil)
+	result, err := c.akasha(ctx, q)
 	if err != nil {
 		return CloudResult{}, err
-	}
-	req.Header.Set("User-Agent", "RayleaBot-game-plugin/0.1.0")
-	client := c.HTTP
-	if client == nil {
-		client = &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	}
-	response, err := client.Do(req)
-	if err != nil {
-		return CloudResult{}, gameError("cloud_unavailable", "Akasha 服务暂不可用。")
-	}
-	defer response.Body.Close()
-	if response.StatusCode == 429 {
-		return CloudResult{}, gameError("cloud_rate_limited", "Akasha 请求过于频繁，请稍后再试。")
-	}
-	if response.StatusCode != 200 {
-		return CloudResult{}, gameError("cloud_rejected", "Akasha 未提供所选版本的结果。")
-	}
-	raw, err := io.ReadAll(io.LimitReader(response.Body, 2*1024*1024+1))
-	if err != nil || len(raw) > 2*1024*1024 {
-		return CloudResult{}, gameError("cloud_invalid", "Akasha 响应过大或无法读取。")
-	}
-	var result map[string]any
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	decoder.UseNumber()
-	if decoder.Decode(&result) != nil || decoder.Decode(new(any)) != io.EOF {
-		return CloudResult{}, gameError("cloud_invalid", "Akasha 数据格式暂不兼容。")
 	}
 	list, ok := result["data"].([]any)
 	if !ok || len(list) > 50 {

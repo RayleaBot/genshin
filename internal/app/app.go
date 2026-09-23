@@ -77,6 +77,8 @@ type Assets struct {
 	// ranking on the same page.
 	Rank      RankImageBuilder
 	CloudRank CloudRankImageBuilder
+	// StygianRank draws ark's group 幽境危战 ranking.
+	StygianRank StygianRankImageBuilder
 	// Showcase is the public service 更新面板 reads without an account;
 	// PanelList draws 面板列表.
 	Showcase  ShowcaseSource
@@ -114,6 +116,19 @@ type Settings struct {
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
 	AliasPermission int `json:"alias_permission"`
+	// Ark holds the ark-plugin settings (config/system/cfg_system.js) that
+	// apply here.
+	Ark ArkSettings `json:"ark"`
+}
+
+// ArkSettings are ark-plugin's settings under its names, with its defaults.
+type ArkSettings struct {
+	// StygianRank is stygianRank: 更新面板 in a group enters the sender's
+	// UID in the group's 幽境危战 ranking.
+	StygianRank bool `json:"stygian_rank"`
+	// StygianDataFrom is stygianDataFrom, where 幽境危战排名 reads global
+	// places: 0 ark, 1 akasha.cv, 2 both.
+	StygianDataFrom int `json:"stygian_data_from"`
 }
 type App struct {
 	Manifest pluginmeta.Manifest
@@ -172,6 +187,7 @@ type App struct {
 	simulationImage    SimulationImageBuilder
 	rankImage          RankImageBuilder
 	cloudRankImage     CloudRankImageBuilder
+	stygianRankImage   StygianRankImageBuilder
 	showcase           ShowcaseSource
 	panelList          PanelListImageBuilder
 	artifactListImage  ArtifactListImageBuilder
@@ -220,10 +236,11 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, payLogImage: assets.PayLog, PayLogs: &PayLogStore{Path: filepath.Join(directory, "pay-log.json")}, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, stygianRankImage: assets.StygianRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, payLogImage: assets.PayLog, PayLogs: &PayLogStore{Path: filepath.Join(directory, "pay-log.json")}, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
-	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{}}
+	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},
+		Ark: ArkSettings{StygianRank: true, StygianDataFrom: 2}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }
@@ -423,6 +440,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.customRankPanel(ctx, event, args)
 	case "cloud-usage":
 		return a.cloudUsage(ctx, event)
+	case "cloud-stygian-rank":
+		return a.stygianRankCommand(ctx, event, args)
 	case "cloud-export", "cloud-import":
 		return a.cloudExchangeCommand(ctx, event, command, args)
 	case "calendar", "banner-history":
@@ -855,12 +874,12 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		return map[string]any{"panels": []CharacterPanel{panel}, "view": PanelView(a.Game, []CharacterPanel{panel}, "")}, nil
 	case "showcase":
 		uid := asText(input["uid"])
-		saved, panels, err := a.refreshShowcase(ctx, event, uid)
+		saved, profile, err := a.refreshShowcase(ctx, event, uid)
 		if err != nil {
 			return nil, gameError("showcase_failed", a.showcaseReply(err, uid))
 		}
 		view := View{Title: a.Game.Name + "公开展柜", Subtitle: uid, Rows: []Row{}, Note: "已保存到此 UID 的面板，聊天中可直接查看这些角色的面板、评分与伤害。"}
-		for _, panel := range panels {
+		for _, panel := range profile.Panels {
 			view.Rows = append(view.Rows, Row{Label: panel.Name, Value: "等级 " + strconv.Itoa(panel.Level) + " · " + strconv.Itoa(panel.Rank)})
 		}
 		if saved.Nickname != "" {

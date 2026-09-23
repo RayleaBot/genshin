@@ -205,7 +205,8 @@
         "https://codeload.github.com/NotIvny/ark-plugin/tar.gz/HEAD"
       ],
       "include": [
-        "resources/graph/"
+        "resources/graph/",
+        "resources/character/img/"
       ],
       "extensions": [
         ".png"

@@ -1,0 +1,12 @@
+{
+  "id": "stygian-rank",
+  "name": "原神幽境危战排名",
+  "description": "幽境危战排名命令的图片，布局参照 ark-plugin character/stygian-rank-list；页面宽度随显示的全服排名栏变化",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1204,
+  "height": 3000,
+  "fit_width": true
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["title", "version", "start", "end", "rows", "ark", "akasha", "width"],
+  "properties": {
+    "title": { "type": "string" },
+    "version": { "type": "string" },
+    "start": { "type": "string" },
+    "end": { "type": "string" },
+    "rows": { "type": "array" },
+    "ark": { "type": "boolean" },
+    "akasha": { "type": "boolean" },
+    "width": { "type": "integer" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

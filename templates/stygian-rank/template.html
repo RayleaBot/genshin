@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode" style="width:{{ .width }}px">
+<div class="container elem-bg" id="container" style="width:{{ .width }}px">
+<div class="head-box">
+  <div class="title">{{ .title }}</div>
+</div>
+<div id="profile-stat">
+  <div class="cont group-rank-tip no-rank">
+    <div class="cont-title">幽境危战排名说明</div>
+    <div class="cont-body">
+      <ul class="cont-msg">
+        <li><strong>幽境危战版本：</strong>{{ .version }}</li>
+        <li><strong>统计周期：</strong>{{ .start }} - {{ .end }}</li>
+        <li><strong>数据源：</strong>ark-plugin | akasha.cv</li>
+      </ul>
+    </div>
+  </div>
+  {{ range .rows }}
+  <div class="cont char-list-item">
+    <div class="char-idx"><span class="idx-icon idx-{{ .place }} mode-">{{ .place }}</span></div>
+    <div class="item-icon char-icon star"><span class="img"{{ with .avatar }} data-render-resource="{{ . }}"{{ end }}></span></div>
+    <div class="char-info char-name">
+      <div class="name"><strong>{{ .name }}</strong></div>
+      <div class="info"> {{ .uid }}</div>
+    </div>
+    <div class="char-item char-weapon line">
+      <div class="item item-icon star5"><div class="img"{{ with .medal }} data-render-resource="{{ . }}"{{ end }}></div></div>
+      <div class="char-info weapon-info">
+        <div class="name">难度</div>
+        <div class="hard">{{ .index }}</div>
+      </div>
+    </div>
+    <div class="char-dmg line">
+      <div class="dmg-title">时间</div>
+      <div class="dmg-value">{{ .seconds }}秒</div>
+    </div>
+    {{ if $.ark }}<div class="char-dmg line" style="width: 160px;"><div class="dmg-title">全服排名(ark)</div><div class="dmg-value">{{ .ark }}</div></div>{{ end }}
+    {{ if $.akasha }}<div class="char-dmg line" style="width: 160px;"><div class="dmg-title">全服排名(akasha)</div><div class="dmg-value">{{ .akasha }}</div></div>{{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

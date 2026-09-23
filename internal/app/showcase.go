@@ -37,6 +37,9 @@ type ShowcaseProfile struct {
 	Face   string
 	Panels []CharacterPanel
 	TTL    time.Duration
+	// StygianIndex and StygianSeconds are the difficulty and time of the
+	// current 幽境危战 season the player shows, zero when none.
+	StygianIndex, StygianSeconds int
 }
 
 // ErrShowcaseEmpty is the answer of a player who shows no character.

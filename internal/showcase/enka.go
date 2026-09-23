@@ -26,6 +26,8 @@ type enkaAnswer struct {
 		ProfilePicture struct {
 			AvatarID int `json:"avatarId"`
 		} `json:"profilePicture"`
+		StygianIndex   int `json:"stygianIndex"`
+		StygianSeconds int `json:"stygianSeconds"`
 	} `json:"playerInfo"`
 	AvatarInfoList []enkaAvatar `json:"avatarInfoList"`
 }
@@ -130,7 +132,8 @@ func Parse(_ context.Context, game app.Game, catalog app.Catalog, raw []byte) (a
 	if err := json.Unmarshal(raw, &answer); err != nil || answer.PlayerInfo == nil {
 		return app.ShowcaseProfile{}, &app.ShowcaseFailure{Status: 200}
 	}
-	profile := app.ShowcaseProfile{Nickname: answer.PlayerInfo.Nickname, Level: answer.PlayerInfo.Level, TTL: time.Duration(answer.TTL) * time.Second}
+	profile := app.ShowcaseProfile{Nickname: answer.PlayerInfo.Nickname, Level: answer.PlayerInfo.Level, TTL: time.Duration(answer.TTL) * time.Second,
+		StygianIndex: answer.PlayerInfo.StygianIndex, StygianSeconds: answer.PlayerInfo.StygianSeconds}
 	if id := answer.PlayerInfo.ProfilePicture.AvatarID; id != 0 {
 		profile.Face = strconv.Itoa(id)
 	}

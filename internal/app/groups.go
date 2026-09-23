@@ -50,6 +50,8 @@ type GroupData struct {
 	// recorded, as upstream); RankSinceMS is when the ranking started.
 	RankOff     bool  `json:"rank_off,omitempty"`
 	RankSinceMS int64 `json:"rank_since_ms,omitempty"`
+	// Stygian are the UIDs entered in ark's 幽境危战 ranking, by season.
+	Stygian map[string][]StygianEntry `json:"stygian,omitempty"`
 }
 
 // GroupStore keeps each group's data in its own file. The settings every

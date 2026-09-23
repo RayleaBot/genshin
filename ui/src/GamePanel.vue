@@ -65,6 +65,10 @@ const importFile = ref<HTMLInputElement | null>(null)
 const removeCandidate = ref<SavedArchive | null>(null), removeDialog = ref<HTMLDialogElement | null>(null)
 const provider = ref('raylea.mihoyo-accounts'), imageReplies = ref(true), aliasPermission = ref(0), pokeCard = ref(true), miaoGacha = ref(false), aliases = ref<Record<string, string>>({})
 const aliasConflicts=ref<{name:string;target:string;builtin:string[]}[]>([])
+// ark-plugin's settings, under its names and with its defaults.
+type ArkSettings = { stygian_rank: boolean; stygian_data_from: number }
+const arkDefaults: ArkSettings = { stygian_rank: true, stygian_data_from: 2 }
+const ark = ref<ArkSettings>({ ...arkDefaults })
 const aliasName = ref(''), aliasTarget = ref('')
 let disposed = false
 const selectedOperation = computed(() => game.value?.operations.find(item => item.name === operationName.value))
@@ -96,13 +100,13 @@ async function loadAccounts(page = 0) {
 async function loadCatalog() { const result = await invoke<{ entries: CatalogEntry[] }>('catalog.search', { query: search.value, kind: kind.value }); entries.value = result.entries }
 async function loadArchives() { archives.value = (await invoke<{ items: SavedArchive[] }>('gacha.list')).items }
 async function load() {
-  const result = await invoke<{ game: Game; bots?:{source_protocol:string;source_adapter:string;id:string}[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; miao_gacha?: boolean; custom_aliases: Record<string, string> } }>('status')
+  const result = await invoke<{ game: Game; bots?:{source_protocol:string;source_adapter:string;id:string}[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; miao_gacha?: boolean; custom_aliases: Record<string, string>; ark?: Partial<ArkSettings> } }>('status')
   bots.value = result.bots ?? []
   game.value = result.game; catalogVersion.value = result.catalog_version
   operationName.value ||= game.value.operations[0]?.name ?? ''
   importRegion.value ||= game.value.region
   publicProfileRegion.value ||= game.value.region
-  provider.value = result.settings.account_provider; imageReplies.value = result.settings.image_replies; aliasPermission.value = result.settings.alias_permission ?? 0; pokeCard.value = result.settings.poke_card ?? true; miaoGacha.value = result.settings.miao_gacha ?? false; aliases.value = result.settings.custom_aliases || {}
+  provider.value = result.settings.account_provider; imageReplies.value = result.settings.image_replies; aliasPermission.value = result.settings.alias_permission ?? 0; pokeCard.value = result.settings.poke_card ?? true; miaoGacha.value = result.settings.miao_gacha ?? false; aliases.value = result.settings.custom_aliases || {}; ark.value = { ...arkDefaults, ...result.settings.ark }
   if (page === 'help' || page === 'media' || page === 'content' || page === 'resources' || page === 'groups' || page === 'simulation' || page === 'cloud') return
   if (page === 'catalog') await loadCatalog()
   else if (page === 'gacha') await Promise.all([loadArchives(), loadAccounts()])
@@ -142,7 +146,7 @@ async function scorePanel() {
 async function setDefault() { await run(async () => { await invoke('accounts.select', chosen()) }, '默认角色已保存到账号服务') }
 async function showcase() { await run(async () => { panels.value=[];view.value = (await invoke<{ view: View }>('showcase', { uid: publicUID.value.trim() })).view }) }
 async function showEntry(entry: CatalogEntry) { await run(async () => { view.value = (await invoke<{ view: View }>('catalog.get', { id: entry.id })).view; aliasTarget.value = entry.id }) }
-async function saveSettings(nextAliases:Record<string,string>=aliases.value) { await run(async () => { const checked=await invoke<{aliases:Record<string,string>;conflicts:typeof aliasConflicts.value}>('aliases.validate',{aliases:nextAliases});await host.client.saveSettings({ account_provider: provider.value.trim(), image_replies: imageReplies.value, alias_permission: aliasPermission.value, poke_card: pokeCard.value, miao_gacha: miaoGacha.value, custom_aliases: checked.aliases });aliases.value=checked.aliases;aliasConflicts.value=checked.conflicts }, '设置已保存') }
+async function saveSettings(nextAliases:Record<string,string>=aliases.value) { await run(async () => { const checked=await invoke<{aliases:Record<string,string>;conflicts:typeof aliasConflicts.value}>('aliases.validate',{aliases:nextAliases});await host.client.saveSettings({ account_provider: provider.value.trim(), image_replies: imageReplies.value, alias_permission: aliasPermission.value, poke_card: pokeCard.value, miao_gacha: miaoGacha.value, custom_aliases: checked.aliases, ark: ark.value });aliases.value=checked.aliases;aliasConflicts.value=checked.conflicts }, '设置已保存') }
 async function addAlias() { if (!aliasName.value.trim() || !aliasTarget.value) return; const name = aliasName.value.trim().toLowerCase(); if (Object.hasOwn(aliases.value, name)) { error.value = '此别名已存在，请先移除再重新添加。'; return }; await saveSettings({ ...aliases.value, [name]: aliasTarget.value }); if(!error.value)aliasName.value = '' }
 async function removeAlias(name: string) { const copy = { ...aliases.value }; delete copy[name]; await saveSettings(copy) }
 
@@ -249,6 +253,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
         <PanelDetails v-if="detailPanel" :panel="detailPanel" />
         <BuildCalculator v-if="detailPanel && selectedRole" :key="`build:${selection}:${detailPanel.id}`" :character-id="detailPanel.id" :character-name="detailPanel.name" :account-ref="selectedRole.account.ref" :role-ref="selectedRole.role.ref" :invoke="invoke" />
         <details class="settings"><summary>查询设置</summary><form @submit.prevent="saveSettings()"><label>账号服务插件 ID<input v-model="provider" required :disabled="busy"></label><label class="check"><input v-model="imageReplies" type="checkbox" :disabled="busy">聊天查询优先发送图片</label><label class="check"><input v-model="pokeCard" type="checkbox" :disabled="busy">戳一戳展示角色卡片</label><label class="check"><input v-model="miaoGacha" type="checkbox" :disabled="busy">抽卡记录、抽卡统计使用喵喵版</label><label>聊天设置别名<select v-model.number="aliasPermission" :disabled="busy"><option :value="0">所有群员</option><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+        <details class="settings"><summary>ark 扩展设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="ark.stygian_rank" type="checkbox" :disabled="busy">群内更新面板时登记幽境危战排名</label><label>幽境危战数据源<select v-model.number="ark.stygian_data_from" :disabled="busy"><option :value="0">ark</option><option :value="1">akasha.cv</option><option :value="2">二者混合</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
       </template>
 
       <template v-else-if="page === 'content'"><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>

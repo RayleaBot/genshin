@@ -23,7 +23,11 @@
     "custom_aliases": {},
     "alias_permission": 0,
     "poke_card": true,
-    "miao_gacha": false
+    "miao_gacha": false,
+    "ark": {
+      "stygian_rank": true,
+      "stygian_data_from": 2
+    }
   },
   "commands": [
     {
@@ -1589,6 +1593,17 @@
       }
     },
     {
+      "id": "cloud-stygian-rank",
+      "name": "幽境危战排名",
+      "description": "群内成员在本群更新面板时登记的幽境危战成绩，附 ark 与 akasha.cv 的全服排名；可写版本号查看旧版本",
+      "usage": "#幽境危战排名[版本]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:top)?幽境危战排名(?P<version>[0-9]+\\.[0-9]+)?$"
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1898,6 +1913,7 @@
         "cloud-custom-rank-help",
         "cloud-custom-rank-panel",
         "cloud-usage",
+        "cloud-stygian-rank",
         "panel-export",
         "cloud-export",
         "cloud-import",

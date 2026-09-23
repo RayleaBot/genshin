@@ -278,15 +278,15 @@ func (a *App) showcaseReply(err error, uid string) string {
 
 // refreshShowcase reads the UID's showcase into its kept panels, telling the
 // user when the service is slow as miao does.
-func (a *App) refreshShowcase(ctx context.Context, event *rayleabot.EventContext, uid string) (SavedProfiles, []CharacterPanel, error) {
+func (a *App) refreshShowcase(ctx context.Context, event *rayleabot.EventContext, uid string) (SavedProfiles, ShowcaseProfile, error) {
 	slow := time.AfterFunc(2*time.Second, func() { notice(ctx, event, a.panelReply("slow", map[string]string{"uid": uid})) })
 	profile, err := a.Showcase.Fetch(ctx, a.showcase, a.Game, a.Catalog, uid)
 	slow.Stop()
 	if err != nil {
-		return SavedProfiles{}, nil, err
+		return SavedProfiles{}, profile, err
 	}
 	saved, err := a.Profiles.Keep(uid, profile.Panels, a.showcase.Name, &profile)
-	return saved, profile.Panels, err
+	return saved, profile, err
 }
 
 // accountPanels reads every character of the user's own UID from the
@@ -416,9 +416,14 @@ func (a *App) panelCommand(ctx context.Context, event *rayleabot.EventContext, c
 		}
 		saved, err = a.Profiles.Keep(owner.UID, panels, service, &ShowcaseProfile{Nickname: owner.Role.Nickname, Level: owner.Role.Level})
 	} else {
-		saved, panels, err = a.refreshShowcase(ctx, event, owner.UID)
+		var profile ShowcaseProfile
+		saved, profile, err = a.refreshShowcase(ctx, event, owner.UID)
 		if err != nil {
 			return event.SendText(a.showcaseReply(err, owner.UID))
+		}
+		panels = profile.Panels
+		if len(panels) > 0 {
+			a.enterStygian(ctx, event, owner.UID, profile)
 		}
 	}
 	if err != nil {
