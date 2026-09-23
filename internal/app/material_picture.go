@@ -12,6 +12,8 @@ import (
 // Yunzai's 角色素材 (material.js): 胡桃素材, 胡桃突破, 胡桃培养 send the
 // character's ascension and talent material picture from 友人A's 米游社
 // collection, else from two others; 更新 reads the collections again.
+// Upstream leaves 培养 in the name it looks up, so 胡桃培养 never answers
+// there; here it does as 胡桃素材.
 
 // materialCollections are Yunzai's collections in the order it tries them,
 // with the index of the picture each post keeps it at.
@@ -30,8 +32,7 @@ var materialOSS = "?x-oss-process=image//resize,s_1000/quality,q_80/auto-orient,
 // no collection has a post naming it.
 func (c PublicContentClient) materialPicture(ctx context.Context, name string) (string, error) {
 	for _, collection := range materialCollections {
-		params := url.Values{"gids": {bbsGID}, "order_type": {"2"}, "collection_id": {collection.id}}
-		page, err := c.get(ctx, "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection?"+params.Encode(), nil)
+		page, err := c.collection(ctx, collection.id)
 		if err != nil {
 			return "", err
 		}
