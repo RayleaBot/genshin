@@ -240,6 +240,18 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"探索100000001", "profile", []string{"100000001"}},
 			{"探索度100000001", "profile", []string{"100000001"}},
 			{"尘歌壶100000001", "profile", []string{"100000001"}},
+			{"角色100000001", "characters", []string{"100000001"}},
+			{"五星角色100000001", "characters", []string{"100000001"}},
+			{"喵喵查询100000001", "characters", []string{"100000001"}},
+			{"练度统计100000001", "training", []string{"100000001"}},
+			{"五星列表100000001", "training", []string{"100000001"}},
+			{"武器汇总5星1800000001", "training", []string{"1800000001"}},
+			// miao's ProfileStat steps aside only for the bare 角色统计 and
+			// 武器统计, and Yunzai's rewrite takes only those words.
+			{"角色统计100000001", "training", []string{"100000001"}},
+			{"202507剧诗练度统计100000001", "theater-training", []string{"202507", "100000001"}},
+			{"天赋100000001", "talent-stat", []string{"100000001"}},
+			{"周三五星天赋统计100000001", "talent-stat", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {

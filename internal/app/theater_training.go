@@ -143,18 +143,23 @@ func (a *App) theaterConditions(ctx context.Context, month string) (map[string]a
 }
 
 // theaterTraining answers 剧诗练度统计 as miao: the month's conditions and the
-// narrowed 练度统计 in one forwarded message.
+// narrowed 练度统计 in one forwarded message. A UID may follow the month's
+// word, as miao reads one from the message.
 func (a *App) theaterTraining(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	theater, text, err := a.theaterConditions(ctx, args[0])
 	if err != nil {
 		return event.SendText(friendlyError(err))
+	}
+	uid := ""
+	if len(args) > 1 {
+		uid = args[1]
 	}
 	client := a.accountClient(event)
 	listed, err := client.List(ctx, 0)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	choice, _, err := Choose(listed, a.Game.ID, "")
+	choice, _, err := Choose(listed, a.Game.ID, uid)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
