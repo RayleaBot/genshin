@@ -105,7 +105,7 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 		logs := []map[string]any{}
 		most := 0
 		for _, pool := range gachaAllPools {
-			if log, ok := gachaLog(context, image, resources, pool[0], pool[1]); ok {
+			if log := gachaLog(context, image, resources, pool[0], pool[1]); log["all"] != 0 {
 				logs = append(logs, log)
 				most = max(most, len(log["cards"].([]any)))
 			}
@@ -133,25 +133,19 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 		return app.Image{Template: "gacha-all", Data: map[string]any{"pool": first["pool"], "first_time": first["first_time"], "last_time": first["last_time"], "logs": list},
 			Resources: resources.List}, true
 	}
+	// A pool without records draws with every count at zero, as upstream.
 	pool, poolName := gachaPool(image.Word)
-	log, ok := gachaLog(context, image, resources, pool, poolName)
-	if !ok {
-		return app.Image{}, false
-	}
-	return app.Image{Template: "gacha", Data: log, Resources: resources.List}, true
+	return app.Image{Template: "gacha", Data: gachaLog(context, image, resources, pool, poolName), Resources: resources.List}, true
 }
 
 // gachaLog is upstream's analyse and randData for one pool: its pull count,
-// summary lines and five-stars; false when the pool has no records.
-func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.ImageResources, pool, poolName string) (map[string]any, bool) {
+// summary lines and five-stars.
+func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.ImageResources, pool, poolName string) map[string]any {
 	records := []gacha.Record{}
 	for _, record := range image.Archive.Records {
 		if gacha.Pool(record.GachaType) == pool {
 			records = append(records, record)
 		}
-	}
-	if len(records) == 0 {
-		return nil, false
 	}
 	// Upstream reads the log newest first; record IDs grow with time.
 	sort.Slice(records, func(i, j int) bool {
@@ -172,10 +166,13 @@ func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.Ima
 	wai, weaponFive, weaponFour, all := 0, 0, 0, len(records)
 	for _, record := range records {
 		if record.Rank == "4" {
-			fourNum++
-			if noFour == 0 {
+			// Upstream tells the first four-star by noFour still being 0, so
+			// a newest pull that was a four-star let the next one overwrite
+			// it; the count is taken at the first four-star only.
+			if fourNum == 0 {
 				noFour = fourSince
 			}
+			fourNum++
 			fourSince = 0
 			if fourCounts[record.Name] == 0 {
 				fourOrder = append(fourOrder, record.Name)
@@ -206,17 +203,30 @@ func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.Ima
 		}
 		fiveSince++
 	}
-	big := 0
 	if len(fives) > 0 {
 		fives[len(fives)-1].num = fiveSince
-		for index := range fives {
-			// A five-star right after an off-banner one came from the guarantee.
-			if next := index + 1; next < len(fives) && !fives[next].up {
-				big++
-			}
-		}
 	} else {
 		noFive = all
+	}
+	// Upstream drops the five-stars it could not name, with their pulls. It
+	// removes them while walking the list, which skipped the five-star after
+	// each; here every one is dropped before the guarantees are counted.
+	known := fives[:0]
+	for _, item := range fives {
+		if item.record.Name == "未知" {
+			all -= item.num
+			fiveNum--
+			continue
+		}
+		known = append(known, item)
+	}
+	fives = known
+	// A five-star right after an off-banner one came from the guarantee.
+	big := 0
+	for index := range fives {
+		if next := index + 1; next < len(fives) && !fives[next].up {
+			big++
+		}
 	}
 	sort.SliceStable(fourOrder, func(i, j int) bool { return fourCounts[fourOrder[i]] > fourCounts[fourOrder[j]] })
 	maxFourName, maxFour := "无", 0
@@ -315,9 +325,12 @@ func gachaLog(context app.ImageContext, image app.GachaImage, resources *app.Ima
 		}
 		cards = append(cards, map[string]any{"class": class, "up": item.up && poolName == "角色", "rate_up": item.up, "icon": icon, "num": item.num})
 	}
-	first, last := records[len(records)-1].Time, records[0].Time
+	first, last := "", ""
+	if len(records) > 0 {
+		first, last = records[len(records)-1].Time, records[0].Time
+	}
 	return map[string]any{
 		"uid": image.UID, "all": all, "pool": pool, "pool_name": poolName, "lines": lines, "cards": cards,
 		"first_time": first[:min(len(first), 16)], "last_time": last[:min(len(last), 16)],
-	}, true
+	}
 }
