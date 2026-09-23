@@ -29,9 +29,9 @@
         <svg width="240" height="240" viewBox="0 0 240 240">
           {{ range .slices }}<path d="{{ .path }}" fill="{{ .color }}" stroke="#fff" stroke-width="1"></path>{{ end }}
           {{ range .slices }}{{ if .label }}<text class="slice-label" x="{{ .x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}{{ end }}
-          <text class="statistic-title" x="120" y="108">总计</text>
-          <text class="statistic-content" x="120" y="140">{{ .total }}</text>
         </svg>
+        <div class="statistic-title">总计</div>
+        <div class="statistic-content">{{ .total }}</div>
       </div>
       <ul class="tooltip">
         {{ range .legend }}

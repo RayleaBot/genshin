@@ -60,8 +60,9 @@ func Ledger(context app.ImageContext, result app.QueryResult) (app.Image, bool) 
 		values, colors = append(values, float64(app.Int(group["num"]))), append(colors, color)
 	}
 	// G2Plot starts at the top and runs clockwise; the ring spans radius 0.7
-	// to 1 of the 240px chart less its 10px padding.
-	slices := app.G2Ring(values, colors, 120, 120, 110, 77)
+	// to 1 of the 240px chart less its 10px padding. Upstream labels a share
+	// over 2%.
+	slices := app.G2Ring(values, colors, 120, 120, 110, 77, 3)
 
 	day := app.Text(result.Data["data_month"]) + "月"
 	if now := context.Now.In(chinaTime); app.Int(result.Data["data_month"]) == int(now.Month()) {

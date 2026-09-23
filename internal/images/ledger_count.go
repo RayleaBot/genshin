@@ -143,7 +143,8 @@ func ledgerCountImage(context app.ImageContext, stats app.MonthlyStats, year int
 	}
 	data["uid"], data["year_text"], data["top"], data["legend"], data["sum"] = stats.Role.UID, yearText, top, legend, strconv.Itoa(sum)
 	data["columns"] = app.G2Column(labels, values, 470, 300, [4]float64{40, 10, 30, 52})
-	data["ring"] = app.G2Ring(amounts, colors, 160, 150, 140, 98)
+	// Upstream labels a share of 2% or more.
+	data["ring"] = app.G2Ring(amounts, colors, 160, 150, 140, 98, 2)
 	// Upstream notes it shows only twelve months once that many are saved.
 	data["more"] = year == 0 && len(stats.Months) >= 12
 	return app.Image{Template: "ledger-count", Data: data, Resources: resources.List}

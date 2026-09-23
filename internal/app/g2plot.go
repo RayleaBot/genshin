@@ -48,10 +48,11 @@ func G2Column(labels []string, values []float64, width, height float64, padding 
 }
 
 // G2Ring is a G2Plot pie with an inner radius, as SVG sectors around (cx, cy)
-// starting at the top and running clockwise; each sector over 2% carries its
-// rounded share at mid radius, as the ledger pages' label formatter does. A
-// value that is the whole ring is drawn as two halves.
-func G2Ring(values []float64, colors []string, cx, cy, outer, inner float64) []any {
+// starting at the top and running clockwise; each sector whose rounded share
+// is at least labelFrom percent carries it at mid radius, as the ledger
+// pages' label formatters do. A value that is the whole ring is drawn as two
+// halves.
+func G2Ring(values []float64, colors []string, cx, cy, outer, inner float64, labelFrom int) []any {
 	total := 0.0
 	for _, value := range values {
 		total += value
@@ -79,7 +80,7 @@ func G2Ring(values []float64, colors []string, cx, cy, outer, inner float64) []a
 				point(inner, -math.Pi/2), inner, inner, point(inner, math.Pi/2), inner, inner, point(inner, -math.Pi/2))
 		}
 		sector := map[string]any{"path": path, "color": colors[index]}
-		if percent := int(math.Round(share * 100)); percent > 2 {
+		if percent := int(math.Round(share * 100)); percent >= labelFrom {
 			middle := (angle + end) / 2
 			sector["label"], sector["x"], sector["y"] = strconv.Itoa(percent)+"%", svgNumber(cx+(outer+inner)/2*math.Cos(middle)), svgNumber(cy+(outer+inner)/2*math.Sin(middle))
 		}

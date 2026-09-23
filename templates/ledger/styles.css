@@ -141,8 +141,12 @@ body {
 }
 
 /* The ring upstream draws with G2Plot. */
+/* G2Plot sets its statistic in inline styles: the title's bottom and the
+   content's top at the centre moved by their offsetY, as wide as the hole. */
+#chartContainer { position: relative; }
 #chartContainer svg { display: block; }
 #chartContainer .slice-label { fill: #fff; font-size: 12px; font-family: "tttgbnumber"; text-anchor: middle; dominant-baseline: central; }
-#chartContainer .statistic-title { fill: rgba(0, 0, 0, 0.65); font-size: 14px; text-anchor: middle; }
-#chartContainer .statistic-content { fill: rgba(0, 0, 0, 0.85); font-size: 24px; font-family: "tttgbnumber"; text-anchor: middle; }
+#chartContainer .statistic-title, #chartContainer .statistic-content { position: absolute; left: 120px; width: 154px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center; line-height: 1; }
+#chartContainer .statistic-title { top: 102px; transform: translate(-50%, -100%); font-size: 20px; font-weight: 300; color: #4B535E; }
+#chartContainer .statistic-content { top: 110px; transform: translate(-50%, 0); font-size: 32px; font-weight: bold; color: rgba(44, 53, 66, 0.85); font-family: "tttgbnumber"; }
 .footer { margin-top: 6px; font-size: 12px; text-align: center; color: #7a8a9e; }

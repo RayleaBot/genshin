@@ -121,7 +121,12 @@ body {
 .bar { fill: #5b8ff9; }
 .bar-value { fill: #595959; font-size: 12px; font-family: "tttgbnumber"; text-anchor: middle; }
 .slice-label { fill: #fff; font-size: 12px; font-family: "tttgbnumber"; text-anchor: middle; dominant-baseline: central; }
-.statistic-title { fill: rgba(0, 0, 0, 0.65); font-size: 14px; text-anchor: middle; }
-.statistic-content { fill: rgba(0, 0, 0, 0.85); font-size: 24px; font-family: "tttgbnumber"; text-anchor: middle; }
+/* G2Plot sets the ring's statistic in inline styles: the title's bottom and
+   the content's top at the centre moved by their offsetY, as wide as the
+   hole. */
+#chartContainer2 { position: relative; }
+.statistic-title, .statistic-content { position: absolute; left: 160px; width: 196px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center; line-height: 1; }
+.statistic-title { top: 142px; transform: translate(-50%, -100%); font-size: 20px; font-weight: 300; color: #4B535E; }
+.statistic-content { top: 150px; transform: translate(-50%, 0); font-size: 32px; font-weight: bold; color: rgba(44, 53, 66, 0.85); font-family: "tttgbnumber"; }
 .legend-name { fill: #595959; font-size: 16px; dominant-baseline: central; }
 .legend-value { fill: #595959; fill-opacity: 0.65; font-size: 16px; font-family: "tttgbnumber"; }

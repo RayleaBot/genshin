@@ -41,10 +41,10 @@
       <svg width="470" height="300" viewBox="0 0 470 300">
         {{ range .ring }}<path d="{{ .path }}" fill="{{ .color }}" stroke="#fff" stroke-width="1"></path>{{ end }}
         {{ range .ring }}{{ if .label }}<text class="slice-label" x="{{ .x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}{{ end }}
-        <text class="statistic-title" x="160" y="138">总计</text>
-        <text class="statistic-content" x="160" y="170">{{ .sum }}</text>
         {{ range .legend }}<circle cx="330" cy="{{ .y }}" r="4" fill="{{ .color }}"></circle><text class="legend-name" x="342" y="{{ .y }}">{{ .action }}<tspan class="legend-value" dx="8">{{ .num }}</tspan></text>{{ end }}
       </svg>
+      <div class="statistic-title">总计</div>
+      <div class="statistic-content">{{ .sum }}</div>
     </div>
   </div>
   {{ if .more }}<div class="hasMore">*该数据只显示最近12个月</div>{{ end }}
