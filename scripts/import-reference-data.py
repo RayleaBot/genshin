@@ -40,6 +40,10 @@ entries = {}
 base = refs / "miao-plugin/resources/meta-gs"
 for kind in ("character", "weapon"):
     for file in sorted((base / kind).rglob("data.json")):
+        # The traveler's element folders hold its talents per element under
+        # the shared id 7; the traveler is the folder's own data.
+        if kind == "character" and file.parent.parent != base / kind:
+            continue
         raw = load(file)
         if not isinstance(raw, dict) or not raw.get("name") or not raw.get("id"):
             continue

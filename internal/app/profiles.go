@@ -317,10 +317,24 @@ func (a *App) accountPanels(ctx context.Context, client AccountsClient, choice S
 // the account's official one when the UID is the user's own, else, in games
 // that refresh from the showcase, the showcase once, as miao tries before it
 // asks for 更新面板.
+// travelerPanel is the traveler whose panel a player keeps, 空 before 荧.
+func travelerPanel(panels map[string]SavedPanel) string {
+	if _, ok := panels["10000005"]; ok {
+		return "10000005"
+	}
+	return "10000007"
+}
+
 func (a *App) characterPanel(ctx context.Context, event *rayleabot.EventContext, owner panelOwner, id string) (CharacterPanel, error) {
 	saved, err := a.Profiles.Read(owner.UID)
 	if err != nil {
 		return CharacterPanel{}, err
+	}
+	// As miao's getAvatar, a traveler is the one the player has: 空 when
+	// kept, else 荧.
+	traveler := slices.Contains(travelerIDs, id)
+	if traveler {
+		id = travelerPanel(saved.Panels)
 	}
 	if kept, ok := saved.Panels[id]; ok {
 		return kept.panel(), nil
@@ -336,6 +350,9 @@ func (a *App) characterPanel(ctx context.Context, event *rayleabot.EventContext,
 		saved, _, err = a.refreshShowcase(ctx, event, owner.UID)
 		if err != nil {
 			return CharacterPanel{}, gameError("panel_missing", a.showcaseReply(err, owner.UID))
+		}
+		if traveler {
+			id = travelerPanel(saved.Panels)
 		}
 		if kept, ok := saved.Panels[id]; ok {
 			return kept.panel(), nil

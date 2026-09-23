@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -135,5 +136,38 @@ func (c Catalog) Resolve(query, kind string, aliases map[string]string) (Entry, 
 	if len(exact) == 0 && len(matches) == 1 {
 		return matches[0], true
 	}
+	if kind == "character" || kind == "" {
+		return c.traveler(wanted, aliases)
+	}
 	return Entry{}, false
+}
+
+// travelerIDs are 空, 荧 and the traveler of either.
+var travelerIDs = []string{"10000005", "10000007", "20000000"}
+
+// travelerWords and elementWords are miao's: Character.get takes a name
+// with 旅行者, 主, 主角, 空, 荧 or 爷 whose rest is an element for the
+// traveler, as 风主 or 雷荧; CharId.getId takes an element before a
+// traveler's name, as 雷女主. The element words keep miao's order, which
+// decides the prefix a name is read with.
+var (
+	travelerWords = regexp.MustCompile(`旅行者|主角?|空|荧|爷`)
+	elementWords  = []string{"anemo", "风", "蒙德", "geo", "岩", "璃月", "electro", "雷", "电", "雷电", "稻妻", "dendro", "草", "须弥", "pyro", "火", "纳塔", "hydro", "水", "枫丹", "cryo", "冰", "至冬"}
+)
+
+func (c Catalog) traveler(name string, aliases map[string]string) (Entry, bool) {
+	found := travelerWords.MatchString(name) && slices.Contains(elementWords, travelerWords.ReplaceAllString(name, ""))
+	if !found {
+		for _, word := range elementWords {
+			if rest, ok := strings.CutPrefix(name, word); ok {
+				entry, ok := c.Resolve(rest, "character", aliases)
+				found = ok && slices.Contains(travelerIDs, entry.ID)
+				break
+			}
+		}
+	}
+	if !found {
+		return Entry{}, false
+	}
+	return c.Get("20000000")
 }
