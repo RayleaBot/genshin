@@ -133,25 +133,25 @@ func (a *App) playerData(ctx context.Context, event *rayleabot.EventContext, own
 
 // readPlayer reads a UID's player data as miao's refreshAndGetAvatarData:
 // the index and then the character list, merged with the panels kept for
-// the UID. miao reads a UID with its owner's cookie, else with the public
-// cookie pool: a UID on the requester's account is read with it, any other
-// through the accounts plugin's public query. failed is the first query that
-// failed; what the others read still counts.
+// the UID. miao reads a UID with its owner's cookie, else with one cookie
+// of the public pool: a UID on the requester's account is read with it, any
+// other through the accounts plugin's public query, whose one call reads
+// both. failed is the first query that failed; what the others read still
+// counts.
 func (a *App) readPlayer(ctx context.Context, client AccountsClient, owner panelOwner, saved SavedProfiles) (CharactersImage, error) {
 	image := CharactersImage{Role: Role{UID: owner.UID}, Saved: saved, Public: !owner.Owned}
 	var index, list QueryResult
-	var failed, err error
+	var failed error
 	if owner.Owned {
 		image.Role = owner.Role
+		var err error
 		index, failed = client.Execute(ctx, owner.Choice, a.Game.ID+".profile", nil)
 		list, err = client.Execute(ctx, owner.Choice, a.Game.ID+".characters", nil)
+		if failed == nil {
+			failed = err
+		}
 	} else {
-		region := uidRegion(owner.UID)
-		index, failed = client.Public(ctx, "profile", owner.UID, region)
-		list, err = client.Public(ctx, "characters", owner.UID, region)
-	}
-	if failed == nil {
-		failed = err
+		index.Data, list, failed = client.PublicCharacters(ctx, owner.UID, uidRegion(owner.UID))
 	}
 	image.Index = index.Data
 	image.Characters = playerCharacters(image.Index, asList(list.Data["list"]), saved.Panels)

@@ -32,33 +32,33 @@ func TestPlayerCharactersMergeAsMiao(t *testing.T) {
 	}
 }
 
-// publicPool answers the accounts plugin's public query with an index and a
-// character list, failing the operation named. As service calls, it decodes
-// numbers as json.Number.
+// publicPool answers the accounts plugin's public query of a character list
+// with an index and the list, or the list's failure when listFails. As
+// service calls, it decodes numbers as json.Number.
 type publicPool struct {
-	asked  []string
-	failed string
+	asked     []string
+	listFails bool
 }
 
 func (c *publicPool) CallService(_ context.Context, req rayleabot.ServiceCallRequest, out any) error {
-	operation := asText(req.Params["operation"])
-	c.asked = append(c.asked, req.Method+" "+operation+" "+asText(req.Params["region"]))
-	if req.Method != "public.execute" || operation == c.failed {
+	c.asked = append(c.asked, req.Method+" "+asText(req.Params["operation"])+" "+asText(req.Params["region"]))
+	if req.Method != "public.execute" {
 		return &rayleabot.ActionError{Code: "plugin.account_public_unavailable"}
 	}
-	data := `{"data":{"avatars":[{"id":10000046,"level":80},{"id":10000025,"level":1}]}}`
-	if operation == "characters" {
-		data = `{"data":{"list":[{"id":10000046,"level":90,"weapon":{"id":13501,"name":"护摩之杖"}}]}}`
+	list := `"data":{"list":[{"id":10000046,"level":90,"weapon":{"id":13501,"name":"护摩之杖"}}]}`
+	if c.listFails {
+		list = `"failure":{"code":"plugin.account_public_unavailable","message":"暂无可用的公共查询账号。"}`
 	}
-	decoder := json.NewDecoder(strings.NewReader(data))
+	decoder := json.NewDecoder(strings.NewReader(`{"index":{"avatars":[{"id":10000046,"level":80},{"id":10000025,"level":1}]},` + list + `}`))
 	decoder.UseNumber()
 	return decoder.Decode(out)
 }
 
-// A UID not on the requester's account is read as miao reads it with the
-// public cookie pool: the index, then the character list whose entries stand
-// in for the index's, with the kept panels. A failed list read leaves the
-// index and the panels, and is the failure answered.
+// A UID not on the requester's account is read as miao reads it with one
+// public cookie: one public query reads the index and then the character
+// list, whose entries stand in for the index's, with the kept panels. A list
+// that failed after the index leaves the index and the panels, and is the
+// failure answered.
 func TestReadPlayerThroughPublicPool(t *testing.T) {
 	pool := &publicPool{}
 	client := AccountsClient{Caller: pool, Game: "genshin"}
@@ -73,15 +73,15 @@ func TestReadPlayerThroughPublicPool(t *testing.T) {
 		return out
 	}
 	image, failed := a.readPlayer(t.Context(), client, panelOwner{UID: "500000001"}, saved)
-	if failed != nil || !image.Public || strings.Join(pool.asked, ",") != "public.execute profile cn_qd01,public.execute characters cn_qd01" {
+	if failed != nil || !image.Public || strings.Join(pool.asked, ",") != "public.execute characters cn_qd01" {
 		t.Fatalf("asked = %v, failed %v", pool.asked, failed)
 	}
 	if got := levels(image); len(got) != 2 || got["10000046"] != 90 || got["10000089"] != 90 || asText(asObject(asObject(image.Characters[0])["weapon"])["name"]) != "护摩之杖" {
 		t.Errorf("characters = %v", image.Characters)
 	}
-	pool.asked, pool.failed = nil, "characters"
+	pool.asked, pool.listFails = nil, true
 	image, failed = a.readPlayer(t.Context(), client, panelOwner{UID: "100000001"}, saved)
-	if PublicError(failed).Code != "plugin.account_public_unavailable" || len(pool.asked) != 2 || image.Index == nil {
+	if PublicError(failed).Code != "plugin.account_public_unavailable" || len(pool.asked) != 1 || image.Index == nil {
 		t.Fatalf("asked = %v, failed %v", pool.asked, failed)
 	}
 	if got := levels(image); len(got) != 2 || got["10000046"] != 80 || got["10000089"] != 90 {

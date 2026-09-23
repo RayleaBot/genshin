@@ -76,12 +76,33 @@ func (c AccountsClient) Select(ctx context.Context, choice Selection) error {
 	return c.call(ctx, "select", map[string]any{"account_ref": choice.AccountRef, "role_ref": choice.RoleRef}, nil)
 }
 
-// Public reads a UID through the public query pool: operation is profile,
-// the index, or characters, the character list.
-func (c AccountsClient) Public(ctx context.Context, operation, uid, region string) (QueryResult, error) {
+// PublicProfile reads a UID's index through the public query pool.
+func (c AccountsClient) PublicProfile(ctx context.Context, uid, region string) (QueryResult, error) {
 	result := QueryResult{}
-	err := c.call(ctx, "public.execute", map[string]any{"game": c.Game, "uid": uid, "region": region, "operation": operation}, &result)
+	err := c.call(ctx, "public.execute", map[string]any{"game": c.Game, "uid": uid, "region": region}, &result)
 	return result, err
+}
+
+// PublicCharacters reads a UID's index and then its character list through
+// the public query pool, both on one account as miao reads them with one
+// public cookie. A list that could not be read after the index is the error
+// returned with the index.
+func (c AccountsClient) PublicCharacters(ctx context.Context, uid, region string) (map[string]any, QueryResult, error) {
+	var result struct {
+		QueryResult
+		Index   map[string]any `json:"index"`
+		Failure *struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"failure"`
+	}
+	if err := c.call(ctx, "public.execute", map[string]any{"game": c.Game, "uid": uid, "region": region, "operation": "characters"}, &result); err != nil {
+		return nil, QueryResult{}, err
+	}
+	if result.Failure != nil {
+		return result.Index, QueryResult{}, &rayleabot.ActionError{Code: result.Failure.Code, Message: result.Failure.Message}
+	}
+	return result.Index, result.QueryResult, nil
 }
 func (c AccountsClient) Execute(ctx context.Context, choice Selection, operation string, input map[string]any) (QueryResult, error) {
 	result := QueryResult{}
