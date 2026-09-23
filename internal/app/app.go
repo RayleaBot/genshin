@@ -395,6 +395,9 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if len(args) == 0 {
 			return event.SendText("使用“" + prefix + "材料 名称”查询固定参考资料。")
 		}
+		if answered, err := a.materialCommand(ctx, event, args); answered {
+			return err
+		}
 		action := "materials.query"
 		input := map[string]any{"query": strings.Join(args, " ")}
 		result, queryErr := a.resourceQuery(action, input)
