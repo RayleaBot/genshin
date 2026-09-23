@@ -151,7 +151,8 @@ func miaoPulls(context app.ImageContext, resources *app.ImageResources, archive 
 			item = &miaoItem{name: "未知", abbr: "未知", weapon: weapon}
 			if entry, ok := context.Catalog.Resolve(record.Name, kind, nil); ok && entry.Name == record.Name {
 				item.id, item.name, item.abbr, item.star = entry.ID, entry.Name, entry.Name, entry.Rarity
-				if entry.Abbr != "" {
+				// miao's Weapon.abbr keeps a name of up to four characters.
+				if entry.Abbr != "" && (!weapon || utf8.RuneCountInString(entry.Name) > 4) {
 					item.abbr = entry.Abbr
 				}
 				path := "resources/meta-gs/weapon/" + types[entry.ID] + "/" + entry.Name + "/icon.webp"
