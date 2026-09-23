@@ -125,16 +125,15 @@ func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventCo
 			return event.SendText("面板数据文件不存在，请先更新面板数据")
 		}
 		raw, _ := json.Marshal(map[string]any{"uid": owner.UID, "avatars": avatars})
-		out, err := a.startCloudJob(ctx, event, CloudInput{Mode: "exchange_upload", UID: owner.UID, Consent: true, Authenticated: true, exchangeData: string(raw)})
-		if job, _ := out["job"].(CloudJob); err == nil && job.State == "completed" {
+		job, err := a.arkExchange(ctx, event, CloudInput{Mode: "exchange_upload", UID: owner.UID, Consent: true, exchangeData: string(raw)})
+		if err == nil && job.State == "completed" {
 			return event.SendText("导出成功，请在另一个安装此插件的Bot上输入 " + a.Game.Prefix + "导入面板数据" + owner.UID + " ，有效期十分钟~")
 		} else if err == nil {
 			return event.SendText(cmpOr(job.Message, "ark 云服务暂未返回结果，请稍后重试。"))
 		}
 		return event.SendText(friendlyError(err))
 	}
-	out, err := a.startCloudJob(ctx, event, CloudInput{Mode: "exchange_download", UID: owner.UID, Consent: true, Authenticated: true})
-	job, _ := out["job"].(CloudJob)
+	job, err := a.arkExchange(ctx, event, CloudInput{Mode: "exchange_download", UID: owner.UID, Consent: true})
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
@@ -223,6 +222,18 @@ func (a *App) cloudAvatarPanel(ctx context.Context, raw json.RawMessage) (Charac
 		talents[key] = level + talentBonus(record, key, panel.Rank)
 	}
 	return a.computedPanel(ctx, record, panel, weapon, talents)
+}
+
+// arkExchange runs a panel exchange as ark-plugin's ArkApi does: with the ark
+// token when the accounts plugin keeps one, else anonymously, and waits for
+// its answer.
+func (a *App) arkExchange(ctx context.Context, event *rayleabot.EventContext, q CloudInput) (CloudJob, error) {
+	q.Authenticated = a.arkConfigured(ctx, event)
+	out, err := a.startCloudJob(ctx, event, q)
+	if err != nil {
+		return CloudJob{}, err
+	}
+	return a.Cloud.Wait(ctx, out["job"].(CloudJob)), nil
 }
 
 func cmpOr(value, fallback string) string {
