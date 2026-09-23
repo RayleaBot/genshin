@@ -34,6 +34,12 @@ func TestCombatFollowsYunzai(t *testing.T) {
 	if buffs := first["buffs"].([]any); len(buffs) != 0 {
 		t.Errorf("buffs = %v", buffs)
 	}
+	// 上期 reads the second period.
+	last := map[string]any{"stat": map[string]any{"difficulty_id": json.Number("2"), "max_round_id": json.Number("8")}, "detail": map[string]any{"rounds_data": []any{round("1", false, "1")}}}
+	data["data"] = append(data["data"].([]any), last)
+	if image, ok := Combat(app.ImageContext{Word: "上期剧诗"}, app.QueryResult{Data: data}); !ok || image.Data["max_round"] != "8" {
+		t.Errorf("last period = %v %v", ok, image.Data["max_round"])
+	}
 	data["has_detail_data"] = "false"
 	if _, ok := Combat(app.ImageContext{}, app.QueryResult{Data: data}); ok {
 		t.Error("a season without detail should answer in text like upstream")

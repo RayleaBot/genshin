@@ -44,8 +44,8 @@ func officialImage(context app.ImageContext, add func(rayleabot.RenderImageResou
 	return id
 }
 
-// Combat draws Imaginarium Theater the way Yunzai's html/abyss/combat does:
-// the traveler card, the difficulty and best act with star medals, flowers,
+// Combat draws Imaginarium Theater, this period's or with 上期 the last one,
+// the way Yunzai's html/abyss/combat does: the traveler card, the difficulty and best act with star medals, flowers,
 // audience support and support lends, then every act with its cast, buffs
 // and chosen cards.
 func Combat(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
@@ -53,7 +53,15 @@ func Combat(context app.ImageContext, result app.QueryResult) (app.Image, bool) 
 	if len(list) == 0 {
 		return app.Image{}, false
 	}
-	first, _ := list[0].(map[string]any)
+	// 上期 is the second period of the response, as miao reads it.
+	index := 0
+	if strings.Contains(context.Word, "上期") {
+		index = 1
+	}
+	if index >= len(list) {
+		return app.Image{}, false
+	}
+	first, _ := list[index].(map[string]any)
 	detail, _ := first["detail"].(map[string]any)
 	stat, _ := first["stat"].(map[string]any)
 	if app.Text(result.Data["has_detail_data"]) == "false" || detail == nil || stat == nil {
