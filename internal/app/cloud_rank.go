@@ -164,7 +164,7 @@ func advancedCloudFilters(input CloudInput) ([]any, error) {
 		return nil, nil
 	}
 	if !input.Authenticated || input.proxy == nil {
-		return nil, gameError("cloud_credential_missing", "高级筛选需要启用授权查询，并在账号插件管理页配置 ark 令牌。")
+		return nil, gameError("cloud_credential_missing", "高级筛选需要启用授权查询，并由机器人管理员配置 ark 令牌。")
 	}
 	if len(input.AdvancedFilters) > 16 {
 		return nil, gameError("input_invalid", "高级筛选最多 16 项。")

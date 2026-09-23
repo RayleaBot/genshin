@@ -21,7 +21,7 @@ type MaterialInfo struct {
 }
 
 func resourceView(game Game, action string, result map[string]any) View {
-	v := View{Title: game.Name + "固定资料", Rows: []Row{}, Note: "来源：" + asText(result["version"]) + "；固定快照，不代表已在线校准的当前活动。完整条目可在材料与卡池页面查询。"}
+	v := View{Title: game.Name + "固定资料", Rows: []Row{}, Note: "来源：" + asText(result["version"]) + "；固定快照，不代表已在线校准的当前活动。"}
 	if action == "materials.query" {
 		items := result["materials"].([]MaterialInfo)
 		v.Title = game.Name + "材料查询"

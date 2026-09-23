@@ -122,7 +122,7 @@ func cloudRequest(input CloudInput) (string, map[string]any, error) {
 		return "", nil, gameError("cloud_consent_required", "请确认将查询参数发送给 ark 云服务。")
 	}
 	if input.Authenticated && input.proxy == nil {
-		return "", nil, gameError("cloud_credential_missing", "授权查询需要在账号插件管理页配置 ark 令牌。")
+		return "", nil, gameError("cloud_credential_missing", "授权查询需要机器人管理员在账号插件中配置 ark 令牌。")
 	}
 	body := map[string]any{"version": "0.1.0"}
 	if input.Mode == "private_panel" {

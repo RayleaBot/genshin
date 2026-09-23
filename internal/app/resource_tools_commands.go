@@ -15,7 +15,7 @@ func (a *App) resourceToolsCommand(ctx context.Context, event *rayleabot.EventCo
 		return a.mapCommand(ctx, event)
 	case "enemy":
 		if len(args) < 2 || len(args) > 3 {
-			return event.SendText("使用“" + a.Game.Prefix + "原魔 名称 生命值/攻击力 [等级]”。修饰因子在攻略与工具页选择。")
+			return event.SendText("使用“" + a.Game.Prefix + "原魔 名称 生命值/攻击力 [等级]”。")
 		}
 		stat := map[string]string{"生命值": "HP", "攻击力": "ATK", "HP": "HP", "ATK": "ATK"}[args[1]]
 		level := 90
@@ -33,7 +33,7 @@ func (a *App) resourceToolsCommand(ctx context.Context, event *rayleabot.EventCo
 		return a.sendView(ctx, event, out["view"].(View))
 	case "blueprint":
 		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + a.Game.Prefix + "摹本 分享码 [UID]”。选择制作数量及完整材料计算见攻略与工具页。")
+			return event.SendText("使用“" + a.Game.Prefix + "摹本 分享码 [UID]”。")
 		}
 		uid := ""
 		if len(args) == 2 {

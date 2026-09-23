@@ -472,7 +472,7 @@ func (a *App) simulationAction(event *rayleabot.EventContext, action string, inp
 		return nil, err
 	}
 	if action == "simulation.configure" && event.Event.EventType != "management.action" {
-		return nil, gameError("source_invalid", "每日额度仅在管理页设置。")
+		return nil, gameError("source_invalid", "每日额度由机器人管理员设置。")
 	}
 	return a.Simulation.Action(scope, action, input, time.Now())
 }
