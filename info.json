@@ -41,6 +41,10 @@
       "stygian_rank": true,
       "stygian_data_from": 2,
       "new_user_panel": false
+    },
+    "xiaoyao": {
+      "is_note_task": false,
+      "note_set_auth": 2
     }
   },
   "commands": [
@@ -362,31 +366,25 @@
       }
     },
     {
-      "id": "reminder",
-      "name": "开启体力推送",
-      "description": "树脂达到设定比例时提醒",
-      "usage": "#开启体力推送 [百分比] [UID]",
+      "id": "note-push",
+      "name": "体力推送",
+      "description": "按逍遥插件在本群开启或关闭本人的体力推送：树脂达到本群阈值时 @ 本人并附体力图，十二小时一次",
+      "usage": "#开启体力推送 / #关闭体力推送",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "开启体力推送",
-          "体力提醒"
-        ]
+        "type": "pattern",
+        "pattern": "^(?P<switch>开启|关闭)体力推送$"
       }
     },
     {
-      "id": "reminder-stop",
-      "name": "关闭体力推送",
-      "description": "关闭体力提醒",
-      "usage": "#关闭体力推送 [UID]",
+      "id": "note-push-group",
+      "name": "群体力推送设置",
+      "description": "按逍遥插件开启或关闭本群的体力推送，或设置推送阈值（20–160，默认 120）",
+      "usage": "#体力设置群推送开启 / #体力设置群推送关闭 / #体力设置群阈值120",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "关闭体力推送",
-          "关闭提醒"
-        ]
+        "type": "pattern",
+        "pattern": "^体力设置群(?:推送(?P<switch>开启|关闭)|(?:阈值|上限)(?P<resin>[0-9]*))$"
       }
     },
     {
@@ -2043,8 +2041,8 @@
       "id": "remind",
       "title": "体力与挑战提醒",
       "commands": [
-        "reminder",
-        "reminder-stop",
+        "note-push",
+        "note-push-group",
         "challenge-remind",
         "challenge-stop",
         "challenge-status"

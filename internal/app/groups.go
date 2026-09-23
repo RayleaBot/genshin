@@ -52,6 +52,8 @@ type GroupData struct {
 	RankSinceMS int64 `json:"rank_since_ms,omitempty"`
 	// Stygian are the UIDs entered in ark's 幽境危战 ranking, by season.
 	Stygian map[string][]StygianEntry `json:"stygian,omitempty"`
+	// NotePush is xiaoyao's 体力推送 setting of the group.
+	NotePush NotePush `json:"note_push,omitempty"`
 }
 
 // GroupStore keeps each group's data in its own file. The settings every

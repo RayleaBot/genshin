@@ -119,6 +119,8 @@ type Settings struct {
 	// Ark holds the ark-plugin settings (config/system/cfg_system.js) that
 	// apply here.
 	Ark ArkSettings `json:"ark"`
+	// Xiaoyao holds the xiaoyao-cvs-plugin settings that apply here.
+	Xiaoyao XiaoyaoSettings `json:"xiaoyao"`
 }
 
 // ArkSettings are ark-plugin's settings under its names, with its defaults.
@@ -281,7 +283,7 @@ func New(assets Assets, directory string) (*App, error) {
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},
-		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, ProfileChangeOCR: true, ExportPanelData: 1, ImportPanelData: 2, ExportPanelRequire: 1, GroupRank: true, LocalGroupRank: true, StygianRank: true, StygianDataFrom: 2}}
+		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, ProfileChangeOCR: true, ExportPanelData: 1, ImportPanelData: 2, ExportPanelRequire: 1, GroupRank: true, LocalGroupRank: true, StygianRank: true, StygianDataFrom: 2}, Xiaoyao: XiaoyaoSettings{NoteSetAuth: 2}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }
@@ -328,6 +330,9 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if strings.HasPrefix(asText(event.Event.Payload["task_id"]), payLogTask) {
 			return a.runPayLog(ctx, event)
 		}
+		if event.Event.Payload["kind"] == notePushKind {
+			return a.runNotePush(ctx, event)
+		}
 		return a.runReminder(ctx, event)
 	}
 	if event.Event.EventType == "management.action" {
@@ -373,7 +378,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "cloud-game-stop" && command != "reminder-stop" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "cloud-game-stop" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -570,8 +575,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			break
 		}
 		view = computed["view"].(View)
-	case "reminder", "reminder-stop":
-		return a.chatReminder(ctx, event, command, args)
+	case "note-push", "note-push-group":
+		return a.notePushCommand(ctx, event, command, args)
 	case "enemy-level":
 		return a.enemyLevelCommand(event, args)
 	case "stat-cons", "stat-usage", "abyss-team":
