@@ -27,7 +27,12 @@ aliases = read_yaml("OtherName.yaml")
 curves = [{key: float(value) for key, value in row.items()} for row in read_yaml("Common.yaml")]
 # OtherName keeps the file's order, which decides between names of equal
 # length, and the keys that name no enemy, which the chat still matches.
-out = {"version": "Atlas-" + version, "enemies": [], "names": [{"name": name, "aliases": names} for name, names in aliases.items()], "curves": curves, "modifiers": []}
+# Four keys miss their Enemy.yaml rows by a slip (察 for 查, a dropped
+# hyphen, reversed words, 型 once for twice), so upstream finds no enemy for
+# them; here they name the rows. Each key is also among its own aliases, so
+# a message still matches it.
+enemy_names = {"遗迹侦察者": "遗迹侦查者", "帽子水母大": "帽子水母-大", "狂暴公义": "公义狂暴", "始基动能型场力发生装置": "始基动能型型场力发生装置"}
+out = {"version": "Atlas-" + version, "enemies": [], "names": [{"name": enemy_names.get(name, name), "aliases": names} for name, names in aliases.items()], "curves": curves, "modifiers": []}
 for group, rows in enemies.items():
     for row in rows:
         out["enemies"].append({
