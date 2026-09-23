@@ -1209,6 +1209,17 @@
       }
     },
     {
+      "id": "photo-upload",
+      "name": "上传照片",
+      "description": "把消息或所引用消息中的图片加入角色照片，供照片与角色卡片使用",
+      "usage": "#上传胡桃照片",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:喵喵)?(?:上传|添加)(?P<character>.+)(?:照片|写真|图片|图像)$"
+      }
+    },
+    {
       "id": "photo",
       "name": "照片",
       "description": "随机发送该角色的照片，取自已下载的 miao 角色图与导入的图库",
@@ -1647,6 +1658,39 @@
       }
     },
     {
+      "id": "panel-image-upload",
+      "name": "上传面板图",
+      "description": "把消息或所引用消息中的图片加入角色面板图，面板随机使用",
+      "usage": "#上传胡桃面板图",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:上传|添加)(?P<character>.+)面板图$"
+      }
+    },
+    {
+      "id": "panel-image-remove",
+      "name": "删除面板图",
+      "description": "按面板图列表的序号删除角色面板图",
+      "usage": "#删除胡桃面板图1",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:移除|清除|删除)(?P<character>.+)面板图(?P<index>[0-9]+)$"
+      }
+    },
+    {
+      "id": "panel-image-list",
+      "name": "面板图列表",
+      "description": "查看角色的面板图及序号",
+      "usage": "#胡桃面板图列表",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+)面板图列表$"
+      }
+    },
+    {
       "id": "character",
       "name": "面板",
       "description": "查看角色面板",
@@ -1717,6 +1761,9 @@
         "panel-list",
         "panel-delete",
         "original-image",
+        "panel-image-upload",
+        "panel-image-remove",
+        "panel-image-list",
         "panel-help"
       ]
     },
@@ -1827,6 +1874,7 @@
       "title": "图片与互动",
       "commands": [
         "photo",
+        "photo-upload",
         "image-library",
         "interaction",
         "poke"

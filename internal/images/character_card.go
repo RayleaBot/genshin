@@ -69,7 +69,7 @@ func CharacterCard(context app.ImageContext, card app.CharacterCardImage) (app.I
 		data["weapon"] = item
 	}
 	if record.Name != "" {
-		characterPath, iconPath := characterFolders(panel.ID, record.Name, record.Element)
+		characterPath, iconPath := app.CharacterFolders(panel.ID, record.Name, record.Element)
 		talentCons, _ := record.Data["talentCons"].(map[string]any)
 		icons := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp"}
 		for _, key := range []string{"e", "q"} {

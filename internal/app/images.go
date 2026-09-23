@@ -57,6 +57,8 @@ type PanelImage struct {
 	Damage *BuildResult
 	// Change is the 面板换装 word of a changed panel, which is not real data.
 	Change string
+	// Splash is the picture drawn: an uploaded 面板图 or miao's splash.
+	Splash rayleabot.RenderImageResource
 }
 
 // PanelImageBuilder draws a single-character panel with the plugin's

@@ -58,7 +58,7 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		if entry.Avatar != "" {
 			row["avatar"] = resources.Remote("avatar-"+strconv.Itoa(index), entry.Avatar)
 		}
-		path, consPath := characterFolders(entry.Panel.ID, record.Name, record.Element)
+		path, consPath := app.CharacterFolders(entry.Panel.ID, record.Name, record.Element)
 		icons := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp", "e": path + "icons/talent-e.webp", "q": path + "icons/talent-q.webp"}
 		talentCons, _ := record.Data["talentCons"].(map[string]any)
 		for _, key := range []string{"e", "q"} {

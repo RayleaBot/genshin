@@ -94,6 +94,6 @@ func poolPicture(entry app.Entry, weaponType string) string {
 	if entry.Kind == "weapon" {
 		return "resources/meta-gs/weapon/" + weaponType + "/" + entry.Name + "/icon.webp"
 	}
-	portraits, _ := characterFolders(entry.ID, entry.Name, "")
+	portraits, _ := app.CharacterFolders(entry.ID, entry.Name, "")
 	return portraits + "imgs/face.webp"
 }

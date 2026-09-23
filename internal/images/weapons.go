@@ -86,7 +86,7 @@ func Weapons(context app.ImageContext, result app.QueryResult) (app.Image, bool)
 			firstSort += affix * 5
 		}
 		order := rarity*1000000 + affix*100000 + level*1000 + roleRarity*100 + roleLevel
-		folder, _ := characterFolders(id, name, "")
+		folder, _ := app.CharacterFolders(id, name, "")
 		shown := entry.Name
 		if utf8.RuneCountInString(shown) > 4 && entry.Abbr != "" {
 			shown = entry.Abbr

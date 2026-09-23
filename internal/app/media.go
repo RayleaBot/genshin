@@ -228,6 +228,38 @@ func validateMediaEntry(entry MediaEntry, catalog Catalog) error {
 	}
 	return nil
 }
+
+// add stores an image with its entry under a new reference, as 上传X照片
+// does.
+func (s *MediaStore) add(entry MediaEntry, data []byte) (MediaEntry, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry.Revision, entry.CreatedMS = 1, time.Now().UnixMilli()
+	return s.store(rand.Text(), entry, data)
+}
+
+// store checks an image against the library's limits and writes it with its
+// entry; the caller holds mu.
+func (s *MediaStore) store(ref string, entry MediaEntry, data []byte) (MediaEntry, error) {
+	mime, w, h, err := mediaInfo(data)
+	if err != nil {
+		return entry, err
+	}
+	entries, err := s.entries()
+	if err != nil {
+		return entry, err
+	}
+	total := len(data)
+	for _, e := range entries {
+		total += e.Bytes
+	}
+	if len(entries) >= 2000 || total > 512*1024*1024 {
+		return entry, gameError("media_limit", "图库超过2000项或512 MiB上限，请清理后再上传。")
+	}
+	entry.Ref, entry.MIME, entry.Width, entry.Height, entry.Bytes = ref, mime, w, h, len(data)
+	return entry, localdata.Write(s.file(ref), mediaFile{entry, data})
+}
+
 func (a *App) mediaAction(action string, input map[string]any) (map[string]any, error) {
 	s := a.Media
 	s.mu.Lock()
@@ -307,31 +339,13 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 		if action != "media.upload.finish" || len(v.data) != v.size {
 			return nil, gameError("media_sequence", "图片还未上传完整。")
 		}
-		mime, w, h, err := mediaInfo(v.data)
+		entry, err := s.store(ref, v.entry, v.data)
 		if err != nil {
-			return nil, err
-		}
-		entries, err := s.entries()
-		if err != nil {
-			return nil, err
-		}
-		total := v.size
-		for _, e := range entries {
-			total += e.Bytes
-		}
-		if len(entries) >= 2000 || total > 512*1024*1024 {
-			return nil, gameError("media_limit", "图库超过2000项或512 MiB上限，请清理后再上传。")
-		}
-		v.entry.MIME = mime
-		v.entry.Width = w
-		v.entry.Height = h
-		v.entry.Bytes = v.size
-		if err = localdata.Write(s.file(ref), mediaFile{v.entry, v.data}); err != nil {
 			return nil, err
 		}
 		v.timer.Stop()
 		delete(s.uploads, ref)
-		return map[string]any{"entry": v.entry}, nil
+		return map[string]any{"entry": entry}, nil
 	}
 	if action == "media.list" {
 		var q struct {

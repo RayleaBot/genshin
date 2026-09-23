@@ -400,8 +400,12 @@ func (a *App) fullPanelView(ctx context.Context, event *rayleabot.EventContext, 
 		if a.Game.Calc != nil {
 			image.Record, _ = findReferenceCharacter(a.Game.Calc, panel)
 		}
+		// As miao, 原图 then answers with the picture the panel drew.
+		var ref string
+		image.Splash, ref = a.panelSplash(panel, image.Record.Name)
 		if drawn, ok := a.panel(a.imageContext(ctx), image); ok {
 			view.Image = &drawn
+			_ = a.rememberImage(event, ref)
 		}
 	}
 	return view

@@ -128,6 +128,10 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"幽境危战使用率", "stat-usage", nil},
 			{"深渊配队", "abyss-team", nil},
 			{"202507剧诗练度统计", "theater-training", []string{"202507"}},
+			{"上传胡桃照片", "photo-upload", []string{"胡桃"}},
+			{"上传胡桃面板图", "panel-image-upload", []string{"胡桃"}},
+			{"删除胡桃面板图1", "panel-image-remove", []string{"胡桃", "1"}},
+			{"胡桃面板图列表", "panel-image-list", []string{"胡桃"}},
 			{"雷神", "character-card", nil},
 		},
 	}

@@ -30,7 +30,7 @@ func Statistics(context app.ImageContext, page app.StatisticsPage) (app.Image, b
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
 	portrait := func(entry app.Entry, file string) string {
-		folder, _ := characterFolders(entry.ID, entry.Name, "")
+		folder, _ := app.CharacterFolders(entry.ID, entry.Name, "")
 		return resources.Artwork(file+"-"+entry.ID, "miao-plugin", folder+"imgs/"+file+".webp")
 	}
 	star := func(entry app.Entry) int {

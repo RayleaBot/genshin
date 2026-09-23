@@ -232,3 +232,20 @@ func (a *App) sendArtwork(event *rayleabot.EventContext, file artworkFile) error
 	}
 	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(data)))
 }
+
+// CharacterFolders are the miao folders of a character's pictures, as miao's
+// getImgs picks them: portraits under the character's name, which is 空 or 荧
+// for the Traveler, and the Traveler's card, banner and constellation icons
+// under 旅行者/<element>.
+func CharacterFolders(id, name, elem string) (portraits, icons string) {
+	switch id {
+	case "10000005":
+		name = "空"
+	case "10000007":
+		name = "荧"
+	default:
+		folder := "resources/meta-gs/character/" + name + "/"
+		return folder, folder
+	}
+	return "resources/meta-gs/character/" + name + "/", "resources/meta-gs/character/旅行者/" + elem + "/"
+}

@@ -84,8 +84,13 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	add("common-bg-bg-"+elem, "resources/common/bg/bg-"+elem+".webp")
 	add("common-bg-talent-"+elem, "resources/common/bg/talent-"+elem+".webp")
 
-	characterPath, iconPath := characterFolders(panel.ID, record.Name, elem)
-	add("splash", characterPath+"imgs/splash.webp")
+	characterPath, iconPath := app.CharacterFolders(panel.ID, record.Name, elem)
+	// An uploaded 面板图 the app picked replaces the splash, as miao's.
+	if image.Splash.Path != "" {
+		resources = append(resources, image.Splash)
+	} else {
+		add("splash", characterPath+"imgs/splash.webp")
+	}
 	talentCons, _ := record.Data["talentCons"].(map[string]any)
 	talentIcon := map[string]string{"a": "resources/common/item/atk-" + record.WeaponType + ".webp"}
 	for _, key := range []string{"e", "q"} {

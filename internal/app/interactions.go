@@ -240,6 +240,9 @@ func (a *App) interactionCommand(ctx context.Context, event *rayleabot.EventCont
 		if p.LastImage == "" || time.Now().UnixMilli()-p.LastImageMS > 600000 || p.LastImageTargetType != event.Event.Target.Type || p.LastImageTargetID != event.Event.Target.ID {
 			return event.SendText("最近十分钟没有由你查询的本地图片。")
 		}
+		if ref, ok := strings.CutPrefix(p.LastImage, "panel:"); ok {
+			return a.sendPanelPicture(event, ref)
+		}
 		if ref, ok := strings.CutPrefix(p.LastImage, "artwork:"); ok {
 			source, file, _ := strings.Cut(ref, "/")
 			return a.sendArtwork(event, artworkFile{source, file})
