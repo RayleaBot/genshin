@@ -234,6 +234,12 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"圣牌", "character-card", nil},
 			{"圣牌交换", "character-card", nil},
 			{"雷神", "character-card", nil},
+			// A UID glued to the word, as upstream's rules accept it, is the
+			// same leading argument as a spaced one.
+			{"声望", "profile", nil},
+			{"探索100000001", "profile", []string{"100000001"}},
+			{"探索度100000001", "profile", []string{"100000001"}},
+			{"尘歌壶100000001", "profile", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {
