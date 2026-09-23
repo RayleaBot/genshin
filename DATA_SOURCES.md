@@ -40,6 +40,8 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 `templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，换装面板的伤害变化同其伤害表的写法（上游的内联样式改为同值的类）；渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）。
 
+七圣召唤卡牌图鉴按 [xiaoyao-cvs-plugin 固定提交](https://github.com/ctrlcvs/xiaoyao-cvs-plugin/tree/e7ab3e8b276a11680beb47d0c5517f6e0a4c2022) 的 `apps/xiaoyao_image.js` 移植，名称查找使用其 `resources/Atlas_alias/` 的 Basic_Event（453 张卡牌，保留分类）、wuqi_tujian 与 yuanmo_tujian，由 `scripts/import-xiaoyao-aliases.py` 转换为 `internal/assets/data/xiaoyao-aliases.json`（GPL-3.0，见 `LICENSES/xiaoyao-cvs-plugin-GPL-3.0.txt`）；卡牌图与视频取自管理员下载的逍遥图鉴库，引用其他图片时回复的 `resources/common/face/what.jpg` 取自 miao-plugin，随插件包分发。
+
 `templates/atlas-index/` 按 Atlas 的 resource/massage/text.html 与 text.css 改写（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`），同上游的 1.5 倍缩放，数字字体取自 Yunzai 的 tttgbnumber；上游的 Source Han Sans CN Bold 字体超过宿主单个渲染资源 16 MiB 的上限，不随附，其余文字使用渲染器的字体。
 
 面板帮助同 miao-plugin 的 character/profile-detail 帮助，直接发送该仓库的 `resources/character/imgs/help.jpg`（MIT），取自 miao 素材来源。

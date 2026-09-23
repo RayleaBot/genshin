@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -285,6 +286,25 @@ func (s *Store) File(sourceID, name string) (string, bool) {
 		return "", false
 	}
 	return "assets/" + sourceID + "/" + name, true
+}
+
+// URL is a file's file:// address, downloaded or shipped, for replies that
+// hand the chat platform the file itself, as a video too large to send
+// inline. A drive letter stays in the path, as the host writes its images.
+func (s *Store) URL(sourceID, name string) (string, bool) {
+	file, ok := s.locate(sourceID, name)
+	if !ok {
+		return "", false
+	}
+	absolute, err := filepath.Abs(file)
+	if err != nil {
+		return "", false
+	}
+	absolute = filepath.ToSlash(absolute)
+	if !strings.HasPrefix(absolute, "/") {
+		absolute = "/" + absolute
+	}
+	return (&url.URL{Scheme: "file", Path: absolute}).String(), true
 }
 
 // List names the files directly inside a directory of a source, downloaded or

@@ -25,7 +25,7 @@ func TestPicturesReadDownloadedLibraries(t *testing.T) {
 	a := App{Artwork: &artwork.Store{Root: root}, Game: Game{Prefix: "#", Pictures: Pictures{
 		Photos:  []PictureSource{{Source: "miao-plugin", Paths: []string{"resources/character-img/{name}"}}},
 		Atlas:   []AtlasLibrary{{Source: "genshin-atlas", Index: "path.json"}},
-		Xiaoyao: PictureSource{Source: "xiaoyao-plus", Paths: []string{"wuqi_tujian/{name}.png"}},
+		Xiaoyao: XiaoyaoPictures{Source: "xiaoyao-plus", Paths: []string{"wuqi_tujian/{name}.png"}},
 	}}}
 	if photos := a.characterPhotos(Entry{Name: "七七"}); len(photos) != 0 {
 		t.Fatal("photos before a download", photos)

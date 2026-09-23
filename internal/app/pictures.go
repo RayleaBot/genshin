@@ -24,8 +24,8 @@ type Pictures struct {
 	Photos []PictureSource `json:"photos"`
 	// Atlas are the Atlas libraries, searched in order.
 	Atlas []AtlasLibrary `json:"atlas"`
-	// Xiaoyao is xiaoyao's 图鉴 library, file paths with {name}.
-	Xiaoyao PictureSource `json:"xiaoyao"`
+	// Xiaoyao is xiaoyao's 图鉴 library.
+	Xiaoyao XiaoyaoPictures `json:"xiaoyao"`
 	// Static are commands answered with a fixed upstream image, by command.
 	Static map[string]StaticPicture `json:"static"`
 	// AtlasHelp is the picture Atlas's atlasHelp answers with.
@@ -103,8 +103,10 @@ func (a *App) xiaoyaoPicture(names []string) (artworkFile, bool) {
 
 // pictureMessage answers the messages the picture plugins take before the
 // ones this plugin follows otherwise: on Miao-Yunzai, Atlas's rule sees every
-// message at priority 10, ahead of miao's and Yunzai's rules. handled is
-// false for the messages left to the plugin's own handlers.
+// message at priority 10, ahead of miao's and Yunzai's rules, and xiaoyao's
+// come at 50, beside miao's, whose words they do not share, and ahead of
+// Yunzai's. handled is false for the messages left to the plugin's own
+// handlers.
 func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
 	if event.Event.Target.Type == "group" {
 		if config, err := a.Groups.Config(groupScope(event)); err == nil && config.Enabled != nil && !*config.Enabled {
@@ -115,8 +117,10 @@ func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext)
 	// name is looked up.
 	aliases := sync.OnceValue(func() map[string]string { return a.aliasMap(event) })
 	// miao's accept checks run before every rule and hand the message on as
-	// their own command word, which no picture plugin answers.
-	msg := a.miaoAccept(yunzaiMessage(event), aliases)
+	// their own command word, which no picture plugin answers; xiaoyao reads
+	// both forms.
+	original := yunzaiMessage(event)
+	msg := a.miaoAccept(original, aliases)
 	// Atlas's atlasHelp comes at priority 9 and passes the message on.
 	if atlasHelpWords.MatchString(msg) {
 		if _, err := post(ctx, event, a.staticReply(a.Game.Pictures.AtlasHelp)); err != nil {
@@ -137,6 +141,21 @@ func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext)
 	}
 	if ended {
 		return true, event.Result(map[string]any{"handled": true})
+	}
+	// xiaoyao's rules come at priority 50: AtlasAlias, then getBasicVoide.
+	if reply, ok := a.xiaoyaoCard(original, msg, aliases); ok {
+		if err := a.sendXiaoyaoCard(ctx, event, reply); err != nil {
+			return true, err
+		}
+		return true, event.Result(map[string]any{"handled": true})
+	}
+	if xiaoyaoVideoWords.MatchString(original) {
+		if sent, err := a.xiaoyaoQuote(ctx, event); sent {
+			if err != nil {
+				return true, err
+			}
+			return true, event.Result(map[string]any{"handled": true})
+		}
 	}
 	return false, nil
 }

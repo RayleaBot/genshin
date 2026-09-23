@@ -59,6 +59,8 @@ type Assets struct {
 	Simulation  []byte
 	CloudPanels []byte
 	Enemies     []byte
+	// Xiaoyao holds the alias lists of xiaoyao's 七圣召唤 card 图鉴.
+	Xiaoyao []byte
 	// Images holds the plugin's own image builders by operation name; Panel
 	// draws single-character panels.
 	Images map[string]ImageBuilder

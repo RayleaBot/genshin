@@ -216,7 +216,8 @@
         ".jpeg",
         ".gif",
         ".json",
-        ".yaml"
+        ".yaml",
+        ".mp4"
       ]
     },
     {
@@ -317,7 +318,13 @@
         "yuanmo_tujian/{name}.png",
         "mijin_tujian/{name}.png",
         "daoju_tujian/{name}.png"
-      ]
+      ],
+      "role": "basicInfo_tujian/role/{name}/{name}.png",
+      "event": "basicInfo_tujian/event/{name}.png",
+      "wrong": {
+        "source": "miao-plugin",
+        "path": "resources/common/face/what.jpg"
+      }
     },
     "static": {
       "panel-help": {

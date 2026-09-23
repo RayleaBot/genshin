@@ -12,6 +12,7 @@ type GameData struct {
 	Simulation *SimulationDeck
 	CloudGear  *cloudGearData
 	Enemies    *EnemyTable
+	Xiaoyao    *XiaoyaoAliases
 }
 
 func parseGameData(assets Assets) (*GameData, error) {
@@ -54,6 +55,13 @@ func parseGameData(assets Assets) (*GameData, error) {
 			table.Enemies[index].Aliases = append([]string{}, aliases[enemy.Name]...)
 		}
 		data.Enemies = table
+	}
+	if assets.Xiaoyao != nil {
+		lists := &XiaoyaoAliases{}
+		if err := json.Unmarshal(assets.Xiaoyao, lists); err != nil || lists.Version == "" {
+			return nil, fmt.Errorf("xiaoyao alias data is invalid")
+		}
+		data.Xiaoyao = lists
 	}
 	return data, nil
 }

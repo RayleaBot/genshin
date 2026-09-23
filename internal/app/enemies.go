@@ -27,18 +27,12 @@ type EnemyModifier struct {
 	Value any      `json:"value"`
 }
 
-// EnemyName is an entry of Atlas's OtherName.yaml: a name and its aliases.
-type EnemyName struct {
-	Name    string   `json:"name"`
-	Aliases []string `json:"aliases"`
-}
-
 // EnemyTable is the Genshin monster data from the pinned Atlas snapshot.
 // Names keep OtherName.yaml's order, including the few names no enemy has.
 type EnemyTable struct {
 	Version   string               `json:"version"`
 	Enemies   []EnemyInfo          `json:"enemies"`
-	Names     []EnemyName          `json:"names"`
+	Names     []Aliased            `json:"names"`
 	Curves    []map[string]float64 `json:"curves"`
 	Modifiers []EnemyModifier      `json:"modifiers"`
 }

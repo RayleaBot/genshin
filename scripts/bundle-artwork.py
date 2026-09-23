@@ -29,6 +29,8 @@ BUNDLES = {
         "resources/common/bg/bg-*.webp",
         "resources/common/bg/talent-*.webp",
         "resources/common/item/*",
+        # xiaoyao answers a quote of a picture without a video with it.
+        "resources/common/face/what.jpg",
         "resources/character/imgs/*",
         "resources/wiki/imgs/*",
         "resources/help/icon.png",
