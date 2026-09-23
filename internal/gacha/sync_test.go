@@ -14,7 +14,7 @@ func testSync(t *testing.T) (*Store, *Syncs, SyncInfo) {
 	t.Helper()
 	store := &Store{Directory: t.TempDir(), Game: "genshin"}
 	jobs := &Syncs{}
-	info, err := jobs.Start(store, SyncChoice{"account", "role"}, "100000001", "cn_gf01", false)
+	info, err := jobs.Start(store, SyncChoice{AccountRef: "account", RoleRef: "role"}, "100000001", "cn_gf01", false)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -227,7 +227,19 @@
         "type": "exact",
         "names": [
           "记录帮助",
-          "抽卡帮助",
+          "抽卡帮助"
+        ]
+      }
+    },
+    {
+      "id": "gacha-help-port",
+      "name": "安卓帮助",
+      "description": "各平台获取抽卡链接的方法",
+      "usage": "#安卓帮助 / #苹果帮助 / #电脑帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
           "安卓帮助",
           "苹果帮助",
           "电脑帮助",
@@ -1665,7 +1677,8 @@
         "gacha-progress",
         "gacha-stop",
         "gacha-versions",
-        "gacha-help"
+        "gacha-help",
+        "gacha-help-port"
       ]
     },
     {

@@ -100,7 +100,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"角色统计", "gacha-versions", nil},
 			{"绑定uid+100000001", "select", []string{"100000001"}},
 			{"喵喵更新图像", "artwork", nil},
-			{"安卓帮助", "gacha-help", nil},
+			{"安卓帮助", "gacha-help-port", nil},
 			{"卡池帮助", "pool-help", nil},
 			{"面板帮助", "panel-help", nil},
 			{"更换面板帮助", "panel-help", nil},

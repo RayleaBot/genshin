@@ -32,6 +32,19 @@ func (c AccountsClient) ChangeUID(ctx context.Context, action, uid string) error
 	return c.call(ctx, "uids."+action, map[string]any{"game": c.Game, "uid": uid}, nil)
 }
 
+// useUID makes a UID the current one: an account's UID also becomes its
+// default role, any other UID is bound without an account.
+func useUID(ctx context.Context, client AccountsClient, listed Accounts, game, uid string) error {
+	choice, _, err := Choose(listed, game, uid)
+	if err != nil {
+		return client.ChangeUID(ctx, "bind", uid)
+	}
+	if err := client.Select(ctx, choice); err != nil {
+		return err
+	}
+	return client.ChangeUID(ctx, "use", uid)
+}
+
 // uidList numbers the account roles first, then the bound UIDs, as upstream
 // lists CK UIDs before bound ones.
 func (a *App) uidList(listed Accounts) []listedUID {
@@ -82,17 +95,7 @@ func (a *App) uidCommand(ctx context.Context, event *rayleabot.EventContext, com
 		if len(args) != 1 {
 			return event.SendText("请发送“" + prefix + "绑定uid”加上游戏 UID，例如“" + prefix + "绑定uid100000001”。")
 		}
-		uid := args[0]
-		if choice, _, err := Choose(listed, a.Game.ID, uid); err == nil {
-			// An account's UID also becomes its default role.
-			err = client.Select(ctx, choice)
-			if err == nil {
-				err = client.ChangeUID(ctx, "use", uid)
-			}
-			if err != nil {
-				return event.SendText(friendlyError(err))
-			}
-		} else if err := client.ChangeUID(ctx, "bind", uid); err != nil {
+		if err := useUID(ctx, client, listed, a.Game.ID, args[0]); err != nil {
 			return event.SendText(friendlyError(err))
 		}
 	case "accounts":
