@@ -713,10 +713,15 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 				image.Nickname, image.Face = saved.Nickname, saved.Face
 			}
 			drawn, ok := a.gacha(a.imageContext(ctx), image)
-			if ok {
+			switch {
+			case ok:
 				view.Image = &drawn
-			} else if miao {
+			case miao:
 				return event.SendText(missing)
+			case command == "gacha":
+				// Yunzai answers 全部记录 without any pool's records as it
+				// answers a UID without records.
+				err = a.noGachaRecords()
 			}
 		}
 	default:

@@ -441,9 +441,14 @@ func (a *App) chatArchive(ctx context.Context, event *rayleabot.EventContext, ui
 	}
 	archive, err := a.Gacha.Read(role.UID, role.Region)
 	if err != nil {
-		return gacha.Archive{}, role, gameError("archive_missing", "暂无抽卡记录\n"+a.Game.Prefix+"记录帮助，查看配置说明")
+		return gacha.Archive{}, role, a.noGachaRecords()
 	}
 	return archive, role, nil
+}
+
+// noGachaRecords is Yunzai's reply for a UID without wish records.
+func (a *App) noGachaRecords() error {
+	return gameError("archive_missing", "暂无抽卡记录\n"+a.Game.Prefix+"记录帮助，查看配置说明")
 }
 
 func (a *App) archiveOrEmpty(uid, region string) gacha.Archive {
