@@ -789,7 +789,8 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 	uid := ""
 	switch operation.Input {
 	case "period":
-		if len(args) > 0 {
+		// Without a period, as in "深渊12层100000001", the UID comes first.
+		if len(args) > 0 && !uidPattern.MatchString(args[0]) {
 			// Upstream names the period in words, as in "上期深渊".
 			if word, ok := map[string]string{"本期": "1", "上期": "2", "往期": "2"}[args[0]]; ok {
 				args = append([]string{word}, args[1:]...)

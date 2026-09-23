@@ -263,6 +263,23 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"胡桃武器100000001", "build", []string{"胡桃", "100000001"}},
 			{"五星武器100000001", "weapons", []string{"100000001"}},
 			{"角色面板100000001", "panel-list", []string{"100000001"}},
+			// miao's abyssSummary takes a period only before the word;
+			// Yunzai's role.js takes one before or after it.
+			{"深渊100000001", "abyss-summary", []string{"100000001"}},
+			{"本期深渊100000001", "abyss-summary", []string{"100000001"}},
+			{"深渊100000001数据", "abyss-summary", []string{"100000001"}},
+			{"上期深渊100000001", "abyss", []string{"上期", "100000001"}},
+			{"深渊上期", "abyss", []string{"上期"}},
+			{"深境螺旋往期", "abyss", []string{"往期"}},
+			{"深渊本期", "abyss", []string{"本期"}},
+			{"深渊本期100000001", "abyss", []string{"本期", "100000001"}},
+			{"深渊12层100000001", "abyss-floor", []string{"100000001"}},
+			{"深渊上期第12层", "abyss-floor", []string{"上期"}},
+			{"深境上期十二层100000001", "abyss-floor", []string{"上期", "100000001"}},
+			// Yunzai's [上期|往期|本期]* also matches stray characters and
+			// both sides at once; only the period words on one side count.
+			{"期深渊", "character-card", nil},
+			{"上期深渊本期", "character-card", nil},
 		},
 	}
 	for game, list := range cases {

@@ -51,9 +51,15 @@ func TestExtendedCommandInputs(t *testing.T) {
 		if _, _, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.invalid}, nil); err == nil {
 			t.Fatal("invalid selector accepted")
 		}
+		// A UID alone, as in 原石100000001 or 深渊12层100000001, is the UID.
+		if input, uid, err := app.commandInput(Operation{Input: tc.mode}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input[tc.key] != nil {
+			t.Errorf("%s with a UID alone = %v %q %v", tc.mode, input, uid, err)
+		}
 	}
-	// 往期 is the last period.
-	if input, _, err := app.commandInput(Operation{Input: "period"}, []string{"往期"}, nil); err != nil || input["schedule_type"] != 2 {
-		t.Errorf("往期 = %v, %v", input["schedule_type"], err)
+	// 往期 is the last period, and 本期 as in 深渊本期 the current one.
+	for word, period := range map[string]int{"往期": 2, "本期": 1} {
+		if input, _, err := app.commandInput(Operation{Input: "period"}, []string{word}, nil); err != nil || input["schedule_type"] != period {
+			t.Errorf("%s = %v, %v", word, input["schedule_type"], err)
+		}
 	}
 }
