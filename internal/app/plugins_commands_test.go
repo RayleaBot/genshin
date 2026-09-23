@@ -96,6 +96,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"推送资讯", "content-push", nil},
 			{"2025年札记统计", "monthly-history", nil},
 			{"原石任务", "monthly-task", nil},
+			{"原石七月", "monthly", []string{"七"}},
+			{"札记12月", "monthly", []string{"12"}},
 			{"原神帮助", "help", nil},
 			{"刷新天赋", "talent-refresh", nil},
 			{"强制更新所有天赋", "talent-refresh", nil},

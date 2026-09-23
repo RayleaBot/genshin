@@ -256,6 +256,27 @@ func (a *App) monthlyCommand(ctx context.Context, event *rayleabot.EventContext,
 	return a.sendView(ctx, event, view)
 }
 
+// ledgerMonths are the Chinese month words Yunzai's getMonth reads.
+var ledgerMonths = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
+
+// ledgerMonth reads the month of 原石7月 or 札记七月 the way Yunzai's getMonth
+// does: digits or a Chinese numeral, anything else this month; only this
+// month and the two before it can be read.
+func ledgerMonth(word string, now time.Time) (int, error) {
+	current := int(now.Month())
+	month, err := strconv.Atoi(word)
+	if err != nil {
+		month = slices.Index(ledgerMonths, word) + 1
+	}
+	if month < 1 || month > 12 {
+		month = current
+	}
+	if (current-month+12)%12 > 2 {
+		return 0, gameError("ledger_month", "札记仅支持查询最近三个月的数据")
+	}
+	return month, nil
+}
+
 // monthlyTask is Yunzai's 原石任务 for a super administrator: every account's
 // report is saved as refreshMonthly saves one, as upstream saves each bound
 // CK's. What one event cannot finish is left for the command sent again,

@@ -1381,7 +1381,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:原石|札记)(?P<month>[0-9]{1,2})?月?$"
+        "pattern": "^(?:原石|札记)(?P<month>(?:[0-9]|[一二两三四五六七八九十]+)*)月*$"
       }
     },
     {

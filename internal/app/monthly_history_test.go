@@ -152,3 +152,15 @@ func TestRefreshMonthlyKeepsOfferedMonthsNotYetFinal(t *testing.T) {
 		t.Fatalf("archive = %+v", archive.Items)
 	}
 }
+
+func TestLedgerMonthReadsYunzaiWords(t *testing.T) {
+	now := time.Date(2026, 1, 20, 12, 0, 0, 0, time.FixedZone("UTC+8", 28800))
+	for word, want := range map[string]int{"1": 1, "十二": 12, "十一": 11, "两": 1, "13": 1, "": 1} {
+		if month, err := ledgerMonth(word, now); err != nil || month != want {
+			t.Errorf("%q: %d %v", word, month, err)
+		}
+	}
+	if _, err := ledgerMonth("十", now); err == nil || friendlyError(err) != "札记仅支持查询最近三个月的数据" {
+		t.Fatal(err)
+	}
+}

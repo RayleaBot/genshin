@@ -718,10 +718,10 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			args = args[1:]
 		}
 	case "month":
-		if len(args) > 0 {
-			month, err := strconv.Atoi(args[0])
-			if err != nil || month < 1 || month > 12 {
-				return nil, "", gameError("input_invalid", "月份使用 1–12。")
+		if len(args) > 0 && !uidPattern.MatchString(args[0]) {
+			month, err := ledgerMonth(args[0], time.Now().In(time.FixedZone("UTC+8", 28800)))
+			if err != nil {
+				return nil, "", err
 			}
 			input["month"] = month
 			args = args[1:]
