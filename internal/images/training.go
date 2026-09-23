@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/RayleaBot/plugin-genshin/internal/app"
@@ -91,6 +92,20 @@ func talentBook(book string) (int, string) {
 // stars and elements the word names, as 五星列表 and 火角色统计.
 func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["list"].([]any)
+	return training(context, result.Role.UID, list, app.SavedProfiles{})
+}
+
+// PlayerTraining draws the same page from a UID's player data, as miao draws
+// a UID read without its account: the characters of its index and character
+// list, with the panels kept for it giving their talents and artifacts, and
+// the last 更新面板 dated beside the official data.
+func PlayerTraining(context app.ImageContext, image app.CharactersImage) (app.Image, bool) {
+	return training(context, image.Role.UID, image.Characters, image.Saved)
+}
+
+// training draws the page of the UID's characters listed, the panels saved
+// for it standing in where the details lack them.
+func training(context app.ImageContext, uid string, list []any, saved app.SavedProfiles) (app.Image, bool) {
 	if len(list) == 0 {
 		return app.Image{}, false
 	}
@@ -99,7 +114,7 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 	for _, item := range trainingArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	entries, cards := buildRoster(context, resources, list, nil)
+	entries, cards := buildRoster(context, resources, list, saved.Panels)
 	// 剧诗练度统计 keeps who may enter instead.
 	keep := rosterFilter(context.Word)
 	if theater, ok := context.Input["theater"].(map[string]any); ok {
@@ -185,9 +200,12 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 		}
 		rows = append(rows, row)
 	}
-	return app.Image{Template: "training", Data: map[string]any{
-		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"), "talent": talent,
-	}, Resources: resources.List}, true
+	// miao dates both as MM-DD HH:mm.
+	data := map[string]any{"uid": uid, "count": len(rows), "rows": rows, "prefix": context.Game.Prefix, "updated": context.Now.In(chinaTime).Format("01-02 15:04"), "talent": talent}
+	if saved.RefreshedAtMS > 0 {
+		data["profile_updated"] = time.UnixMilli(saved.RefreshedAtMS).In(chinaTime).Format("01-02 15:04")
+	}
+	return app.Image{Template: "training", Data: data, Resources: resources.List}, true
 }
 
 // theaterRoster is miao's 剧诗练度统计 roster: the month's opening characters

@@ -62,7 +62,7 @@
         </div>
         {{ end }}
       </div>
-      <div class="cont-notice"><strong>数据更新时间</strong> <span>米游社: {{ .updated }}</span></div>
+      <div class="cont-notice"><strong>数据更新时间</strong>{{ with .profile_updated }} <span>{{ $.prefix }}更新面板: {{ . }}</span>{{ end }} <span>米游社: {{ .updated }}</span></div>
     </div>
   </div>
   {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}

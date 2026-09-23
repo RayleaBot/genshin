@@ -1,11 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["uid", "count", "rows", "updated"],
+  "required": ["uid", "count", "rows", "prefix", "updated"],
   "properties": {
     "uid": { "type": "string" },
     "count": { "type": "integer" },
     "rows": { "type": "array" },
+    "prefix": { "type": "string" },
+    "profile_updated": { "type": "string" },
     "updated": { "type": "string" },
     "talent": { "type": "boolean" },
     "render_footer": { "type": "string" }

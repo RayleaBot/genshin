@@ -82,3 +82,41 @@ func TestTrainingFollowsMiao(t *testing.T) {
 		t.Errorf("四星列表 rows = %v", rows)
 	}
 }
+
+// A UID read without its account is drawn from its player data as miao
+// draws it: a kept panel gives talents and scored artifacts under the weapon
+// the list names, a character only the list has shows no talents but its
+// weapon, and the last 更新面板 is dated beside the official data.
+func TestPlayerTrainingDrawsKeptPanels(t *testing.T) {
+	application, err := app.New(assets.Load(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog, Now: time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC),
+		Score: func(panel app.CharacterPanel) (app.CharacterPanel, error) {
+			panel.ScoreDetail = &app.ScoreDetail{Mark: "180.2", Grade: "SS"}
+			return panel, nil
+		}}
+	kept := app.SavedProfiles{RefreshedAtMS: time.Date(2026, 9, 21, 1, 30, 0, 0, time.UTC).UnixMilli(), Panels: map[string]app.SavedPanel{
+		"10000089": {Panel: app.CharacterPanel{ID: "10000089", Level: 90, Rank: 2, Weapon: &app.PanelEquipment{ID: "11513", Level: 90, Rarity: "5", Refinement: 1},
+			Equipment: []app.PanelEquipment{{Slot: 1, SetName: "黄金剧团"}, {Slot: 2, SetName: "黄金剧团"}},
+			Skills:    []app.PanelSkill{{SkillType: 1, ID: "10891", Level: 9}, {SkillType: 1, ID: "10892", Level: 13, ExtraLevel: 3}, {SkillType: 1, ID: "10893", Level: 10}}}},
+	}}
+	characters := decode(t, `{"list":[{"id":10000089,"level":90,"actived_constellation_num":2,"weapon":{"id":11401,"name":"西风剑","rarity":4,"level":90,"affix_level":3}},
+		{"id":10000025,"level":80,"actived_constellation_num":6,"weapon":{"id":11501,"name":"风鹰剑","rarity":5,"level":90,"affix_level":1}}]}`)["list"].([]any)
+	image, ok := images.PlayerTraining(context, app.CharactersImage{Role: app.Role{UID: "100000001"}, Characters: characters, Saved: kept, Public: true})
+	if !ok || image.Data["count"] != 2 || image.Data["profile_updated"] != "09-21 09:30" || image.Data["updated"] != "09-22 20:00" {
+		t.Fatalf("image = %v", image.Data)
+	}
+	rows := image.Data["rows"].([]any)
+	furina, xingqiu := rows[0].(map[string]any), rows[1].(map[string]any)
+	talents := furina["talents"].([]any)
+	if furina["name"] != "芙宁娜" || furina["weapon"].(map[string]any)["name"] != "西风剑" || furina["grade"] != "SS" || len(furina["artis"].([]any)) != 1 ||
+		talents[0].(map[string]any)["level"] != 9 || talents[1].(map[string]any)["plus"] != true {
+		t.Errorf("芙宁娜 = %v", furina)
+	}
+	if xingqiu["name"] != "行秋" || xingqiu["weapon"].(map[string]any)["name"] != "风鹰剑" || xingqiu["grade"] != nil ||
+		xingqiu["talents"].([]any)[0].(map[string]any)["level"] != "-" {
+		t.Errorf("行秋 = %v", xingqiu)
+	}
+}
