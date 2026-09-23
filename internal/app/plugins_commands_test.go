@@ -310,6 +310,27 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 	}
 }
 
+// As on the host, a fallback command takes a word only when no ordinary
+// command does, wherever the manifest declares it.
+func TestFallbackCommandsResolveAfterOrdinaryOnes(t *testing.T) {
+	manifest, err := pluginmeta.Read([]byte(`{"id":"raylea.test","version":"1.0.0","commands":[
+		{"id":"card","trigger":{"type":"pattern","pattern":"^.+$","fallback":true}},
+		{"id":"panel","trigger":{"type":"pattern","pattern":"^(?P<character>.+?)面板$"}}
+	]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := newCommandSet(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for word, want := range map[string]string{"雷神面板": "panel", "雷神": "card"} {
+		if id, _, ok := set.resolve(word, nil); !ok || id != want {
+			t.Errorf("%s resolved to %q %v, want %s", word, id, ok, want)
+		}
+	}
+}
+
 // A hint or static picture answers a command by ID, so each must name one
 // the manifest has.
 func TestShippedHintsNameManifestCommands(t *testing.T) {
