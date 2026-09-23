@@ -46,6 +46,13 @@ func parseGameData(assets Assets) (*GameData, error) {
 		if err := json.Unmarshal(assets.Enemies, table); err != nil || len(table.Curves) == 0 {
 			return nil, fmt.Errorf("enemy data is invalid")
 		}
+		aliases := map[string][]string{}
+		for _, name := range table.Names {
+			aliases[name.Name] = name.Aliases
+		}
+		for index, enemy := range table.Enemies {
+			table.Enemies[index].Aliases = append([]string{}, aliases[enemy.Name]...)
+		}
 		data.Enemies = table
 	}
 	return data, nil

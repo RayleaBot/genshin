@@ -967,14 +967,12 @@
     {
       "id": "enemy",
       "name": "原魔",
-      "description": "原魔的属性资料",
-      "usage": "#原魔 名称 属性 [等级]",
+      "description": "按 Atlas 计算原魔的生命值或攻击力，可写等级与深渊、秘境、联机人数等修饰因子",
+      "usage": "#原魔90级丘丘人生命值 / #原魔12-3魔偶剑鬼攻击力",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "原魔"
-        ]
+        "type": "pattern",
+        "pattern": "^原魔"
       }
     },
     {

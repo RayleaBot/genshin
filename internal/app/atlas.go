@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode/utf16"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -429,7 +428,7 @@ func atlasPages(lines []string) [][]string {
 			page = []string{}
 		}
 		switch {
-		case message != "" && len(utf16.Encode([]rune(message))) < 100:
+		case message != "" && jsLength(message) < 100:
 			message += "\n" + line
 		case message == "":
 			message = line

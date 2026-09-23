@@ -1,6 +1,9 @@
 package app
 
-import "math/big"
+import (
+	"math/big"
+	"unicode/utf16"
+)
 
 // JSFixed is JavaScript's toFixed: the exact value rounded half up.
 func JSFixed(value float64, digits int) string {
@@ -16,4 +19,9 @@ func JSFixed(value float64, digits int) string {
 		text = "0" + text
 	}
 	return text[:len(text)-digits] + "." + text[len(text)-digits:]
+}
+
+// jsLength is a string's JavaScript length, in UTF-16 code units.
+func jsLength(text string) int {
+	return len(utf16.Encode([]rune(text)))
 }

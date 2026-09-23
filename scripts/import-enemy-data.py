@@ -25,14 +25,14 @@ def read_yaml(name):
 enemies = read_yaml("Enemy.yaml")
 aliases = read_yaml("OtherName.yaml")
 curves = [{key: float(value) for key, value in row.items()} for row in read_yaml("Common.yaml")]
-out = {"version": "Atlas-" + version, "enemies": [], "curves": curves, "modifiers": []}
+# OtherName keeps the file's order, which decides between names of equal
+# length, and the keys that name no enemy, which the chat still matches.
+out = {"version": "Atlas-" + version, "enemies": [], "names": [{"name": name, "aliases": names} for name, names in aliases.items()], "curves": curves, "modifiers": []}
 for group, rows in enemies.items():
     for row in rows:
-        name = row[group]
         out["enemies"].append({
-            "name": name,
+            "name": row[group],
             "group": group,
-            "aliases": aliases.get(name, []),
             "hp_curve": row.get("HPScale", ""),
             "hp_base": row.get("HPValue"),
             "atk_curve": row.get("ATKScale", ""),
@@ -52,4 +52,4 @@ for group, rows in factors.items():
 text = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"
 (plugin / "internal/assets/data/enemies.json").write_bytes(text.encode("utf-8"))
 shutil.copyfile(source / "LICENSE", plugin / "LICENSES/Atlas-GPL-3.0.txt")
-print(json.dumps({"version": version, "enemies": len(out["enemies"]), "curves": len(curves), "modifiers": len(out["modifiers"])}))
+print(json.dumps({"version": version, "enemies": len(out["enemies"]), "names": len(out["names"]), "curves": len(curves), "modifiers": len(out["modifiers"])}))
