@@ -390,7 +390,7 @@ func gachaLinkSummary(prefix string, before, after map[string]int) string {
 			lines = append(lines, "["+pool[1]+"]记录获取成功，更新"+strconv.Itoa(after[pool[0]]-before[pool[0]])+"条")
 		}
 	}
-	lines = append(lines, "", "抽卡记录更新完成，您还可回复", "【"+prefix+"全部记录】统计全部抽卡数据", "【"+prefix+"武器记录】统计武器池数据", "【"+prefix+"角色统计】按卡池统计数据")
+	lines = append(lines, "", "抽卡记录更新完成，您还可回复", "【"+prefix+"全部记录】统计全部抽卡数据", "【"+prefix+"武器记录】统计武器池数据", "【"+prefix+"角色统计】按卡池统计数据", "【"+prefix+"导出记录】导出记录数据")
 	return strings.Join(lines, "\n")
 }
 
