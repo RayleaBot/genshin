@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -50,26 +51,32 @@ func (a *App) privateCloudPanelCommand(ctx context.Context, event *rayleabot.Eve
 			if err != nil {
 				return event.SendText(friendlyError(err))
 			}
-			choice, role, err := Choose(listed, a.Game.ID, job.Exchange.UID)
-			if err != nil {
+			// Only a UID of the sender's own account is saved.
+			if _, _, err = Choose(listed, a.Game.ID, job.Exchange.UID); err != nil {
 				return event.SendText(friendlyError(err))
 			}
 			data, err := cloudPlayerObject(string(job.exchange))
 			if err != nil {
 				return event.SendText(friendlyError(err))
 			}
-			avatars, err := cleanCloudPlayer(role.UID, data)
+			avatars, err := cleanCloudPlayer(job.Exchange.UID, data)
 			if err != nil {
 				return event.SendText(friendlyError(err))
 			}
-			archive, err := a.CloudArchive.Read(client.Provider, choice)
-			if err != nil {
+			// Kept with the UID's other panels, as miao keeps a player's data
+			// together, so 面板 shows them and 导出面板 sends them.
+			panels := []CharacterPanel{}
+			for _, raw := range avatars {
+				panel, err := a.cloudAvatarPanel(ctx, raw)
+				if err != nil {
+					return event.SendText(friendlyError(err))
+				}
+				panels = append(panels, panel)
+			}
+			if _, err = a.Profiles.Keep(job.Exchange.UID, panels, "share", nil); err != nil {
 				return event.SendText(friendlyError(err))
 			}
-			if err = a.CloudArchive.Update(client.Provider, choice, archive.Revision, role, avatars, false); err != nil {
-				return event.SendText(friendlyError(err))
-			}
-			return event.SendText("本人云面板已保存为独立交换档案，可在本游戏管理页查看、导出或再次交换。")
+			return event.SendText("本人云面板已保存，共" + strconv.Itoa(len(panels)) + "个角色，可发送“" + a.Game.Prefix + "面板列表”查看。")
 		}
 		if job.View == nil {
 			return event.SendText("云服务未返回可展示的面板信息。")

@@ -1327,6 +1327,17 @@
       }
     },
     {
+      "id": "panel-export",
+      "name": "导出面板",
+      "description": "把已保存的面板作为 miao 面板数据文件发送",
+      "usage": "#原神导出面板",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:原神)?导出面板$"
+      }
+    },
+    {
       "id": "cloud-export",
       "name": "导出面板数据",
       "description": "把本人 UID 已保存的面板上传 ark，十分钟内可在另一个机器人导入",
@@ -1599,6 +1610,7 @@
         "cloud-character-rank",
         "cloud-total-rank",
         "cloud-rank-stats",
+        "panel-export",
         "cloud-export",
         "cloud-import",
         "cloud-reforge",

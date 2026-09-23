@@ -99,6 +99,11 @@ func (a *App) gachaFileCommand(ctx context.Context, event *rayleabot.EventContex
 	}
 	name := archive.UID + ".json"
 	notice(ctx, event, fmt.Sprintf("导出成功：%s，共%d条 \n请接收文件", name, len(archive.Records)))
+	return sendFile(event, name, content)
+}
+
+// sendFile sends a file into the chat the event came from.
+func sendFile(event *rayleabot.EventContext, name string, content []byte) error {
 	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Passthrough("file", map[string]any{"file": "base64://" + base64.StdEncoding.EncodeToString(content), "name": name}))
 }
 
