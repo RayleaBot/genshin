@@ -1,0 +1,11 @@
+{
+  "id": "stat-role-card",
+  "name": "原神月谕圣牌",
+  "description": "月谕圣牌命令的收藏图片，布局参照 miao-plugin stat/role-card",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1164,
+  "height": 3000
+}

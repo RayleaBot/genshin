@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container" id="container">
+  <div class="head-box type">
+    <div class="title">#月谕圣牌</div>
+    <div class="uid">UID:{{ .uid }}</div>
+  </div>
+  <div class="info_box">
+    <div class="card-stat-cont">
+      <div class="card-stat">
+        <div class="cont">
+          <div class="title"><strong>已收集 {{ .collected }} / {{ .total }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cont">
+    <div class="cont-body">
+      <div class="cards-container">
+        {{ range .cards }}
+        <div class="card-container">
+          <div class="card-image-container">
+            {{ if .unlocked }}
+            <div class="card-image"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div>
+            {{ else }}
+            <div class="card-image empty-image"><strong>???</strong></div>
+            {{ end }}
+          </div>
+          <div class="card-info">{{ .name }} x {{ .count }}</div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

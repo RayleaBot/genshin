@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "collected", "total", "cards"],
+  "properties": {
+    "uid": { "type": "string" },
+    "collected": { "type": "integer" },
+    "total": { "type": "integer" },
+    "cards": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

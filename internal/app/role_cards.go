@@ -14,6 +14,9 @@ type RoleCard struct {
 	Name     string `json:"name"`
 	Count    int    `json:"count"`
 	Unlocked bool   `json:"unlocked"`
+	// Icon is the card's official picture; offers kept before it was
+	// recorded have none.
+	Icon string `json:"icon,omitempty"`
 }
 type RoleCardOffer struct {
 	ActorID  string     `json:"actor_id"`
@@ -23,17 +26,43 @@ type RoleCardOffer struct {
 	Cards    []RoleCard `json:"cards"`
 	SavedMS  int64      `json:"saved_ms"`
 }
+
+// RoleCardMatch is a group member to trade with: Give are the requester's
+// spare cards the member lacks, Receive the member's spare cards the
+// requester lacks, each as its owner holds it.
 type RoleCardMatch struct {
-	ActorID  string   `json:"actor_id"`
-	Nickname string   `json:"nickname"`
-	UID      string   `json:"uid"`
-	Give     []string `json:"give"`
-	Receive  []string `json:"receive"`
-	Score    int      `json:"score"`
-	SavedMS  int64    `json:"saved_ms"`
+	ActorID  string     `json:"actor_id"`
+	Nickname string     `json:"nickname"`
+	UID      string     `json:"uid"`
+	Give     []RoleCard `json:"give"`
+	Receive  []RoleCard `json:"receive"`
+	Score    int        `json:"score"`
+	SavedMS  int64      `json:"saved_ms"`
 }
 
+// RoleCardsImage is 月谕圣牌 as miao's stat/role-card draws it, or with
+// Exchange 月谕圣牌交换 as stat/role-card-exchange does.
+type RoleCardsImage struct {
+	UID              string
+	Collected, Total int
+	Cards            []RoleCard
+	Exchange         bool
+	Group            string
+	Matches          []RoleCardMatch
+}
+
+// RoleCardsImageBuilder draws RoleCardsImage.
+type RoleCardsImageBuilder func(ImageContext, RoleCardsImage) (Image, bool)
+
+// errNoRoleCards is miao's reply when the theater record has no collection.
+var errNoRoleCards = gameError("cards_unavailable", "暂未获得「月谕圣牌」收藏数据...")
+
+// parseRoleCards reads the collection in the official order, as miao lists
+// it.
 func parseRoleCards(data map[string]any) ([]RoleCard, error) {
+	if data["tarot_card_state"] == nil {
+		return nil, errNoRoleCards
+	}
 	state := asObject(data["tarot_card_state"])
 	raw, ok := state["list"].([]any)
 	if !ok || len(raw) > 200 {
@@ -50,16 +79,29 @@ func parseRoleCards(data map[string]any) ([]RoleCard, error) {
 			return nil, gameError("cards_unavailable", "圣牌数据缺少数量、解锁状态或名称。")
 		}
 		seen[name] = true
-		cards = append(cards, RoleCard{name, int(n), unlocked})
+		cards = append(cards, RoleCard{Name: name, Count: int(n), Unlocked: unlocked, Icon: asText(m["icon"])})
 	}
-	slices.SortFunc(cards, func(a, b RoleCard) int { return strings.Compare(a.Name, b.Name) })
 	return cards, nil
+}
+
+// missing is whether miao counts a card as one to trade for.
+func (c RoleCard) missing() bool { return !c.Unlocked || c.Count <= 0 }
+
+// spareRoleCards are the unlocked cards held more than once, by name.
+func spareRoleCards(cards []RoleCard) map[string]RoleCard {
+	spare := map[string]RoleCard{}
+	for _, c := range cards {
+		if c.Unlocked && c.Count > 1 {
+			spare[c.Name] = c
+		}
+	}
+	return spare
 }
 func roleCardView(role Role, cards []RoleCard) View {
 	view := View{Title: "月谕圣牌收藏", Subtitle: role.Nickname + " · " + role.UID, Rows: []Row{}, Note: "交换匹配需在群内主动提交；查询本身不加入群交换列表。"}
 	for _, c := range cards {
 		text := fmt.Sprintf("持有%d张", c.Count)
-		if !c.Unlocked || c.Count <= 0 {
+		if c.missing() {
 			text += " · 缺少"
 		} else if c.Count > 1 {
 			text += fmt.Sprintf(" · 多余%d张", c.Count-1)
@@ -68,31 +110,27 @@ func roleCardView(role Role, cards []RoleCard) View {
 	}
 	return view
 }
+
+// roleCardMatches pairs the requester with the members whose spare cards
+// each lacks, as miao's RoleCardExchange: the cards the member can give in
+// the requester's order, those the requester can give in the member's.
 func roleCardMatches(self RoleCardOffer, others []RoleCardOffer, now int64) []RoleCardMatch {
-	extra, need := func(cards []RoleCard) (map[string]bool, map[string]bool) {
-		extra, need := map[string]bool{}, map[string]bool{}
-		for _, c := range cards {
-			if c.Unlocked && c.Count > 1 {
-				extra[c.Name] = true
-			}
-			if !c.Unlocked || c.Count <= 0 {
-				need[c.Name] = true
-			}
-		}
-		return extra, need
-	}(self.Cards)
+	selfSpare := spareRoleCards(self.Cards)
 	out := []RoleCardMatch{}
 	for _, other := range others {
 		if other.ActorID == self.ActorID || other.UID == self.UID || other.Region != self.Region || other.SavedMS <= now-int64(30*24*time.Hour/time.Millisecond) {
 			continue
 		}
-		candidate := RoleCardMatch{ActorID: other.ActorID, Nickname: other.Nickname, UID: other.UID, SavedMS: other.SavedMS, Give: []string{}, Receive: []string{}}
-		for _, c := range other.Cards {
-			if c.Unlocked && c.Count > 1 && need[c.Name] {
-				candidate.Receive = append(candidate.Receive, c.Name)
+		candidate := RoleCardMatch{ActorID: other.ActorID, Nickname: other.Nickname, UID: other.UID, SavedMS: other.SavedMS, Give: []RoleCard{}, Receive: []RoleCard{}}
+		otherSpare := spareRoleCards(other.Cards)
+		for _, c := range self.Cards {
+			if spare, ok := otherSpare[c.Name]; ok && c.missing() {
+				candidate.Receive = append(candidate.Receive, spare)
 			}
-			if (!c.Unlocked || c.Count <= 0) && extra[c.Name] {
-				candidate.Give = append(candidate.Give, c.Name)
+		}
+		for _, c := range other.Cards {
+			if spare, ok := selfSpare[c.Name]; ok && c.missing() {
+				candidate.Give = append(candidate.Give, spare)
 			}
 		}
 		if len(candidate.Give) > 0 && len(candidate.Receive) > 0 {
@@ -153,7 +191,7 @@ func (a *App) cardsAction(ctx context.Context, event *rayleabot.EventContext, ac
 func (a *App) cardsCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	group := event.Event.Target.Type == "group"
 	if command == "role-cards-exchange" && !group {
-		return event.SendText("圣牌交换请在目标群操作。")
+		return event.SendText("「月谕圣牌交换」仅支持在群聊中查询。")
 	}
 	if len(args) > 1 {
 		return event.SendText("可提供本人UID选择角色。")
@@ -200,19 +238,49 @@ func (a *App) cardsCommand(ctx context.Context, event *rayleabot.EventContext, c
 		if group {
 			view.Note += "\n已记入本群月谕圣牌交换匹配，有效 30 天，再次查看时刷新。"
 		}
+		state := asObject(result.Data["tarot_card_state"])
+		view.Image = a.roleCardsDrawn(ctx, RoleCardsImage{UID: result.Role.UID, Collected: Int(state["curr_num"]), Total: Int(state["total_num"]), Cards: cards})
 		return a.sendView(ctx, event, view)
+	}
+	// miao answers these before looking for members to trade with.
+	if !slices.ContainsFunc(cards, RoleCard.missing) {
+		return event.SendText("你的「月谕圣牌」已全部收集，无需交换。")
+	}
+	if len(spareRoleCards(cards)) == 0 {
+		return event.SendText("你当前没有可用于交换的重复「月谕圣牌」。")
 	}
 	data, err := a.Groups.Read(scope)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
 	matches := roleCardMatches(self, data.Cards, now)
+	if len(matches) == 0 {
+		return event.SendText("本群暂无可互相交换的「月谕圣牌」用户。\n提示：需要群友先查询过 " + a.Game.Prefix + "月谕圣牌，才会进入本群交换匹配范围。")
+	}
 	view := View{Title: "月谕圣牌交换匹配", Subtitle: result.Role.UID, Note: "仅列双方互补且同区服的记录；数据最多保留30天。请自行与对方确认，本插件不执行赠送。"}
 	for _, m := range matches {
-		view.Sections = append(view.Sections, Section{Title: m.Nickname + " · " + m.ActorID + " · " + m.UID, Rows: []Row{{"你可给对方", strings.Join(m.Give, "、")}, {"对方可给你", strings.Join(m.Receive, "、")}, {"对方更新时间", calendarMS(m.SavedMS)}}})
+		view.Sections = append(view.Sections, Section{Title: m.Nickname + " · " + m.ActorID + " · " + m.UID, Rows: []Row{{"你可给对方", roleCardNames(m.Give)}, {"对方可给你", roleCardNames(m.Receive)}, {"对方更新时间", calendarMS(m.SavedMS)}}})
 	}
-	if len(matches) == 0 {
-		view.Note = "当前没有双方互补且同区服的有效记录，可请群友主动提交收藏。"
-	}
+	view.Image = a.roleCardsDrawn(ctx, RoleCardsImage{UID: result.Role.UID, Exchange: true, Group: event.Event.Target.ID, Matches: matches})
 	return a.sendView(ctx, event, view)
+}
+
+func roleCardNames(cards []RoleCard) string {
+	names := []string{}
+	for _, c := range cards {
+		names = append(names, c.Name)
+	}
+	return strings.Join(names, "、")
+}
+
+// roleCardsDrawn draws a role card page with the plugin's template, if any.
+func (a *App) roleCardsDrawn(ctx context.Context, page RoleCardsImage) *Image {
+	if a.roleCardsImage == nil {
+		return nil
+	}
+	drawn, ok := a.roleCardsImage(a.imageContext(ctx), page)
+	if !ok {
+		return nil
+	}
+	return &drawn
 }

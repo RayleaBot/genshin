@@ -1,0 +1,11 @@
+{
+  "id": "stat-role-card-exchange",
+  "name": "原神月谕圣牌交换",
+  "description": "月谕圣牌交换命令的匹配图片，布局参照 miao-plugin stat/role-card-exchange",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1164,
+  "height": 3000
+}

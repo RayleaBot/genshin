@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "group", "matches"],
+  "properties": {
+    "uid": { "type": "string" },
+    "group": { "type": "string" },
+    "matches": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

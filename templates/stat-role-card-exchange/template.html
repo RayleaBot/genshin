@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container" id="container">
+  <div class="head-box type">
+    <div class="title">#月谕圣牌交换</div>
+    <div class="uid">UID:{{ .uid }}</div>
+  </div>
+  <div class="info_box">
+    <div class="exchange-summary">
+      <strong>本群找到 {{ len .matches }} 位可交换群友</strong>
+      <span>群号 {{ .group }}</span>
+    </div>
+  </div>
+  <div class="cont">
+    <div class="cont-body">
+      {{ range .matches }}
+      <div class="exchange-user">
+        <div class="user-title">
+          <div class="rank">{{ .rank }}</div>
+          <div class="user-info">
+            <strong>{{ .name }}</strong>
+            <span>QQ {{ .qq }}<i></i>UID {{ .uid }}</span>
+          </div>
+          <div class="match-count">可互换 <strong>{{ .score }}</strong> 种</div>
+        </div>
+        <div class="trade-lane receive">
+          <div class="trade-direction">
+            <strong>TA 给你</strong>
+            <span>你缺少的牌</span>
+          </div>
+          <div class="trade-cards">
+            <div class="card-list">{{ range .receive }}{{ template "card" . }}{{ end }}</div>
+          </div>
+        </div>
+        <div class="trade-lane provide">
+          <div class="trade-direction">
+            <strong>你给 TA</strong>
+            <span>对方缺少的牌</span>
+          </div>
+          <div class="trade-cards">
+            <div class="card-list">{{ range .give }}{{ template "card" . }}{{ end }}</div>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="copyright">仅匹配本群近 30 天查询过 #月谕圣牌 的用户，请双方确认交换数量。</div>
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
+{{ define "card" }}
+<div class="trade-card">
+  <div class="card-image-container">
+    {{ if .icon }}
+    <div class="card-image" data-render-resource="{{ .icon }}"></div>
+    {{ else }}
+    <div class="card-image empty-image"><strong>?</strong></div>
+    {{ end }}
+  </div>
+  <div class="card-info">{{ .name }} x {{ .num }}</div>
+</div>
+{{ end }}
