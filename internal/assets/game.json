@@ -223,7 +223,11 @@
     "atlas": [
       {
         "source": "genshin-atlas",
-        "index": "path.json"
+        "index": "path.json",
+        "skip": [
+          "card",
+          "material for role"
+        ]
       },
       {
         "source": "xiaoyao-plus",
