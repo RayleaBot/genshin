@@ -19,7 +19,7 @@ var statisticsArtwork = [][2]string{
 }
 
 // statPercent is miao's pct: the fraction as a percentage to two places.
-func statPercent(value float64) string { return jsFixed(value*100, 2) }
+func statPercent(value float64) string { return app.JSFixed(value*100, 2) }
 
 // Statistics draws miao's stat pages: stat/character for 角色持有率 and
 // 命座分布, stat/abyss-pct for 深渊 and 幽境使用率, stat/abyss-team for

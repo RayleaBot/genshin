@@ -136,7 +136,7 @@ func wikiStats(context app.ImageContext, name string) (map[string]any, float64) 
 }
 
 // miaoPercent is miao's Format.percent: the fraction as a percentage.
-func miaoPercent(value float64) string { return jsFixed(value*100, 1) + "%" }
+func miaoPercent(value float64) string { return app.JSFixed(value*100, 1) + "%" }
 
 var wikiSetPart = regexp.MustCompile(`^(.*?)(4|2)$`)
 
@@ -207,7 +207,7 @@ func CharacterWiki(context app.ImageContext, character wikiCharacter) (app.Image
 		}
 		// Upstream shows the block whenever lelaer lists the character; an
 		// unknown holding rate prints as 0.
-		data["holding"] = map[string]any{"num": miaoPercent(max(owned, 0)), "level": jsFixed(level, 1), "cons": jsFixed(cons, 2), "shares": shares}
+		data["holding"] = map[string]any{"num": miaoPercent(max(owned, 0)), "level": app.JSFixed(level, 1), "cons": app.JSFixed(cons, 2), "shares": shares}
 		data["weapons"] = wikiWeaponUsage(context, miao, role["weapon"])
 		data["artis"] = wikiSetUsage(context, miao, role["artifacts_set"])
 	}

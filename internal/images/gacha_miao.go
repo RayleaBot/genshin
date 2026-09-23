@@ -270,7 +270,7 @@ func GachaDetail(context app.ImageContext, image app.GachaImage) (app.Image, boo
 		stats = miaoStat(stats, fourNum, "紫卡数")
 	}
 	if fiveNum > 0 {
-		stats = miaoStat(stats, jsFixed(float64(all-noFive)/float64(fiveNum), 2), "平均出金")
+		stats = miaoStat(stats, app.JSFixed(float64(all-noFive)/float64(fiveNum), 2), "平均出金")
 	}
 	// Pulls per rate-up, leaving out the newest five-star when it missed, in
 	// primogems.
@@ -280,11 +280,11 @@ func GachaDetail(context app.ImageContext, image app.GachaImage) (app.Image, boo
 		if !fives[0].up {
 			pulled -= fives[0].count
 		}
-		valid, _ = strconv.ParseFloat(jsFixed(float64(pulled)/float64(fiveNum-missed), 2), 64)
+		valid, _ = strconv.ParseFloat(app.JSFixed(float64(pulled)/float64(fiveNum-missed), 2), 64)
 	}
-	primogems := jsFixed(valid*160, 0)
+	primogems := app.JSFixed(valid*160, 0)
 	if valid*160 >= 10000 {
-		primogems = jsFixed(valid*160/10000, 2) + "w"
+		primogems = app.JSFixed(valid*160/10000, 2) + "w"
 	}
 	stats = miaoStat(stats, primogems, "UP原石")
 	if noFive > 0 {
@@ -467,7 +467,7 @@ func GachaStat(context app.ImageContext, image app.GachaImage) (app.Image, bool)
 		}
 	}
 	if total["upNum"] > 0 {
-		stats = miaoStat(stats, jsFixed(float64(total["totalNum"])/float64(total["upNum"]), 1), "平均UP抽")
+		stats = miaoStat(stats, app.JSFixed(float64(total["totalNum"])/float64(total["upNum"]), 1), "平均UP抽")
 	}
 	data := miaoPlayer(context, resources, image)
 	data["stats"], data["mix"], data["card_width"], data["versions"] = stats, kind == "mix", 69, versions

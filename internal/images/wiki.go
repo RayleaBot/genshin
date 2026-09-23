@@ -3,7 +3,6 @@ package images
 import (
 	"encoding/json"
 	"html"
-	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
@@ -178,26 +177,10 @@ func wikiDetail(talent wikiTalent, icon string) map[string]any {
 	return map[string]any{"icon": icon, "name": talent.Name, "desc": desc.String(), "tables": len(talent.Tables) > 0, "shared": shared, "rows": rows, "levels": levels}
 }
 
-// jsFixed is JavaScript's toFixed: the exact value rounded half up.
-func jsFixed(value float64, digits int) string {
-	scaled := new(big.Float).SetPrec(256).SetFloat64(value)
-	scaled.Mul(scaled, new(big.Float).SetPrec(256).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(digits)), nil)))
-	scaled.Add(scaled, new(big.Float).SetPrec(256).SetFloat64(0.5))
-	whole, _ := scaled.Int(nil)
-	text := whole.String()
-	if digits == 0 {
-		return text
-	}
-	for len(text) <= digits {
-		text = "0" + text
-	}
-	return text[:len(text)-digits] + "." + text[len(text)-digits:]
-}
-
 // miaoComma is miao's Format.comma with its default one decimal: the value
 // to one decimal with thousands commas.
 func miaoComma(value float64) string {
-	fixed, _ := strconv.ParseFloat(jsFixed(value, 1), 64)
+	fixed, _ := strconv.ParseFloat(app.JSFixed(value, 1), 64)
 	integer, decimal, _ := strings.Cut(strconv.FormatFloat(fixed, 'f', -1, 64), ".")
 	for index := len(integer) - 3; index > 0; index -= 3 {
 		integer = integer[:index] + "," + integer[index:]

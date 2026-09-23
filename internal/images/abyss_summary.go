@@ -87,7 +87,7 @@ func AbyssSummary(context app.ImageContext, result app.QueryResult) (app.Image, 
 	// miao leaves out a damage record without a character.
 	for _, item := range [][2]string{{"最强一击", "damage_rank"}, {"最高承伤", "take_damage_rank"}} {
 		if id, value := leader(item[1]); id != "" {
-			records = append(records, record{item[0], id, jsFixed(float64(value)/10000, 1) + " W"})
+			records = append(records, record{item[0], id, app.JSFixed(float64(value)/10000, 1) + " W"})
 		}
 	}
 	for _, item := range [][2]string{{"最多击破", "defeat_rank"}, {"元素战技", "normal_skill_rank"}, {"元素爆发", "energy_skill_rank"}} {
