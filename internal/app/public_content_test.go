@@ -39,6 +39,22 @@ func TestPublicPostsUseOfficialCursorAndSanitizeContent(t *testing.T) {
 		t.Fatal("query accepted")
 	}
 }
+func TestPostLinksAreGenshinArticlesOnly(t *testing.T) {
+	for text, want := range map[string]string{
+		"看看 2 https://www.miyoushe.com/ys/article/51234567": "51234567",
+		"https://bbs.mihoyo.com/ys/article/100":             "100",
+		"https://www.miyoushe.com/sr/article/51234567":      "",
+	} {
+		got := ""
+		if match := postLink.FindStringSubmatch(text); match != nil {
+			got = match[1]
+		}
+		if got != want {
+			t.Errorf("%s: %q", text, got)
+		}
+	}
+}
+
 func TestPushPicksOneRecentPostAsYunzai(t *testing.T) {
 	now := time.Date(2026, 9, 20, 12, 0, 0, 0, pushZone)
 	at := func(ago time.Duration) int64 { return now.Add(-ago).Unix() }
