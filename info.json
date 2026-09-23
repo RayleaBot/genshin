@@ -20,7 +20,8 @@
   "default_config": {
     "account_provider": "raylea.mihoyo-accounts",
     "image_replies": true,
-    "custom_aliases": {}
+    "custom_aliases": {},
+    "alias_permission": 0
   },
   "commands": [
     {
@@ -353,7 +354,7 @@
       "name": "设置别名",
       "description": "给角色添加对所有群生效的自定义别名",
       "usage": "#喵喵别名设置 角色名 别名",
-      "permission": "super_admin",
+      "permission": "everyone",
       "trigger": {
         "type": "pattern",
         "pattern": "^喵喵别名(?:原神)?设置$"
@@ -363,11 +364,11 @@
       "id": "alias-remove",
       "name": "删除别名",
       "description": "删除自定义别名，预设别名不能删除",
-      "usage": "#喵喵别名删除 别名",
-      "permission": "super_admin",
+      "usage": "#喵喵别名删除 别名 / #删除别名 别名",
+      "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^喵喵别名(?:原神)?删除$"
+        "pattern": "^(?:喵喵别名(?:原神)?删除|删除(?:别名|昵称)(?P<alias>.+))$"
       }
     },
     {
@@ -379,6 +380,28 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^喵喵别名(?:原神)?列表$"
+      }
+    },
+    {
+      "id": "alias-add",
+      "name": "添加别名",
+      "description": "给角色添加别名，随后发送别名，多个用空格隔开",
+      "usage": "#设置胡桃别名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:设置|配置)(?P<character>.+)(?:别名|昵称)$"
+      }
+    },
+    {
+      "id": "aliases",
+      "name": "角色别名",
+      "description": "查看角色的全部别名",
+      "usage": "#胡桃别名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)(?:别名|昵称)$"
       }
     },
     {
@@ -1852,7 +1875,9 @@
         "alias-help",
         "alias-set",
         "alias-remove",
-        "alias-list"
+        "alias-list",
+        "alias-add",
+        "aliases"
       ]
     }
   ],

@@ -79,3 +79,30 @@ func TestGroupConfigFollowsEveryWrite(t *testing.T) {
 		t.Fatal(config)
 	}
 }
+
+func TestAliasChangesFollowYunzaiPermission(t *testing.T) {
+	event := func(target, role string, permission int, super bool) *rayleabot.EventContext {
+		e := &rayleabot.EventContext{Config: map[string]any{"alias_permission": permission}, Event: rayleabot.Event{Actor: rayleabot.Actor{ID: "u", Role: role}, Target: rayleabot.Target{Type: target, ID: "g"}}}
+		if super {
+			e.SuperAdmins = []string{"u"}
+		}
+		return e
+	}
+	for _, c := range []struct {
+		target, role string
+		permission   int
+		super, ok    bool
+	}{
+		{"group", "member", 0, false, true},
+		{"private", "member", 0, false, false},
+		{"private", "member", 2, true, true},
+		{"group", "member", 1, false, false},
+		{"group", "admin", 1, false, true},
+		{"group", "owner", 2, false, false},
+		{"group", "member", 2, true, true},
+	} {
+		if denied := aliasDenied(event(c.target, c.role, c.permission, c.super)); (denied == "") != c.ok {
+			t.Errorf("%+v: %q", c, denied)
+		}
+	}
+}

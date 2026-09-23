@@ -5,16 +5,22 @@ import (
 	"maps"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-// miao's alias commands: 喵喵别名设置, 删除 and 列表 for the custom aliases.
+// The upstreams' alias commands: miao's 喵喵别名设置, 删除 and 列表 for its
+// custom aliases; Yunzai's 设置X别名 (the aliases follow in the next
+// message), 删除别名 and X别名.
 // Custom aliases are the plugin's custom_aliases setting, the one the
-// management page edits. They apply to every group, so only super
-// administrators change them; 群设置 别名 keeps a group's own.
+// management page edits, and apply to every group; 群设置 别名 keeps a
+// group's own. Who changes them follows Yunzai's abbrSetAuth, the
+// alias_permission setting: 0 every group member, 1 group administrators, 2
+// super administrators; in private chats only super administrators.
 
 // customAliases serializes chat changes to custom_aliases. Events of several
 // groups run at once, each with the configuration of its start, so the value
@@ -78,13 +84,52 @@ func (a *App) aliasOwner(word string, aliases map[string]string) (entry Entry, c
 	return Entry{}, "", false
 }
 
+// aliasesOf are a character's built-in aliases, then its custom ones.
+func aliasesOf(entry Entry, aliases map[string]string) []string {
+	out := slices.Clone(entry.Aliases)
+	custom := []string{}
+	for alias, id := range aliases {
+		if id == entry.ID {
+			custom = append(custom, alias)
+		}
+	}
+	slices.Sort(custom)
+	return append(out, custom...)
+}
+
 var miaoAliasInvalid = regexp.MustCompile(`[,，:：\s]`)
 
 func validAlias(alias string) bool {
 	return alias != "" && len(alias) <= 64 && !strings.ContainsAny(alias, "\r\n\t")
 }
 
+// aliasDenied is why the sender may not change aliases, "" when they may.
+func aliasDenied(event *rayleabot.EventContext) string {
+	switch {
+	case slices.Contains(event.SuperAdmins, event.Event.Actor.ID):
+		return ""
+	case event.Event.Target.Type != "group":
+		return "禁止私聊设置角色别名"
+	}
+	switch settings(event).AliasPermission {
+	case 0:
+		return ""
+	case 1:
+		if groupAdministrator(event) {
+			return ""
+		}
+		return "暂无权限，只有管理员才能操作"
+	}
+	return "暂无权限，只有主人才能操作"
+}
+
 func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
+	if command == "alias-add" || command == "alias-set" || command == "alias-remove" {
+		if denied := aliasDenied(event); denied != "" {
+			return event.SendText(denied)
+		}
+	}
+	miao := strings.HasPrefix(event.Event.Command(), "喵喵别名")
 	aliases := settings(event).CustomAliases
 	reply := func(text string, err error) error {
 		if err != nil {
@@ -92,8 +137,8 @@ func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, c
 		}
 		return event.SendText(text)
 	}
-	switch command {
-	case "alias-list":
+	switch {
+	case command == "alias-list":
 		names := map[string][]string{}
 		order := []string{}
 		for alias, id := range aliases {
@@ -116,7 +161,59 @@ func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, c
 			lines = append(lines, name+"："+strings.Join(names[name], "，"))
 		}
 		return event.SendText(strings.Join(lines, "\n"))
-	case "alias-set":
+	case command == "aliases":
+		entry, ok := a.Catalog.Resolve(strings.Join(args, ""), "character", a.aliasMap(event))
+		if !ok {
+			return event.Result(map[string]any{"handled": false})
+		}
+		list := aliasesOf(entry, aliases)
+		parts := [][]rayleabot.Segment{}
+		for index, alias := range list {
+			parts = append(parts, []rayleabot.Segment{rayleabot.Text(strconv.Itoa(index+1) + "." + alias + "\n")})
+		}
+		if len(parts) == 0 {
+			return event.SendText(entry.Name + "别名，0个")
+		}
+		return a.sendForward(ctx, event, parts)
+	case command == "alias-add":
+		entry, _, ok := a.aliasOwner(strings.Join(args, ""), aliases)
+		if !ok || entry.Kind != "character" {
+			return event.SendText("未识别到角色")
+		}
+		_, err := event.Ask(ctx, "请发送"+entry.Name+"别名，多个用空格隔开", rayleabot.SessionWaitOptions{Scope: "user", Timeout: 20 * time.Second}, func(ctx context.Context, next *rayleabot.EventContext) error {
+			text := strings.TrimSpace(next.Event.Message.PlainText)
+			for _, segment := range next.Event.Message.Segments {
+				if segment.Type == "at" || segment.Type == "image" {
+					text = ""
+				}
+			}
+			if text == "" {
+				return next.SendText("设置错误：请发送正确内容")
+			}
+			answer, err := a.changeAliases(ctx, next, func(aliases map[string]string) (string, bool) {
+				added := []string{}
+				for _, alias := range strings.Split(text, " ") {
+					if _, _, taken := a.aliasOwner(alias, aliases); !validAlias(alias) || taken {
+						continue
+					}
+					aliases[alias] = entry.ID
+					added = append(added, alias)
+				}
+				if len(added) == 0 {
+					return "设置失败：别名错误或已存在", false
+				}
+				return "设置别名成功：" + strings.Join(added, "、"), true
+			})
+			if err != nil {
+				return next.SendText(friendlyError(err))
+			}
+			return next.SendText(answer)
+		})
+		if err != nil {
+			return event.SendText(friendlyError(err))
+		}
+		return nil
+	case command == "alias-set":
 		if len(args) != 2 {
 			return event.SendText("命令格式：" + a.Game.Prefix + "喵喵别名设置 角色名 别名")
 		}
@@ -141,17 +238,27 @@ func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, c
 			aliases[alias] = entry.ID
 			return entry.Name + "：" + alias + " 添加成功。", true
 		}))
-	case "alias-remove":
-		if len(args) != 1 {
+	case command == "alias-remove":
+		alias := strings.Join(args, "")
+		if miao && len(args) != 1 {
 			return event.SendText("命令格式：" + a.Game.Prefix + "喵喵别名删除 别名")
 		}
-		alias := args[0]
 		return reply(a.changeAliases(ctx, event, func(aliases map[string]string) (string, bool) {
-			if _, custom, _ := a.aliasOwner(alias, aliases); custom != "" {
+			entry, custom, ok := a.aliasOwner(alias, aliases)
+			if custom != "" {
 				delete(aliases, custom)
-				return "别名「" + alias + "」删除成功", true
 			}
-			return "不存在该别名，或该别名为预设，不支持删除", false
+			switch {
+			case miao && custom == "":
+				return "不存在该别名，或该别名为预设，不支持删除", false
+			case miao:
+				return "别名「" + alias + "」删除成功", true
+			case !ok:
+				return "未识别到角色", false
+			case custom == "":
+				return "默认别名设置，不能删除！", false
+			}
+			return "删除" + entry.Name + "别名成功：" + alias, true
 		}))
 	}
 	return event.Result(map[string]any{"handled": false})

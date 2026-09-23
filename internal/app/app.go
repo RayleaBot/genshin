@@ -97,6 +97,10 @@ type Settings struct {
 	AccountProvider string            `json:"account_provider"`
 	ImageReplies    bool              `json:"image_replies"`
 	CustomAliases   map[string]string `json:"custom_aliases"`
+	// AliasPermission is who may change custom aliases, as Yunzai's
+	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
+	// administrators.
+	AliasPermission int `json:"alias_permission"`
 }
 type App struct {
 	Manifest       pluginmeta.Manifest
