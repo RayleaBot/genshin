@@ -580,7 +580,7 @@
       "id": "challenge-remind",
       "name": "挑战提醒",
       "description": "显式开启本人挑战完成提醒",
-      "usage": "#挑战提醒 玩法 指标 阈值 [HH:MM] [UID]",
+      "usage": "#挑战提醒 玩法 指标 阈值 [时间] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -599,6 +599,19 @@
         "type": "exact",
         "names": [
           "关闭挑战提醒"
+        ]
+      }
+    },
+    {
+      "id": "challenge-status",
+      "name": "挑战提醒状态",
+      "description": "查看本人的挑战提醒",
+      "usage": "#挑战提醒状态 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "挑战提醒状态"
         ]
       }
     },
@@ -1789,7 +1802,8 @@
         "reminder",
         "reminder-stop",
         "challenge-remind",
-        "challenge-stop"
+        "challenge-stop",
+        "challenge-status"
       ]
     },
     {
