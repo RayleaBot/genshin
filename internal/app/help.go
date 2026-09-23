@@ -26,7 +26,7 @@ func (a *App) help(event *rayleabot.EventContext, query string) (map[string]any,
 		if event.Event.Target.Type == "group" && slices.Contains([]string{"group-settings", "challenge-clear"}, c.ID) && !groupAdministrator(event) {
 			continue
 		}
-		if disabled && !slices.Contains([]string{"help", "version", "group-settings", "unsubscribe", "reminder-stop", "gacha-stop", "poke"}, c.ID) {
+		if disabled && !slices.Contains([]string{"help", "version", "group-settings", "unsubscribe", "reminder-stop", "poke"}, c.ID) {
 			continue
 		}
 		allowed := event.Event.EventType == "management.action" || c.Permission == "everyone" || c.Permission == "" || slices.Contains(event.SuperAdmins, event.Event.Actor.ID)

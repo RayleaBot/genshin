@@ -15,15 +15,22 @@ import (
 type SyncTask struct {
 	Ref string `json:"ref"`
 	Selection
-	Owner              Subject        `json:"owner"`
-	Role               Role           `json:"role"`
-	Provider           string         `json:"provider"`
-	DelegationRef      string         `json:"delegation_ref"`
-	ExpiresAtMS        int64          `json:"expires_at_ms"`
-	Kind               string         `json:"kind"`
-	Hour               int            `json:"hour"`
-	Full               bool           `json:"full"`
-	Notify             bool           `json:"notify"`
+	Owner         Subject `json:"owner"`
+	Role          Role    `json:"role"`
+	Provider      string  `json:"provider"`
+	DelegationRef string  `json:"delegation_ref"`
+	ExpiresAtMS   int64   `json:"expires_at_ms"`
+	Kind          string  `json:"kind"`
+	Hour          int     `json:"hour"`
+	Full          bool    `json:"full"`
+	Notify        bool    `json:"notify"`
+	// ReplyType and ReplyID are the chat a 更新抽卡记录 answers in when the
+	// round completes, Before the records each pool held then, and
+	// FullRound reads that round in full after 设置全量更新抽卡记录.
+	ReplyType          string         `json:"reply_type,omitempty"`
+	ReplyID            string         `json:"reply_id,omitempty"`
+	Before             map[string]int `json:"before,omitempty"`
+	FullRound          bool           `json:"full_round,omitempty"`
 	State              string         `json:"state"`
 	NextCheckMS        int64          `json:"next_check_ms"`
 	LastCheckedMS      int64          `json:"last_checked_ms"`
@@ -39,13 +46,16 @@ type SyncTask struct {
 // SyncTaskStore keeps each background sync task in its own file. steps is
 // held while a trigger advances a sync, so removing an archive waits for a
 // page being merged instead of letting it revive the archive.
+// SyncTaskStore keeps the sync tasks; Prefix is the game's command prefix
+// the report after 更新抽卡记录 suggests commands with.
 type SyncTaskStore struct {
 	taskFiles[SyncTask]
-	steps sync.RWMutex
+	Prefix string
+	steps  sync.RWMutex
 }
 
-func syncTaskStore(directory string) *SyncTaskStore {
-	return &SyncTaskStore{taskFiles: taskFiles[SyncTask]{Directory: filepath.Join(directory, "sync-tasks"), Legacy: filepath.Join(directory, "sync-tasks.json")}}
+func syncTaskStore(directory, prefix string) *SyncTaskStore {
+	return &SyncTaskStore{taskFiles: taskFiles[SyncTask]{Directory: filepath.Join(directory, "sync-tasks"), Legacy: filepath.Join(directory, "sync-tasks.json")}, Prefix: prefix}
 }
 
 func syncTaskTime(now int64, hour int) (string, int64, int64) {
@@ -140,7 +150,7 @@ func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, now int64, jobs
 			task.Restarts++
 			jobs.Forget(task.Progress.Ref)
 		}
-		info, err = jobs.Start(archive, gacha.SyncChoice{AccountRef: task.AccountRef, RoleRef: task.RoleRef}, task.Role.UID, task.Role.Region, task.Full)
+		info, err = jobs.Start(archive, gacha.SyncChoice{AccountRef: task.AccountRef, RoleRef: task.RoleRef}, task.Role.UID, task.Role.Region, task.Full || task.FullRound)
 		if err != nil {
 			syncTaskFailure(task, err, now)
 			return s.save(*task)
@@ -187,16 +197,25 @@ func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, now int64, jobs
 		task.NextCheckMS = nextDay
 		task.RunDay = day
 	}
-	if task.Notify {
+	if task.Notify || task.ReplyType != "" {
 		task.LastNotificationMS = now
 	}
 	// The notification is marked before it is sent, so a restart does not
 	// send it again.
+	answer := *task
+	task.ReplyType, task.ReplyID, task.Before, task.FullRound = "", "", nil, false
 	if err = s.save(*task); err != nil {
 		return err
 	}
 	jobs.Forget(task.Progress.Ref)
-	if task.Notify && send != nil {
+	if answer.ReplyType != "" && send != nil {
+		// Yunzai's report after the records xiaoyao's 更新抽卡记录 reads.
+		archived, _ := archive.Read(task.Role.UID, task.Role.Region)
+		if err = send(ctx, answer, gachaLinkSummary(s.Prefix, answer.Before, gachaPoolCounts(archived))); err != nil {
+			task.LastCode = "sync_completed.notification_failed"
+			return s.save(*task)
+		}
+	} else if task.Notify && send != nil {
 		result := task.Progress.Result
 		message := fmt.Sprintf("抽卡后台同步完成\n%s · %s\n新增 %d 条，档案共 %d 条。", task.Role.Nickname, task.Role.UID, result.Added, result.Total)
 		if err = send(ctx, *task, message); err != nil {
