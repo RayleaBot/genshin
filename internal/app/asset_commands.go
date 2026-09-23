@@ -15,7 +15,7 @@ func (a *App) assetCommand(ctx context.Context, event *rayleabot.EventContext, c
 		return a.sendView(ctx, event, a.codesView(data))
 	}
 	if len(args) < 1 || len(args) > 2 {
-		return event.SendText("使用“" + a.Game.Prefix + "兑换 代码 [UID]”确认兑换，或“" + a.Game.Prefix + "资产记录 类别 [UID]”查询。")
+		return event.SendText("使用“" + a.Game.Prefix + "兑换 代码 [UID]”确认兑换。")
 	}
 	uid := ""
 	if len(args) == 2 {
@@ -30,20 +30,7 @@ func (a *App) assetCommand(ctx context.Context, event *rayleabot.EventContext, c
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	action := "billing.page"
-	input := map[string]any{"account_ref": choice.AccountRef, "role_ref": choice.RoleRef, "category": args[0]}
-	if command == "redeem" {
-		action = "redeem.run"
-		input["confirm"] = true
-		input["code"] = args[0]
-	} else {
-		for _, c := range billingCategories() {
-			if args[0] == c["label"] {
-				input["category"] = c["id"]
-			}
-		}
-	}
-	result, err := a.assetAccountAction(ctx, client, action, input)
+	result, err := a.assetAccountAction(ctx, client, "redeem.run", map[string]any{"account_ref": choice.AccountRef, "role_ref": choice.RoleRef, "confirm": true, "code": args[0]})
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}

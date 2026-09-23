@@ -22,8 +22,11 @@ import (
 // the Genesis Crystals bought and the 680 primogems of each Gnostic Hymn with
 // its authkey, and draws them by month and pack. The result is kept for the
 // sender; the authkey only in memory, for a day, so 更新充值记录 can read
-// again, as upstream keeps it a day in redis. A history too long for one
-// event is finished by a scheduled task, dropped if the plugin restarts.
+// again, as upstream keeps it a day in redis. Without a link 更新充值记录
+// reads the same logs with the account's SToken, as xiaoyao's 刷新充值记录
+// hands Yunzai a customer service authkey; the accounts plugin reads them
+// and the authkey stays there. A history too long for one event is finished
+// by a scheduled task, dropped if the plugin restarts.
 
 const (
 	payLogURL  = "https://hk4e-api.mihoyo.com/common/hk4e_self_help_query/User/"
@@ -143,10 +146,16 @@ type payRecord struct {
 	add    int
 }
 
-// payLogJob is a link whose logs are still being read: the crystal log, then
-// the primogem log for 680s.
+// payLogJob is a link or account whose logs are still being read: the
+// crystal log, then the primogem log for 680s. An account read has no key:
+// choice and provider pick the role the accounts plugin reads, and grant is
+// the delegation its scheduled task reads with, a page a second.
 type payLogJob struct {
 	key, uid string
+	choice   Selection
+	provider string
+	grant    string
+	last     time.Time
 	api      string
 	cursor   string
 	pages    int
@@ -205,19 +214,62 @@ func (a *App) payLogRequest(ctx context.Context, key, api, endID string) (map[st
 	return envelope.Data, nil
 }
 
+// payLogPage reads a page of the log being read, with the link's authkey or
+// through the accounts plugin, and the cursor of the next page.
+func (a *App) payLogPage(ctx context.Context, client AccountsClient, job *payLogJob) ([]any, string, error) {
+	if job.key != "" {
+		data, err := a.payLogRequest(ctx, job.key, job.api, job.cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		list := asList(data["list"])
+		if len(list) == 20 {
+			return list, asText(asObject(list[19])["id"]), nil
+		}
+		return list, "", nil
+	}
+	end := job.cursor
+	if end == "" {
+		end = "0"
+	}
+	params := map[string]any{"account_ref": job.choice.AccountRef, "role_ref": job.choice.RoleRef, "operation": a.Game.ID + ".billing",
+		"input": map[string]any{"category": map[string]string{"GetCrystalLog": "crystal", "GetPrimogemLog": "primogem"}[job.api], "direction": "produce", "end_id": end}}
+	if job.grant != "" {
+		params["delegation_ref"] = job.grant
+		select {
+		case <-ctx.Done():
+			return nil, "", ctx.Err()
+		case <-time.After(time.Until(job.last.Add(time.Second))):
+		}
+		job.last = time.Now()
+	}
+	client.Provider = job.provider
+	var result QueryResult
+	if err := client.call(ctx, "execute", params, &result); err != nil {
+		return nil, "", err
+	}
+	if result.Role.UID != job.uid {
+		return nil, "", gameError("pay_log_unavailable", "获取失败，请稍后再试")
+	}
+	next := ""
+	if result.Data["has_more"] == true {
+		next = asText(result.Data["next_end_id"])
+	}
+	return asList(result.Data["items"]), next, nil
+}
+
 // stepPayLog reads pages until both logs are read or stop passes; done is
 // false while pages remain.
-func (a *App) stepPayLog(ctx context.Context, job *payLogJob, stop time.Time) (bool, error) {
+func (a *App) stepPayLog(ctx context.Context, client AccountsClient, job *payLogJob, stop time.Time) (bool, error) {
 	for job.api != "" {
 		if job.pages >= 2000 {
 			return false, gameError("pay_log_limit", "记录过多，未能全部获取")
 		}
-		data, err := a.payLogRequest(ctx, job.key, job.api, job.cursor)
+		list, next, err := a.payLogPage(ctx, client, job)
 		if err != nil {
 			return false, err
 		}
 		job.pages++
-		list := asList(data["list"])
 		for _, raw := range list {
 			item := asObject(raw)
 			add, _ := strconv.Atoi(asText(item["add_num"]))
@@ -225,10 +277,6 @@ func (a *App) stepPayLog(ctx context.Context, job *payLogJob, stop time.Time) (b
 			if job.api == "GetCrystalLog" || add == 680 {
 				job.records = append(job.records, payRecord{asText(item["id"]), asText(item["datetime"]), add})
 			}
-		}
-		next := ""
-		if len(list) == 20 {
-			next = asText(asObject(list[19])["id"])
 		}
 		switch {
 		case next != "" && next != job.cursor:
@@ -302,29 +350,48 @@ func (a *App) payLinkMessage(ctx context.Context, event *rayleabot.EventContext)
 		return true, event.SendText("链接无效,请重新发送")
 	}
 	notice(ctx, event, "正在获取消费数据,可能需要30s~~")
-	return true, a.startPayLog(ctx, event, key)
+	return true, a.startPayLog(ctx, event, &payLogJob{key: key})
 }
 
-// startPayLog reads the logs of an authkey and answers in the chat, on a
-// scheduled task when they take longer than the event.
-func (a *App) startPayLog(ctx context.Context, event *rayleabot.EventContext, key string) error {
-	user, err := a.payLogRequest(ctx, key, "GetUserInfo", "")
-	if err != nil {
-		return event.SendText(friendlyError(err))
+// startPayLog reads the logs of a link or account and answers in the chat,
+// on a scheduled task when they take longer than the event.
+func (a *App) startPayLog(ctx context.Context, event *rayleabot.EventContext, job *payLogJob) error {
+	client := a.accountClient(event)
+	if job.key != "" {
+		user, err := a.payLogRequest(ctx, job.key, "GetUserInfo", "")
+		if err != nil {
+			return event.SendText(friendlyError(err))
+		}
+		job.uid = asText(user["uid"])
+		// As upstream, the link's UID becomes the sender's.
+		a.useLinkUID(ctx, event, job.uid)
 	}
-	job := &payLogJob{key: key, uid: asText(user["uid"]), api: "GetCrystalLog", owner: chatOwner(event), target: event.Event.Target, expires: time.Now().Add(15 * time.Minute)}
-	// As upstream, the link's UID becomes the sender's.
-	a.useLinkUID(ctx, event, job.uid)
-	done, err := a.stepPayLog(ctx, job, time.Now().Add(40*time.Second))
+	job.api, job.owner, job.target, job.expires = "GetCrystalLog", chatOwner(event), event.Event.Target, time.Now().Add(15*time.Minute)
+	done, err := a.stepPayLog(ctx, client, job, time.Now().Add(40*time.Second))
 	switch {
 	case err != nil:
 		return event.SendText(friendlyError(err))
 	case !done:
+		retry := "记录较多，本次未能全部获取，请稍后重新发送链接。"
 		ref := payLogTask + rand.Text()
+		if job.key == "" {
+			// The scheduled task reads the account with a delegation, which
+			// only a chat can grant; it lapses after a day.
+			retry = "记录较多，本次未能全部获取，请稍后再试。"
+			var grant struct {
+				Delegation struct {
+					Ref string `json:"ref"`
+				} `json:"delegation"`
+			}
+			if client.call(ctx, "delegation.create", map[string]any{"account_ref": job.choice.AccountRef, "role_ref": job.choice.RoleRef, "task_id": ref, "operation": a.Game.ID + ".billing", "days": 1}, &grant) != nil {
+				return event.SendText(retry)
+			}
+			job.grant = grant.Delegation.Ref
+		}
 		a.PayJobs.put(ref, job)
 		if _, err := event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "充值记录", Payload: map[string]any{"kind": "pay_log"}}); err != nil {
 			a.PayJobs.take(ref)
-			return event.SendText("记录较多，本次未能全部获取，请稍后重新发送链接。")
+			return event.SendText(retry)
 		}
 		return event.SendText("记录较多，将在后台继续获取，完成后在此回复。")
 	}
@@ -343,7 +410,7 @@ func (a *App) runPayLog(ctx context.Context, event *rayleabot.EventContext) erro
 		_, _ = event.Actions().SchedulerDelete(ctx, ref)
 		return event.Result(map[string]any{"handled": true})
 	}
-	done, err := a.stepPayLog(ctx, job, time.Now().Add(40*time.Second))
+	done, err := a.stepPayLog(ctx, AccountsClient{Caller: event.Actions(), Game: a.Game.ID}, job, time.Now().Add(40*time.Second))
 	if err == nil && !done {
 		a.PayJobs.put(ref, job)
 		return event.Result(map[string]any{"handled": true})
@@ -361,8 +428,8 @@ func (a *App) runPayLog(ctx context.Context, event *rayleabot.EventContext) erro
 	return event.Result(map[string]any{"handled": true})
 }
 
-// finishPayLog draws the logs read, keeps the result for the sender and the
-// authkey for a day.
+// finishPayLog draws the logs read, keeps the result for the sender and a
+// link's authkey for a day.
 func (a *App) finishPayLog(ctx context.Context, event *rayleabot.EventContext, job *payLogJob, send func(...rayleabot.Segment) error) error {
 	if len(job.records) == 0 {
 		return send(rayleabot.Text("未获取到您的任何充值数据"))
@@ -371,7 +438,9 @@ func (a *App) finishPayLog(ctx context.Context, event *rayleabot.EventContext, j
 	if err := a.sendPayLog(ctx, event, log, send); err != nil {
 		return err
 	}
-	a.PayKeys.put(job.owner, job.uid, job.key)
+	if job.key != "" {
+		a.PayKeys.put(job.owner, job.uid, job.key)
+	}
 	if err := a.PayLogs.Keep(job.owner, log); err != nil {
 		return send(rayleabot.Text(friendlyError(err)))
 	}
@@ -409,13 +478,11 @@ var PayPackNames = [8]string{"大月卡", "小月卡", "648", "328", "198", "98"
 
 // payLogCommand answers 充值记录 and 更新充值记录: the kept result of the
 // sender's current UID, else the first kept, and a new read with the
-// authkey kept for that UID.
+// authkey kept for that UID, else with the account of the UID.
 func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, command string) error {
 	owner := chatOwner(event)
-	current := ""
-	if player, err := a.panelOwner(ctx, event, ""); err == nil {
-		current = player.UID
-	}
+	player, _ := a.panelOwner(ctx, event, "")
+	current := player.UID
 	if command == "pay-log" {
 		logs, err := a.PayLogs.Get(owner)
 		if err != nil {
@@ -430,10 +497,14 @@ func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, 
 			return event.SendText("当前绑定的uid未获取数据，请私聊获取")
 		}
 	}
-	kept, ok := a.PayKeys.get(owner)
-	if !ok || current != "" && kept.uid != current {
+	job := &payLogJob{}
+	if kept, ok := a.PayKeys.get(owner); ok && (current == "" || kept.uid == current) {
+		job.key = kept.key
+	} else if player.Owned {
+		job.choice, job.provider, job.uid = player.Choice, a.accountClient(event).Provider, player.UID
+	} else {
 		return event.SendText("请私聊发送米游社链接，可以发送【" + a.Game.Prefix + "充值统计帮助】查看链接教程")
 	}
 	notice(ctx, event, "正在获取数据,可能需要30s")
-	return a.startPayLog(ctx, event, kept.key)
+	return a.startPayLog(ctx, event, job)
 }

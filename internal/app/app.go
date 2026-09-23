@@ -412,7 +412,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.calendarCommand(ctx, event)
 	case "alias-set", "alias-remove", "alias-list":
 		return a.aliasCommand(ctx, event, command, args)
-	case "codes", "redeem", "billing":
+	case "codes", "redeem":
 		return a.assetCommand(ctx, event, command, args)
 	case "monthly-history":
 		return a.monthlyCommand(ctx, event, command, args)

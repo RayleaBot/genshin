@@ -939,7 +939,7 @@
     {
       "id": "pay-log-update",
       "name": "更新充值记录",
-      "description": "用一天内私聊发送的客服链接重新读取充值统计",
+      "description": "用一天内私聊发送的客服链接重新读取充值统计，没有链接时按逍遥插件用账号读取",
       "usage": "#更新充值记录",
       "permission": "everyone",
       "trigger": {
@@ -956,19 +956,6 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:充值|消费)(?:记录|统计)帮助$"
-      }
-    },
-    {
-      "id": "billing",
-      "name": "资产记录",
-      "description": "查询官方可用资产变动明细",
-      "usage": "#资产记录 类别 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "资产记录"
-        ]
       }
     },
     {
@@ -2005,7 +1992,6 @@
         "monthly",
         "monthly-history",
         "monthly-task",
-        "billing",
         "pay-log",
         "pay-log-update",
         "pay-help"
