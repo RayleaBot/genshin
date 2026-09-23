@@ -88,6 +88,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"ark获取面板3", "cloud-custom-rank-panel", []string{"3"}},
 			{"ARK获取面板20", "cloud-custom-rank-panel", []string{"20"}},
 			{"ark获取面板", "cloud-custom-rank-panel", nil},
+			{"arktoken用量", "cloud-usage", nil},
+			{"ARKTOKEN用量", "cloud-usage", nil},
 			{"胡桃圣遗物排行榜", "rank", nil},
 			{"群排名", "rank", nil},
 			{"最强胡桃", "rank-top", nil},

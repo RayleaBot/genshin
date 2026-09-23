@@ -1578,6 +1578,17 @@
       }
     },
     {
+      "id": "cloud-usage",
+      "name": "arktoken用量",
+      "description": "ark 令牌（未配置时为匿名请求）的剩余请求额度",
+      "usage": "#arktoken用量",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?i:arktoken)用量$"
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1886,6 +1897,7 @@
         "cloud-custom-rank",
         "cloud-custom-rank-help",
         "cloud-custom-rank-panel",
+        "cloud-usage",
         "panel-export",
         "cloud-export",
         "cloud-import",

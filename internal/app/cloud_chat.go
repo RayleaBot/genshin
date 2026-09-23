@@ -230,3 +230,39 @@ func cmpOr(value, fallback string) string {
 	}
 	return fallback
 }
+
+// cloudUsage is ark-plugin's #arktoken用量 (apps/usage.js) for super
+// administrators: the quota ark reports for the ark token, or for anonymous
+// requests while none is set.
+func (a *App) cloudUsage(ctx context.Context, event *rayleabot.EventContext) error {
+	decoded, err := a.arkRequest(ctx, event, "auth/usage", map[string]any{})
+	if err != nil {
+		return event.SendText("查询失败，服务暂不可用")
+	}
+	return event.SendText(arkUsageText(decoded))
+}
+
+// arkUsageText is usage.js's formatUsageResult: the permission, what is left
+// of every request's minute, hour and day quota, the custom ranking's
+// multiplier and what is left of its ordinary and advanced quota.
+func arkUsageText(decoded any) string {
+	if text, ok := decoded.(string); ok {
+		return cloudText(text)
+	}
+	result := asObject(decoded)
+	data := asObject(result["data"])
+	if asText(result["retcode"]) != "0" || data == nil {
+		return cmpOr(cloudText(result["message"]), "查询失败")
+	}
+	auth, quota := asObject(data["auth"]), asObject(data["quota"])
+	rank, custom := asObject(quota["rank"]), asObject(quota["custom"])
+	remaining := func(item any) string { return cmpOr(asText(asObject(item)["remaining"]), "-") }
+	permission := map[string]string{"1": "高级"}[asText(auth["permission"])]
+	return strings.Join([]string{
+		"权限类型：" + cmpOr(permission, "普通"),
+		"全部请求剩余额度：" + remaining(rank["minute"]) + "/" + remaining(rank["hour"]) + "/" + remaining(rank["day"]),
+		"自定义排名请求额度倍率：" + cmpOr(asText(auth["limit_normal"]), "1") + "x",
+		"自定义排名普通请求剩余额度：" + remaining(custom["normal"]),
+		"自定义排名高级请求剩余额度：" + remaining(custom["advanced"]),
+	}, "\n")
+}

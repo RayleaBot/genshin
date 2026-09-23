@@ -421,6 +421,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.customRankHelp(ctx, event)
 	case "cloud-custom-rank-panel":
 		return a.customRankPanel(ctx, event, args)
+	case "cloud-usage":
+		return a.cloudUsage(ctx, event)
 	case "cloud-export", "cloud-import":
 		return a.cloudExchangeCommand(ctx, event, command, args)
 	case "calendar", "banner-history":
