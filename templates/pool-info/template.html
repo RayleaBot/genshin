@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+<div class="basic">
+  {{ range .pools }}
+  <div class="cont pool-cont">
+    <div class="cont-title pool-title">
+      <strong class="pool-name">{{ .version }} {{ .half }}{{ if .mix }}<em class="mix-tag">mix</em>{{ end }}</strong>
+      {{ if .from }}<span class="pool-time">{{ .from }} - {{ .to }}</span>{{ end }}
+    </div>
+    <div class="cont-body pool-body">
+      {{ range .groups }}
+      <div class="pool-group">
+        <div class="group-title">{{ .title }}</div>
+        {{ range .rows }}
+        <div class="item-row">
+          {{ range . }}
+          <div class="item-card">
+            <div class="item-icon star{{ .star }}">
+              <div class="item-bg"{{ with .img }} data-render-resource="{{ . }}"{{ end }}></div>
+            </div>
+            <div class="item-name">{{ .name }}</div>
+          </div>
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

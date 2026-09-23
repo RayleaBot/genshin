@@ -1183,7 +1183,8 @@
       "trigger": {
         "type": "exact",
         "names": [
-          "卡池帮助"
+          "卡池帮助",
+          "卡池"
         ]
       }
     },
@@ -1195,7 +1196,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:卡池|(?P<version>[0-9]+(?:\\.[0-9]+)+)(?:上半|下半)?卡池)$"
+        "pattern": "^(?P<version>[0-9]+(?:\\.[0-9]+)+)(?P<half>上半|下半)?卡池$"
       }
     },
     {
@@ -1206,7 +1207,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:卡池历史|复刻记录|(?P<item>.+?)卡池(?:详情|详细|历史)?)$"
+        "pattern": "^(?P<item>.+?)卡池(?P<detail>详情|详细)?$"
       }
     },
     {

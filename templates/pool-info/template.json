@@ -1,0 +1,11 @@
+{
+  "id": "pool-info",
+  "name": "卡池信息",
+  "description": "卡池命令的图片，布局参照 miao-plugin gacha/gacha-info",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1036,
+  "height": 8000
+}

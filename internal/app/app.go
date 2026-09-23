@@ -86,6 +86,8 @@ type Assets struct {
 	// UIDList draws 我的uid; RankStats draws 排名统计.
 	UIDList   UIDListImageBuilder
 	RankStats RankStatsImageBuilder
+	// Pools draws 卡池.
+	Pools PoolImageBuilder
 	// Queries picks the official query, by operation name, for commands that
 	// draw on another operation's data, as 最新深渊 runs whichever record
 	// opened last.
@@ -146,6 +148,7 @@ type App struct {
 	panelList          PanelListImageBuilder
 	artifactListImage  ArtifactListImageBuilder
 	dailyMaterialImage DailyMaterialImageBuilder
+	poolImage          PoolImageBuilder
 	uidListImage       UIDListImageBuilder
 	rankStatsImage     RankStatsImageBuilder
 	atlases            atlasIndexes
@@ -185,7 +188,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}}
@@ -369,35 +372,14 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.cloudChatCommand(ctx, event, command, args)
 	case "cloud-export", "cloud-import":
 		return a.cloudExchangeCommand(ctx, event, command, args)
-	case "banner-history":
-		result, queryErr := a.bannerQuery(map[string]any{"query": strings.Join(args, " ")})
-		if queryErr != nil {
-			err = queryErr
-			break
-		}
-		view = resourceView(a.Game, "calendar.query", result)
-	case "materials", "calendar":
-		if command == "calendar" && len(args) == 0 {
-			result, queryErr := a.bannerQuery(map[string]any{"date": time.Now().In(time.FixedZone("UTC+8", 28800)).Format("2006-01-02")})
-			if queryErr != nil {
-				err = queryErr
-				break
-			}
-			view = resourceView(a.Game, "calendar.query", result)
-			break
-		}
+	case "calendar", "banner-history":
+		return a.poolCommand(ctx, event, command, args)
+	case "materials":
 		if len(args) == 0 {
-			return event.SendText("使用“" + prefix + "材料 名称”或“" + prefix + "卡池 版本 [YYYY-MM-DD]”查询固定参考资料。")
+			return event.SendText("使用“" + prefix + "材料 名称”查询固定参考资料。")
 		}
 		action := "materials.query"
 		input := map[string]any{"query": strings.Join(args, " ")}
-		if command == "calendar" {
-			action = "calendar.query"
-			input = map[string]any{"version": args[0]}
-			if len(args) > 1 {
-				input["date"] = args[1]
-			}
-		}
 		result, queryErr := a.resourceQuery(action, input)
 		if queryErr != nil {
 			err = queryErr
