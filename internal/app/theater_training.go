@@ -143,24 +143,19 @@ func (a *App) theaterConditions(ctx context.Context, month string) (map[string]a
 }
 
 // theaterTraining answers 剧诗练度统计 as miao's ProfileStat.roleStat: the
-// UID's player data read as for 练度统计, then the month's conditions, sent
-// with the 练度统计 narrowed to who may enter in one forwarded message. A UID
-// may follow the month's word, as miao reads one from the message.
+// player data of the UID written after the month's word, a mentioned
+// user's or the one in use, read as for 练度统计, then the month's
+// conditions, sent with the 练度统计 narrowed to who may enter in one
+// forwarded message.
 func (a *App) theaterTraining(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	uid := ""
 	if len(args) > 1 {
 		uid = args[1]
 	}
-	client := a.accountClient(event)
-	listed, err := client.List(ctx, 0)
+	owner, err := a.panelOwner(ctx, event, uid)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	choice, role, err := Choose(listed, a.Game.ID, uid)
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	owner := panelOwner{UID: role.UID, Choice: choice, Role: role, Owned: true}
 	image, answered, err := a.playerData(ctx, event, owner)
 	if answered {
 		return err
