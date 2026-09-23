@@ -36,6 +36,9 @@ type Catalog struct {
 	// SetAbbrs are upstream's short names for some equipment sets, by set
 	// name.
 	SetAbbrs map[string]string `json:"set_abbrs,omitempty"`
+	// WifeTypes are miao's 老婆 kinds (girlfriend, boyfriend, daughter, son)
+	// and the character IDs of each.
+	WifeTypes map[string][]string `json:"wife_types,omitempty"`
 	// MaterialAbbrs are upstream's short names for some materials, by name.
 	MaterialAbbrs map[string]string `json:"material_abbrs,omitempty"`
 	Version       string            `json:"version"`

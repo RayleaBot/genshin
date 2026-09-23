@@ -6,7 +6,8 @@ Takes character and weapon aliases from miao-plugin (character/alias.js,
 weapon/alias.js `alias` and `abbr`, the abbreviation also kept as `abbr`), the
 character names from miao's character index, which upstream resolves names
 through, and the set abbreviations from artifact/alias.js as `set_abbrs` and
-the set aliases as `set_aliases`; also miao's material abbreviations (material/abbr.js) as `material_abbrs`.
+the set aliases as `set_aliases`; also miao's material abbreviations (material/abbr.js) as `material_abbrs`
+and its 老婆 types (character/extra.js wifeCfg) as `wife_types`.
 Only built-in aliases are replaced; custom aliases stay in plugin settings.
 Needs node.
 """
@@ -93,5 +94,16 @@ sets = module(meta / "artifact/alias.js")
 catalog["set_abbrs"] = sets.get("setAbbr", {})
 catalog["set_aliases"] = {name: words(value) for name, value in sets.get("setAlias", {}).items()}
 catalog["material_abbrs"] = module(meta / "material/abbr.js").get("abbr", {})
+# miao's 老婆 types (character/extra.js wifeCfg) by character ID, resolving
+# names and aliases as its meta.getId does.
+ids = {}
+for entry in catalog["entries"]:
+    if entry["kind"] == "character":
+        for name in [entry["name"]] + entry.get("aliases", []):
+            ids.setdefault(name, entry["id"])
+wife = {}
+for kind, names in module(meta / "character/extra.js").get("wifeCfg", {}).items():
+    wife[kind] = [ids[name] for name in words(names) if name in ids]
+catalog["wife_types"] = wife
 save(path, catalog)
 print(json.dumps({"aliases": counted, "set_abbrs": len(catalog["set_abbrs"]), "renamed": renamed}, ensure_ascii=False))

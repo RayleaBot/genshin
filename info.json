@@ -21,7 +21,8 @@
     "account_provider": "raylea.mihoyo-accounts",
     "image_replies": true,
     "custom_aliases": {},
-    "alias_permission": 0
+    "alias_permission": 0,
+    "poke_card": true
   },
   "commands": [
     {
@@ -1011,19 +1012,6 @@
       }
     },
     {
-      "id": "poke",
-      "name": "戳一戳",
-      "description": "开启或关闭本人的戳一戳角色互动",
-      "usage": "#戳一戳 开启/关闭",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "戳一戳"
-        ]
-      }
-    },
-    {
       "id": "help",
       "name": "原神帮助",
       "description": "查看全部命令，可按关键词筛选",
@@ -1200,12 +1188,12 @@
     {
       "id": "interaction",
       "name": "老婆",
-      "description": "设置老婆、老公等角色偏好并看图",
-      "usage": "#老婆设置<角色>",
+      "description": "按 miao 从自己的角色中随机展示老婆、老公、女儿等角色卡片，或设置指定角色",
+      "usage": "#老婆 / #老婆设置胡桃,雷神 / #老婆是谁 / #老婆照片",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:互动|(?P<relation>老婆|媳妇|女友|女朋友|老公|男友|男朋友|女儿|儿子|伙伴)(?P<action>设置|添加|移除|列表|随机|照片|卡片)?(?P<character>[^0-9]*?))$"
+        "pattern": "^(?:小宝贝|老婆|媳妇|妻子|娘子|宝贝|老公|丈夫|夫君|郎君|死鬼|女朋友|女友|女神|女王|女票|男朋友|男友|男神|男票|女儿|闺女|儿子|犬子)(?:设置|选择|指定|添加|列表|查询|是|是谁|照片|相片|图片|写真|图像)?[^0-9]*[0-9]*$"
       }
     },
     {
@@ -1876,8 +1864,7 @@
         "photo",
         "photo-upload",
         "image-library",
-        "interaction",
-        "poke"
+        "interaction"
       ]
     },
     {

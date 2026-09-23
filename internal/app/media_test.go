@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"image/png"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -117,9 +118,6 @@ func TestWebPDimensionsAndInvalidContainer(t *testing.T) {
 func TestPokeClaimHonorsReplayAndCooldown(t *testing.T) {
 	s := &InteractionStore{Path: filepath.Join(t.TempDir(), "interaction.json")}
 	owner := Subject{"onebot11", "adapter", "bot", "actor"}
-	if err := s.edit(owner, func(p *InteractionProfile) error { p.Poke = true; return nil }); err != nil {
-		t.Fatal(err)
-	}
 	now := time.Now().UnixMilli()
 	yes, err := s.claimPoke(owner, "event", now)
 	if err != nil || !yes {
@@ -131,14 +129,34 @@ func TestPokeClaimHonorsReplayAndCooldown(t *testing.T) {
 	if yes, _ = s.claimPoke(owner, "another", now+1000); yes {
 		t.Fatal("cooldown ignored")
 	}
-	a := App{Interactions: s}
-	if yes, err = a.interactionEligible(owner, rayleabot.Target{Type: "private", ID: "actor"}); err != nil || !yes {
-		t.Fatal("cooldown must not permit next game to reply", err)
-	}
 	other := owner
 	other.BotID = "other"
-	p, _ := s.Get(other)
-	if p.Poke || p.LastEvent != "" {
+	if p, _ := s.Get(other); p.LastEvent != "" {
 		t.Fatal("preferences crossed bot identity")
+	}
+	// miao's avatarPoke: on unless the administrator turns it off.
+	a := App{Interactions: s}
+	event := &rayleabot.EventContext{Event: rayleabot.Event{Target: rayleabot.Target{Type: "private", ID: "actor"}}}
+	if yes, err = a.pokeEligible(event, owner); err != nil || !yes {
+		t.Fatal("poke cards are on by default", err)
+	}
+	event.Config = map[string]any{"poke_card": false}
+	if yes, _ = a.pokeEligible(event, owner); yes {
+		t.Fatal("the setting did not turn poke cards off")
+	}
+}
+
+func TestWifeWordsFollowMiao(t *testing.T) {
+	for text, want := range map[string][4]string{
+		"老婆":         {"老婆", "", "", ""},
+		"小宝贝":        {"小宝贝", "", "", ""},
+		"老婆设置 胡桃,雷神": {"老婆", "设置", "胡桃,雷神", ""},
+		"老公是谁":       {"老公", "是谁", "", ""},
+		"女友照片":       {"女友", "照片", "", ""},
+	} {
+		match := wifeMessage.FindStringSubmatch(text)
+		if match == nil || match[1] != want[0] || match[2] != want[1] || strings.TrimSpace(match[3]) != want[2] {
+			t.Errorf("%s: %q", text, match)
+		}
 	}
 }

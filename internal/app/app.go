@@ -101,6 +101,8 @@ type Settings struct {
 	AccountProvider string            `json:"account_provider"`
 	ImageReplies    bool              `json:"image_replies"`
 	CustomAliases   map[string]string `json:"custom_aliases"`
+	// PokeCard is miao's avatarPoke: a poke shows a character card.
+	PokeCard bool `json:"poke_card"`
 	// AliasPermission is who may change custom aliases, as Yunzai's
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
@@ -204,7 +206,7 @@ func New(assets Assets, directory string) (*App, error) {
 	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
-	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}}
+	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }
@@ -287,7 +289,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && !(command == "poke" && len(args) > 0 && args[0] == "关闭") && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "cloud-game-stop" && command != "reminder-stop" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "cloud-game-stop" && command != "reminder-stop" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -312,8 +314,10 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.helpCommand(ctx, event, command, args)
 	case "artwork", "artwork-status":
 		return a.artworkCommand(event, command, args)
-	case "photo", "image-library", "original-image", "interaction", "poke":
+	case "photo", "image-library", "original-image":
 		return a.interactionCommand(ctx, event, command, args)
+	case "interaction":
+		return a.wifeCommand(ctx, event, args)
 	case "guides", "guide-help", "guide-default", "map", "enemy", "blueprint":
 		return a.resourceToolsCommand(ctx, event, command, args)
 	case "subscribe", "unsubscribe":

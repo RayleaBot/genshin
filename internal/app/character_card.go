@@ -45,16 +45,23 @@ func (a *App) characterCard(ctx context.Context, event *rayleabot.EventContext, 
 	if !found || entry.Kind != "character" {
 		return event.Result(map[string]any{"handled": false})
 	}
-	image := CharacterCardImage{Entry: entry}
-	var ref string
-	if image.Picture, image.Width, image.Height, ref = a.cardPicture(ctx, entry); ref == "" {
+	if _, _, _, ref := a.cardPicture(ctx, entry); ref == "" {
 		return event.SendText(entry.Name + "暂无角色图片")
 	}
 	owner, err := a.panelOwner(ctx, event, uid)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	image.UID = owner.UID
+	return a.characterCardFor(ctx, event, owner, entry)
+}
+
+// characterCardFor draws the card of a character for a UID's owner.
+func (a *App) characterCardFor(ctx context.Context, event *rayleabot.EventContext, owner panelOwner, entry Entry) error {
+	image := CharacterCardImage{Entry: entry, UID: owner.UID}
+	var ref string
+	if image.Picture, image.Width, image.Height, ref = a.cardPicture(ctx, entry); ref == "" {
+		return event.SendText(entry.Name + "暂无角色图片")
+	}
 	// The Traveler's panel is the twin the player chose.
 	ids := []string{entry.ID}
 	if entry.ID == "20000000" {

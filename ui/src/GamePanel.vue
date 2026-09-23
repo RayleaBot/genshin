@@ -63,7 +63,7 @@ let syncController: AbortController | undefined
 const imported = ref<Archive[]>([]), importIndex = ref(0), importRegion = ref(''), legacyTimezone = ref(8)
 const importFile = ref<HTMLInputElement | null>(null)
 const removeCandidate = ref<SavedArchive | null>(null), removeDialog = ref<HTMLDialogElement | null>(null)
-const provider = ref('raylea.mihoyo-accounts'), imageReplies = ref(true), aliasPermission = ref(0), aliases = ref<Record<string, string>>({})
+const provider = ref('raylea.mihoyo-accounts'), imageReplies = ref(true), aliasPermission = ref(0), pokeCard = ref(true), aliases = ref<Record<string, string>>({})
 const aliasConflicts=ref<{name:string;target:string;builtin:string[]}[]>([])
 const aliasName = ref(''), aliasTarget = ref('')
 let disposed = false
@@ -96,13 +96,13 @@ async function loadAccounts(page = 0) {
 async function loadCatalog() { const result = await invoke<{ entries: CatalogEntry[] }>('catalog.search', { query: search.value, kind: kind.value }); entries.value = result.entries }
 async function loadArchives() { archives.value = (await invoke<{ items: SavedArchive[] }>('gacha.list')).items }
 async function load() {
-  const result = await invoke<{ game: Game; bots?:{source_protocol:string;source_adapter:string;id:string}[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; custom_aliases: Record<string, string> } }>('status')
+  const result = await invoke<{ game: Game; bots?:{source_protocol:string;source_adapter:string;id:string}[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; custom_aliases: Record<string, string> } }>('status')
   bots.value = result.bots ?? []
   game.value = result.game; catalogVersion.value = result.catalog_version
   operationName.value ||= game.value.operations[0]?.name ?? ''
   importRegion.value ||= game.value.region
   publicProfileRegion.value ||= game.value.region
-  provider.value = result.settings.account_provider; imageReplies.value = result.settings.image_replies; aliasPermission.value = result.settings.alias_permission ?? 0; aliases.value = result.settings.custom_aliases || {}
+  provider.value = result.settings.account_provider; imageReplies.value = result.settings.image_replies; aliasPermission.value = result.settings.alias_permission ?? 0; pokeCard.value = result.settings.poke_card ?? true; aliases.value = result.settings.custom_aliases || {}
   if (page === 'help' || page === 'media' || page === 'content' || page === 'resources' || page === 'groups' || page === 'simulation' || page === 'cloud') return
   if (page === 'catalog') await loadCatalog()
   else if (page === 'gacha') await Promise.all([loadArchives(), loadAccounts()])
@@ -142,7 +142,7 @@ async function scorePanel() {
 async function setDefault() { await run(async () => { await invoke('accounts.select', chosen()) }, '默认角色已保存到账号服务') }
 async function showcase() { await run(async () => { panels.value=[];view.value = (await invoke<{ view: View }>('showcase', { uid: publicUID.value.trim() })).view }) }
 async function showEntry(entry: CatalogEntry) { await run(async () => { view.value = (await invoke<{ view: View }>('catalog.get', { id: entry.id })).view; aliasTarget.value = entry.id }) }
-async function saveSettings(nextAliases:Record<string,string>=aliases.value) { await run(async () => { const checked=await invoke<{aliases:Record<string,string>;conflicts:typeof aliasConflicts.value}>('aliases.validate',{aliases:nextAliases});await host.client.saveSettings({ account_provider: provider.value.trim(), image_replies: imageReplies.value, alias_permission: aliasPermission.value, custom_aliases: checked.aliases });aliases.value=checked.aliases;aliasConflicts.value=checked.conflicts }, '设置已保存') }
+async function saveSettings(nextAliases:Record<string,string>=aliases.value) { await run(async () => { const checked=await invoke<{aliases:Record<string,string>;conflicts:typeof aliasConflicts.value}>('aliases.validate',{aliases:nextAliases});await host.client.saveSettings({ account_provider: provider.value.trim(), image_replies: imageReplies.value, alias_permission: aliasPermission.value, poke_card: pokeCard.value, custom_aliases: checked.aliases });aliases.value=checked.aliases;aliasConflicts.value=checked.conflicts }, '设置已保存') }
 async function addAlias() { if (!aliasName.value.trim() || !aliasTarget.value) return; const name = aliasName.value.trim().toLowerCase(); if (Object.hasOwn(aliases.value, name)) { error.value = '此别名已存在，请先移除再重新添加。'; return }; await saveSettings({ ...aliases.value, [name]: aliasTarget.value }); if(!error.value)aliasName.value = '' }
 async function removeAlias(name: string) { const copy = { ...aliases.value }; delete copy[name]; await saveSettings(copy) }
 
@@ -248,7 +248,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
         <MonthlyHistory v-if="operationName.endsWith('.monthly') && selectedRole" :key="selection" :account-ref="selectedRole.account.ref" :role-ref="selectedRole.role.ref" :invoke="invoke" />
         <PanelDetails v-if="detailPanel" :panel="detailPanel" />
         <BuildCalculator v-if="detailPanel && selectedRole" :key="`build:${selection}:${detailPanel.id}`" :character-id="detailPanel.id" :character-name="detailPanel.name" :account-ref="selectedRole.account.ref" :role-ref="selectedRole.role.ref" :invoke="invoke" />
-        <details class="settings"><summary>查询设置</summary><form @submit.prevent="saveSettings()"><label>账号服务插件 ID<input v-model="provider" required :disabled="busy"></label><label class="check"><input v-model="imageReplies" type="checkbox" :disabled="busy">聊天查询优先发送图片</label><label>聊天设置别名<select v-model.number="aliasPermission" :disabled="busy"><option :value="0">所有群员</option><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+        <details class="settings"><summary>查询设置</summary><form @submit.prevent="saveSettings()"><label>账号服务插件 ID<input v-model="provider" required :disabled="busy"></label><label class="check"><input v-model="imageReplies" type="checkbox" :disabled="busy">聊天查询优先发送图片</label><label class="check"><input v-model="pokeCard" type="checkbox" :disabled="busy">戳一戳展示角色卡片</label><label>聊天设置别名<select v-model.number="aliasPermission" :disabled="busy"><option :value="0">所有群员</option><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
       </template>
 
       <template v-else-if="page === 'content'"><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>
