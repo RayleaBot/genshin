@@ -53,7 +53,7 @@
     <div class="cont artis-cont right-line">
       <div class="artis-list">
         {{ range .artis }}
-        {{ if .level }}
+        {{ if . }}
         <div class="item">
           <div class="item-icon"{{ with .img }} data-render-resource="{{ . }}"{{ end }}></div>
           <span class="lv">{{ .level }}</span>

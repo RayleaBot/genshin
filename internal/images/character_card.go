@@ -41,13 +41,14 @@ func CharacterCard(context app.ImageContext, card app.CharacterCardImage) (app.I
 	if card.Width > card.Height {
 		width, zoom, mode = 480*float64(card.Width)/float64(card.Height), 1.45, "left"
 	}
-	name := card.Entry.Name
-	if utf8.RuneCountInString(name) > 4 && card.Entry.Abbr != "" {
-		name = card.Entry.Abbr
-	}
-	data := map[string]any{"mode": mode, "width": width, "zoom": zoom, "name": name, "uid": card.UID, "bg": card.Picture.ID}
+	data := map[string]any{"mode": mode, "width": width, "zoom": zoom, "name": card.Entry.Name, "uid": card.UID, "bg": card.Picture.ID}
 	panel := card.Panel
 	if panel == nil || context.Game.Calc == nil {
+		// Without a panel miao shows the character's sName: the short name
+		// from four characters on.
+		if utf8.RuneCountInString(card.Entry.Name) >= 4 && card.Entry.Abbr != "" {
+			data["name"] = card.Entry.Abbr
+		}
 		return app.Image{Template: "character-card", Data: data, Resources: resources.List}, true
 	}
 	record := card.Record

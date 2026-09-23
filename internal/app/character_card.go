@@ -70,7 +70,7 @@ func (a *App) characterCardFor(ctx context.Context, event *rayleabot.EventContex
 	for _, id := range ids {
 		if panel, err := a.characterPanel(ctx, event, owner, id); err == nil {
 			image.Panel = &panel
-			image.Record, _ = findBuildCharacter(a.Game.Calc, panel)
+			image.Record, _ = findReferenceCharacter(a.Game.Calc, panel)
 			break
 		}
 	}
