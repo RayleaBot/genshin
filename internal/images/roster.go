@@ -48,7 +48,8 @@ var rosterArtwork = [][2]string{
 // Characters draws the character list the way miao's character/avatar-list
 // does: the profile banner with the strongest character, nickname, level,
 // days active and counts, each region's exploration, the chests, and every
-// character as an avatar card, strongest first.
+// character as an avatar card, strongest first; 五星角色 and 四星角色 list only
+// that rarity, while the counts stay the whole roster's.
 func Characters(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["list"].([]any)
 	if len(list) == 0 {
@@ -59,10 +60,17 @@ func Characters(context app.ImageContext, result app.QueryResult) (app.Image, bo
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
 	entries, cards := buildRoster(context, resources, list)
+	keep := rosterFilter(context.Word)
 	five, gold := 0, 0
 	avatars := []any{}
+	strongest := ""
 	for _, item := range entries {
-		avatars = append(avatars, item.card)
+		if entry, _ := context.Catalog.Get(item.id); keep(item.star, entry.Element) {
+			avatars = append(avatars, item.card)
+			if strongest == "" {
+				strongest = item.id
+			}
+		}
 		// miao counts a five-star's constellations, travelers aside, and each
 		// five-star weapon's refinements as gold cards.
 		if item.weaponStar == 5 {
@@ -123,9 +131,13 @@ func Characters(context app.ImageContext, result app.QueryResult) (app.Image, bo
 			shown = append(shown, map[string]any{"title": stat.title, "value": value})
 		}
 	}
-	// The banner shows the strongest character, as upstream without a
-	// profile picture.
-	path := "resources/meta-gs/character/" + cards.records[entries[0].id].Name + "/imgs/"
+	// The banner shows the strongest character listed, as upstream without a
+	// profile picture. Upstream then fails when the filter leaves no one;
+	// the strongest of all is shown instead.
+	if strongest == "" {
+		strongest = entries[0].id
+	}
+	path := "resources/meta-gs/character/" + cards.records[strongest].Name + "/imgs/"
 	player["banner"], player["face"] = cards.miao(path+"banner.webp"), cards.miao(path+"face-q.webp")
 	if player["face"] == "" {
 		player["face"] = cards.miao(path + "face.webp")

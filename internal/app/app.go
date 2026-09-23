@@ -109,9 +109,6 @@ type Settings struct {
 	CustomAliases   map[string]string `json:"custom_aliases"`
 	// PokeCard is miao's avatarPoke: a poke shows a character card.
 	PokeCard bool `json:"poke_card"`
-	// MiaoGacha is miao's gachaStat: 抽卡记录 and 抽卡统计 without 喵喵
-	// draw miao's pages instead of Yunzai's.
-	MiaoGacha bool `json:"miao_gacha"`
 	// AliasPermission is who may change custom aliases, as Yunzai's
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
@@ -684,13 +681,10 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	case "accounts", "select", "uid-remove":
 		return a.uidCommand(ctx, event, command, args)
 	case "gacha", "gacha-versions", "gacha-detail", "gacha-stat":
-		// miao's words start with 喵喵, or are Yunzai's while its setting is
-		// on; others it has only then.
+		// As on Miao-Yunzai, miao's pages take every word their rules match;
+		// Yunzai's keep the rest.
 		word := event.Event.Command()
-		miao := (a.commands.matches("gacha-detail", word) || a.commands.matches("gacha-stat", word)) && (strings.HasPrefix(word, "喵喵") || settings(event).MiaoGacha)
-		if !miao && (command == "gacha-detail" || command == "gacha-stat") {
-			return event.Result(map[string]any{"handled": false})
-		}
+		miao := command == "gacha-detail" || command == "gacha-stat"
 		uid := ""
 		if len(args) > 0 {
 			uid = args[0]

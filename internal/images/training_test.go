@@ -70,4 +70,15 @@ func TestTrainingFollowsMiao(t *testing.T) {
 			t.Error("周一 kept Furina's Tuesday book")
 		}
 	}
+	// miao's yzRule words keep the stars and elements they name.
+	context.Word = "水角色统计"
+	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	if rows = image.Data["rows"].([]any); image.Data["talent"] != false || len(rows) != 1 || rows[0].(map[string]any)["name"] != "芙宁娜" {
+		t.Errorf("水角色统计 rows = %v", rows)
+	}
+	context.Word = "四星列表"
+	image, _ = images.Training(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	if rows = image.Data["rows"].([]any); len(rows) != 0 {
+		t.Errorf("四星列表 rows = %v", rows)
+	}
 }

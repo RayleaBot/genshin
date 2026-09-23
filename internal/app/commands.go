@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
@@ -76,16 +75,6 @@ func (s commandSet) resolve(word string, args []string) (string, []string, bool)
 		return command.id, append(leading, args...), true
 	}
 	return "", args, false
-}
-
-// matches is whether a word matches a declared command's trigger.
-func (s commandSet) matches(id, word string) bool {
-	for _, command := range s.commands {
-		if command.id == id {
-			return command.pattern != nil && command.pattern.MatchString(word) || slices.Contains(command.names, word)
-		}
-	}
-	return false
 }
 
 // usage writes a declared usage with the prefix replies use. Manifests start

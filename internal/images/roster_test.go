@@ -69,4 +69,14 @@ func TestCharactersFollowMiao(t *testing.T) {
 	if chests := image.Data["chests"].([]any); chests[4].(map[string]any)["max"] != 500 || chests[0].(map[string]any)["max"] != 3838 {
 		t.Errorf("chests = %v", chests)
 	}
+	// 四星角色 lists only the four-stars, under the strongest of them, and
+	// keeps the whole roster's counts.
+	context.Word = "四星角色"
+	image, _ = images.Characters(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: list})
+	if avatars := image.Data["avatars"].([]any); len(avatars) != 1 || avatars[0].(map[string]any)["name"] != "行秋" {
+		t.Errorf("四星角色 avatars = %v", avatars)
+	}
+	if stats := image.Data["stats"].([]any); len(stats) != 5 {
+		t.Errorf("四星角色 stats = %v", stats)
+	}
 }

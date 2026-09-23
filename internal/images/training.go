@@ -41,10 +41,32 @@ var trainingArtwork = [][2]string{
 
 var (
 	talentWeekWord = regexp.MustCompile(`周([1-6]|一|二|三|四|五|六)`)
-	talentStarWord = regexp.MustCompile(`(五|四|5|4|)+星`)
-	talentFiveWord = regexp.MustCompile(`(五|5)+星`)
-	talentElements = []string{"风", "岩", "雷", "草", "水", "火", "冰"}
+	rosterStarWord = regexp.MustCompile(`(五|四|5|4|)+星`)
+	rosterFiveWord = regexp.MustCompile(`(五|5)+星`)
+	rosterElements = []string{"风", "岩", "雷", "草", "水", "火", "冰"}
 )
+
+// rosterFilter is miao's star and element filter on the command word
+// (ProfileStat.getFilterFunc): a word with 星 keeps the four-stars, or the
+// five-stars when 五 or 5 comes before it, and naming elements keeps those.
+func rosterFilter(word string) func(star int, element string) bool {
+	star := 0
+	if rosterStarWord.MatchString(word) {
+		star = 4
+		if rosterFiveWord.MatchString(word) {
+			star = 5
+		}
+	}
+	elements := []string{}
+	for _, element := range rosterElements {
+		if strings.Contains(word, element) {
+			elements = append(elements, element)
+		}
+	}
+	return func(entryStar int, element string) bool {
+		return (star == 0 || entryStar == star) && (len(elements) == 0 || slices.Contains(elements, element))
+	}
+}
 
 // talentBook is a talent book's week group (1 for Monday and Thursday) and
 // miao's label for it, city and name, from miao's daily.js; 0 and the name
@@ -65,7 +87,8 @@ func talentBook(book string) (int, string) {
 // sets with the pinned scoring's grade and score. 天赋统计 is the same page's
 // talent mode: the weekly boss material and talent book in place of the
 // weapon and artifacts, today's books highlighted (the day turns at 04:00),
-// with miao's star, element and weekday filters from the command word.
+// with miao's weekday filter from the command word. Both modes keep the
+// stars and elements the word names, as 五星列表 and 火角色统计.
 func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["list"].([]any)
 	if len(list) == 0 {
@@ -77,16 +100,18 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
 	entries, cards := buildRoster(context, resources, list)
+	// 剧诗练度统计 keeps who may enter instead.
+	keep := rosterFilter(context.Word)
 	if theater, ok := context.Input["theater"].(map[string]any); ok {
 		entries = theaterRoster(entries, cards, theater)
+		keep = func(int, string) bool { return true }
 	}
 	day := context.Now.In(chinaTime)
 	if day.Hour() < 4 {
 		day = day.AddDate(0, 0, -1)
 	}
 	weekday := (int(day.Weekday()) + 6) % 7
-	weekFilter, star := 0, 0
-	elements := []string{}
+	weekFilter := 0
 	if talent {
 		if match := talentWeekWord.FindStringSubmatch(context.Word); match != nil {
 			weekFilter = strings.Index("123456", match[1]) + 1
@@ -100,27 +125,13 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 		case strings.Contains(context.Word, "明日") || strings.Contains(context.Word, "明天"):
 			weekFilter = (weekday+1)%7 + 1
 		}
-		if talentStarWord.MatchString(context.Word) {
-			star = 4
-			if talentFiveWord.MatchString(context.Word) {
-				star = 5
-			}
-		}
-		for _, element := range talentElements {
-			if strings.Contains(context.Word, element) {
-				elements = append(elements, element)
-			}
-		}
 	}
 	rows := []any{}
 	for _, item := range entries {
 		entry, _ := context.Catalog.Get(item.id)
 		week, label := talentBook(entry.Materials["天赋材料"])
-		if talent {
-			if (star != 0 && item.star != star) || (len(elements) > 0 && !slices.Contains(elements, entry.Element)) ||
-				(weekFilter != 0 && weekFilter != 7 && week != (weekFilter-1)%3+1) {
-				continue
-			}
+		if !keep(item.star, entry.Element) || (weekFilter != 0 && weekFilter != 7 && week != (weekFilter-1)%3+1) {
+			continue
 		}
 		card := item.card
 		fetter := item.fetter
