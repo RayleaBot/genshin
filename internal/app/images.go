@@ -61,6 +61,8 @@ type PanelImage struct {
 	Splash rayleabot.RenderImageResource
 	// DamageMode draws miao's 伤害 page.
 	DamageMode bool
+	// Rank is where ark ranks the panel, nil when it is not shown.
+	Rank *PanelRank
 }
 
 // PanelImageBuilder draws a single-character panel with the plugin's

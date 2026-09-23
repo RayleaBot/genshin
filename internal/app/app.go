@@ -123,6 +123,20 @@ type Settings struct {
 
 // ArkSettings are ark-plugin's settings under its names, with its defaults.
 type ArkSettings struct {
+	// PanelRank is panelRank: a panel with a damage table shows ark's ranks.
+	PanelRank bool `json:"panel_rank"`
+	// QueryType is queryType, the panel's ranks: 0 damage, 1 artifacts, 2
+	// both, 3 both as 排名统计 charts.
+	QueryType int `json:"query_type"`
+	// RankType is RankType, how a rank is written: 0 the place, 1 the
+	// percent, 2 both.
+	RankType int `json:"rank_type"`
+	// LocalPanelRank is localPanelRank: ark ranks the panel itself rather
+	// than the UID's panel it keeps.
+	LocalPanelRank bool `json:"local_panel_rank"`
+	// MarkRankType is markRankType: ranks of local data are marked (本地),
+	// or (面板变换) for a changed panel.
+	MarkRankType bool `json:"mark_rank_type"`
 	// StygianRank is stygianRank: 更新面板 in a group enters the sender's
 	// UID in the group's 幽境危战 ranking.
 	StygianRank bool `json:"stygian_rank"`
@@ -243,7 +257,7 @@ func New(assets Assets, directory string) (*App, error) {
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},
-		Ark: ArkSettings{StygianRank: true, StygianDataFrom: 2}}
+		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, StygianRank: true, StygianDataFrom: 2}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }

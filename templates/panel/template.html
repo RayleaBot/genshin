@@ -148,6 +148,45 @@
   </div>
   {{ end }}
 
+  {{ with .rank_chart }}
+  <div class="dmg-cont dmg-list cont">
+    <div class="cont-title">排名统计<span class="not-dmg-mode dmg-desc">使用<strong>{{ .hint }}</strong>命令可以查看排名统计详情</span></div>
+    <div class="echarts-artis " style="display: table; width: 100%; border-collapse: separate;">
+      <div style="display: table-row;">
+        {{ range .charts }}
+        <div style="display: table-cell; width: 50%; position: relative;  box-shadow: 0 0 1px 0 #fff;">
+          <div class="damage-rank">
+            {{ if .line }}
+            <div class="chart-wrapper" style="transform: scale(0.38); transform-origin: -1% -13%;">
+              <svg class="rank-chart" xmlns="http://www.w3.org/2000/svg" width="{{ .width }}" height="{{ .height }}" viewBox="0 0 {{ .width }} {{ .height }}">
+                <defs><linearGradient id="{{ .id }}" x1="0" y1="0" x2="1" y2="0">{{ range .stops }}<stop offset="{{ .offset }}" stop-color="{{ .color }}" stop-opacity="{{ .opacity }}"/>{{ end }}</linearGradient></defs>
+                <path d="{{ .area }}" fill="url(#{{ .id }})" fill-opacity="0.7"/>
+                <path d="{{ .line }}" fill="none" stroke="#33CCCC" stroke-width="2"/>
+                {{ range .x_ticks }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="middle" dominant-baseline="hanging" font-size="22" font-weight="bold" fill="#ffffff">{{ .label }}</text>{{ end }}
+                {{ range .y_ticks }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="end" dominant-baseline="middle" font-size="22" font-weight="bold" fill="#ffffff">{{ .label }}</text>{{ end }}
+                {{ with .x_name }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="start" dominant-baseline="middle" font-size="18" fill="#ffffff">%</text>{{ end }}
+                {{ with .y_name }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="middle" dominant-baseline="text-after-edge" font-size="18" fill="#ffffff">{{ .text }}</text>{{ end }}
+                {{ with .mark }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="middle" dominant-baseline="text-after-edge" font-size="35" font-weight="bold" fill="#ffffff">{{ .text }}</text>{{ end }}
+              </svg>
+            </div>
+            {{ else }}
+            <div style="height: 145px; position: relative;"><div class="no-data">暂无数据</div></div>
+            {{ end }}
+          </div>
+        </div>
+        {{ end }}
+      </div>
+      <div style="display: table-row;">
+        <div style="display: table-cell;"><div class="damage-type-label">伤害排名</div></div>
+        <div style="display: table-cell;"><div class="damage-type-label">圣遗物排名</div></div>
+      </div>
+      <div style="display: table-row;">
+        {{ range .places }}<div style="display: table-cell;"><div class="damage-type-label">{{ . }}</div></div>{{ end }}
+      </div>
+    </div>
+  </div>
+  {{ end }}
+
   {{ if eq .mode "dmg" }}
   <div>
     {{ with .matrix }}

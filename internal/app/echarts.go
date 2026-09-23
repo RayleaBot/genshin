@@ -47,6 +47,46 @@ func EChartsLine(xs, values []float64, width, height float64, grid [4]float64, y
 		"bottom": svgNumber(bottom), "line": line, "area": area, "points": shapes, "ticks": ticks}
 }
 
+// EChartsDistribution lays out the ECharts line ark-plugin's profile-detail
+// draws of a ranking distribution, in an 800 x 400 box with ECharts' default
+// grid (80 left and right, 60 top and bottom): x runs over 0–100 with a tick
+// every 20, y from 0 to yMax with a tick every interval and at yMax, the
+// points join as smooth: true draws them and the area below them is
+// filled. at places a data point in the box.
+func EChartsDistribution(xs, values []float64, yMax, interval float64) (chart map[string]any, at func(x, y float64) (float64, float64)) {
+	left, top, right, bottom := 80.0, 60.0, 720.0, 340.0
+	at = func(x, y float64) (float64, float64) {
+		if yMax <= 0 {
+			return left + x/100*(right-left), bottom
+		}
+		return left + x/100*(right-left), bottom - y/yMax*(bottom-top)
+	}
+	points := make([][2]float64, len(values))
+	for index, value := range values {
+		points[index][0], points[index][1] = at(xs[index], value)
+	}
+	line := echartsSmooth(points, 0.5)
+	area := ""
+	if len(points) > 0 {
+		area = fmt.Sprintf("%s L %s %s L %s %s Z", line, svgNumber(points[len(points)-1][0]), svgNumber(bottom), svgNumber(points[0][0]), svgNumber(bottom))
+	}
+	xTicks, yTicks := []any{}, []any{}
+	for tick := 0.0; tick <= 100; tick += 20 {
+		x, _ := at(tick, 0)
+		xTicks = append(xTicks, map[string]any{"x": svgNumber(x), "value": tick})
+	}
+	for tick := 0.0; interval > 0 && tick <= yMax+interval*1e-9; tick += interval {
+		_, y := at(0, tick)
+		yTicks = append(yTicks, map[string]any{"y": svgNumber(y), "value": tick})
+	}
+	if last := len(yTicks) - 1; yMax > 0 && (last < 0 || yTicks[last].(map[string]any)["value"].(float64) < yMax) {
+		yTicks = append(yTicks, map[string]any{"y": svgNumber(top), "value": yMax})
+	}
+	chart = map[string]any{"width": "800", "height": "400", "left": svgNumber(left), "right": svgNumber(right), "top": svgNumber(top), "bottom": svgNumber(bottom),
+		"line": line, "area": area, "x_ticks": xTicks, "y_ticks": yTicks}
+	return chart, at
+}
+
 // echartsNice is ECharts' numberUtil.nice with rounding.
 func echartsNice(value float64) float64 {
 	exponent := math.Floor(math.Log10(value))

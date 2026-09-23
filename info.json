@@ -25,6 +25,11 @@
     "poke_card": true,
     "miao_gacha": false,
     "ark": {
+      "panel_rank": true,
+      "query_type": 3,
+      "rank_type": 2,
+      "local_panel_rank": true,
+      "mark_rank_type": false,
       "stygian_rank": true,
       "stygian_data_from": 2,
       "new_user_panel": false

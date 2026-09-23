@@ -1632,6 +1632,48 @@ body {
 .copyright.ad {
   font-size: 12px;
 }
+/* ark-plugin's additions to character/profile-detail: the 排名统计 block. */
+.no-data {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 28px;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.damage-type-label {
+  position: static;
+  transform: none;
+  color: white;
+  font-size: 15px;
+  text-align: center;
+  white-space: nowrap;
+  padding: 7px 0;
+  box-shadow: 0 0 1px 0 #fff;
+  background: rgba(0, 0, 0, 0.4);
+}
+.echarts-artis {
+  display: table;
+  width: 100%;
+  height: 100px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.chart-wrapper {
+  width: 800px;
+  height: 135px;
+  margin-top: 10px;
+  transform: scale(0.35);
+  transform-origin: 0% top;
+}
+/* ECharts draws with the page's font. */
+.rank-chart {
+  display: block;
+  font-family: Number, "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
+}
 
 /* Per-character images: upstream sets them inline; here each element carries
    data-render-resource and reads its own image. */

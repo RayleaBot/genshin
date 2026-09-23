@@ -2,6 +2,7 @@ package images
 
 import (
 	"cmp"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -225,6 +226,20 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 			}
 			rows = append(rows, row)
 		}
+		if rank := image.Rank; rank != nil {
+			// ark adds its ranks as rows of the table.
+			for _, row := range rank.Rows {
+				rows = append(rows, map[string]any{"index": len(rows) + 1, "title": row.Label, "full": row.Value})
+			}
+			if chart := rank.Chart; chart != nil {
+				artisMax := 0.0
+				if chart.Artis != nil {
+					artisMax = math.Trunc(chart.Artis.Top)
+				}
+				data["rank_chart"] = map[string]any{"hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "排名统计", "places": chart.Places,
+					"charts": []any{panelRankChart("damage", chart.Damage, "伤害评分", 100, 20), panelRankChart("artis", chart.Artis, "圣遗物评分", artisMax, 50)}}
+			}
+		}
 		baseline := image.Damage.Baseline
 		enemy := baseline.EnemyName
 		if enemy == "" {
@@ -252,6 +267,53 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 		data["change"] = image.Change
 	}
 	return app.Image{Template: "panel", Data: data, Resources: resources}, true
+}
+
+// panelRankXs are the x of the points ark draws in 排名统计: the bottom, the
+// ranking percentiles from the lowest (100 - percentile) and the top.
+var panelRankXs = []float64{0, 1, 5, 10, 30, 50, 70, 80, 90, 95, 99, 100}
+
+// panelRankChart is one of ark-plugin's 排名统计 charts, as its ECharts
+// option draws it: the distribution with the x labels reading 100 - x, the
+// axis names, the panel's score written 15 right of and 5 above its place,
+// and the area's gradient, which turns red from the panel's place for 2.5
+// points (ark's stops fall out of order, and later stops cannot go back).
+// A curve ark did not send draws 暂无数据.
+func panelRankChart(id string, curve *app.RankCurve, name string, yMax, interval float64) map[string]any {
+	if curve == nil {
+		return map[string]any{}
+	}
+	values := []float64{0}
+	for index := len(curve.Scores) - 1; index >= 0; index-- {
+		values = append(values, curve.Scores[index])
+	}
+	values = append(values, curve.Top)
+	chart, at := app.EChartsDistribution(panelRankXs, values, yMax, interval)
+	left, top := at(0, yMax)
+	right, bottom := at(100, 0)
+	for _, tick := range chart["x_ticks"].([]any) {
+		item := tick.(map[string]any)
+		item["label"], item["y"] = strconv.FormatFloat(100-item["value"].(float64), 'f', -1, 64), bottom+8
+	}
+	for _, tick := range chart["y_ticks"].([]any) {
+		item := tick.(map[string]any)
+		item["label"], item["x"] = strconv.FormatFloat(item["value"].(float64), 'f', -1, 64), left-8
+	}
+	x, y := at(100-curve.Percent, curve.Score)
+	chart["mark"] = map[string]any{"x": x + 15, "y": y - 5, "text": strconv.FormatFloat(curve.Score, 'f', 2, 64)}
+	chart["x_name"] = map[string]any{"x": right + 15, "y": bottom}
+	chart["y_name"] = map[string]any{"x": left, "y": top - 15, "text": name}
+	place := (100 - curve.Percent) / 100
+	cyan, red := map[string]any{"color": "rgb(51, 204, 204)", "opacity": 0.5}, map[string]any{"color": "rgb(255, 0, 0)", "opacity": 1}
+	stops := []any{}
+	for _, stop := range []struct {
+		offset float64
+		color  map[string]any
+	}{{0, cyan}, {place, cyan}, {place - 0.025, red}, {place + 0.025, red}, {place + 0.025, cyan}, {1, cyan}} {
+		stops = append(stops, map[string]any{"offset": stop.offset, "color": stop.color["color"], "opacity": stop.color["opacity"]})
+	}
+	chart["stops"], chart["id"] = stops, "rank-"+id
+	return chart
 }
 
 // damageMatrixData is miao's 词条伤害计算 as ProfileDetail formats it: each

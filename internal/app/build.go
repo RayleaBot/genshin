@@ -442,6 +442,16 @@ func (a *App) panelView(ctx context.Context, event *rayleabot.EventContext, pane
 		damage := BuildView(a.Game, result)
 		view.Sections = append(view.Sections, Section{Title: "参考伤害 · " + result.Version, Rows: damage.Rows})
 		image.Damage = &result
+		if settings(event).Ark.PanelRank {
+			image.Rank = a.panelRank(ctx, event, panel, uid, change != "")
+			rows := image.Rank.Rows
+			if chart := image.Rank.Chart; chart != nil {
+				rows = []Row{{Label: "伤害排名", Value: chart.Places[0]}, {Label: "圣遗物排名", Value: chart.Places[1]}}
+			}
+			if len(rows) > 0 {
+				view.Sections = append(view.Sections, Section{Title: "ark 全服排名", Rows: rows})
+			}
+		}
 	} else {
 		missing = append(missing, "伤害："+friendlyError(err))
 	}

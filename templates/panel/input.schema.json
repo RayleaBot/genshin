@@ -23,6 +23,7 @@
     "mode": { "type": "string" },
     "matrix": { "type": "object" },
     "buffs": { "type": "array" },
+    "rank_chart": { "type": "object" },
     "render_footer": { "type": "string" }
   },
   "additionalProperties": false
