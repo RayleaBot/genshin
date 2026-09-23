@@ -98,14 +98,20 @@ type RankStatsImageBuilder func(ImageContext, RankStatsImage) (Image, bool)
 // cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>:
 // export uploads the UID's kept panels that came from the account, as the
 // exchange format, for ten minutes; import downloads a UID's upload into the
-// user's own exchange archive, the one the management page shows. As
-// upstream, only a UID of the user's own account may be exported or
-// imported.
+// UID's kept panels. Who may do either is ark's exportPanelData and
+// importPanelData; the UID is the one named, mentioned or in use.
 func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
-	uid := cloudRankUID.FindString(strings.Join(args, ""))
-	owner, err := a.panelOwner(ctx, event, uid)
-	if err != nil || !owner.Owned {
-		return event.SendText("为确保数据安全，目前仅允许绑定CK用户导入/导出自己UID的面板数据，请联系Bot主人导入/导出...")
+	level := settings(event).Ark.ImportPanelData
+	if command == "cloud-export" {
+		level = settings(event).Ark.ExportPanelData
+	}
+	listed, _ := a.accountClient(event).List(ctx, 0)
+	if refusal := panelDataRefusal(level, hasAccount(listed), slices.Contains(event.SuperAdmins, event.Event.Actor.ID)); refusal != "" {
+		return event.SendText(refusal)
+	}
+	owner, err := a.panelOwner(ctx, event, cloudRankUID.FindString(strings.Join(args, "")))
+	if err != nil {
+		return event.SendText(friendlyError(err))
 	}
 	if command == "cloud-export" {
 		saved, err := a.Profiles.Read(owner.UID)
@@ -222,6 +228,25 @@ func (a *App) cloudAvatarPanel(ctx context.Context, raw json.RawMessage) (Charac
 		talents[key] = level + talentBonus(record, key, panel.Rank)
 	}
 	return a.computedPanel(ctx, record, panel, weapon, talents)
+}
+
+// panelDataRefusal is ark-plugin's checkPermission: the reply refusing
+// 导出面板数据 or 导入面板数据 at a permission level, empty when allowed.
+func panelDataRefusal(level int, account, superAdmin bool) string {
+	switch {
+	case level == 0, level == 1 && (account || superAdmin), level == 2 && superAdmin:
+		return ""
+	case level == 1:
+		return "为确保数据安全，目前仅允许绑定CK用户导入/导出自己UID的面板数据，请联系Bot主人导入/导出..."
+	case level == 2:
+		return "为确保数据安全，目前仅允许主人导入/导出自己UID的面板数据，请联系Bot主人导入/导出..."
+	}
+	return "当前功能已被禁用..."
+}
+
+// hasAccount is Yunzai's user.hasCk: an account of the game is bound.
+func hasAccount(listed Accounts) bool {
+	return slices.ContainsFunc(listed.Items, func(account Account) bool { return len(account.Roles) > 0 })
 }
 
 // arkExchange runs a panel exchange as ark-plugin's ArkApi does: with the ark

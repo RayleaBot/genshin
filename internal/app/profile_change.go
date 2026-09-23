@@ -493,7 +493,7 @@ func (a *App) panelChangeCommand(ctx context.Context, event *rayleabot.EventCont
 	text := strings.TrimSpace(event.Event.Command() + " " + strings.Join(event.Event.Args(), " "))
 	change, ok := parsePanelChange(a.Catalog, a.aliasMap(event), text)
 	var images []string
-	if change.CharacterID != "" {
+	if change.CharacterID != "" && settings(event).Ark.ProfileChangeOCR {
 		images = messageImages(ctx, event)
 	}
 	if !ok && len(images) == 0 || a.Game.Calc == nil {

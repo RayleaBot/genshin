@@ -34,3 +34,25 @@ func TestArkPlayerPanelsReadArkPlayerData(t *testing.T) {
 		t.Fatalf("kept another UID's panels: %+v", panels)
 	}
 }
+
+func TestPanelDataRefusalFollowsArkPermission(t *testing.T) {
+	const account, master = "为确保数据安全，目前仅允许绑定CK用户导入/导出自己UID的面板数据，请联系Bot主人导入/导出...", "为确保数据安全，目前仅允许主人导入/导出自己UID的面板数据，请联系Bot主人导入/导出..."
+	cases := []struct {
+		level              int
+		account, superUser bool
+		want               string
+	}{
+		{0, false, false, ""},
+		{1, true, false, ""}, {1, false, true, ""}, {1, false, false, account},
+		{2, true, false, master}, {2, false, true, ""},
+		{3, true, true, "当前功能已被禁用..."},
+	}
+	for _, tc := range cases {
+		if got := panelDataRefusal(tc.level, tc.account, tc.superUser); got != tc.want {
+			t.Errorf("level %d account %v super %v: %q", tc.level, tc.account, tc.superUser, got)
+		}
+	}
+	if hasAccount(Accounts{Items: []Account{{Roles: nil}}}) || !hasAccount(Accounts{Items: []Account{{}, {Roles: []Role{{UID: "100000001"}}}}}) {
+		t.Fatal("account")
+	}
+}

@@ -143,6 +143,19 @@ type ArkSettings struct {
 	// DealLongDmgTitle is DealLongDmgTitle, what a changed panel does with
 	// damage titles past 20 widths: 0 nothing, 1 cut them, 2 wrap them.
 	DealLongDmgTitle int `json:"deal_long_dmg_title"`
+	// ProfileChangeOCR is profileChangeOCR: 面板换装 reads the attached or
+	// quoted artifact screenshots with ark's OCR.
+	ProfileChangeOCR bool `json:"profile_change_ocr"`
+	// ExportPanelData and ImportPanelData are exportPanelData and
+	// importPanelData, who may 导出面板数据 and 导入面板数据: 0 anyone, 1
+	// users with an account and super administrators, 2 super administrators,
+	// 3 no one.
+	ExportPanelData int `json:"export_panel_data"`
+	ImportPanelData int `json:"import_panel_data"`
+	// ExportPanelRequire is exportPanelRequire, who may 导出面板: 0 anyone,
+	// 1 users with an account or whose UID ark verified for their QQ, 2 users
+	// with an account, 3 no one.
+	ExportPanelRequire int `json:"export_panel_require"`
 	// GroupRank is groupRank: a group ranking shows ark's global ranks.
 	GroupRank bool `json:"group_rank"`
 	// LocalGroupRank is localGroupRank: ark ranks the listed panels
@@ -268,7 +281,7 @@ func New(assets Assets, directory string) (*App, error) {
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},
-		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, GroupRank: true, LocalGroupRank: true, StygianRank: true, StygianDataFrom: 2}}
+		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, ProfileChangeOCR: true, ExportPanelData: 1, ImportPanelData: 2, ExportPanelRequire: 1, GroupRank: true, LocalGroupRank: true, StygianRank: true, StygianDataFrom: 2}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }
