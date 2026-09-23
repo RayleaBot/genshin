@@ -968,7 +968,7 @@
     {
       "id": "birthday",
       "name": "留影叙佳期",
-      "description": "角色生日留影（留影叙佳期）",
+      "description": "领取当天生日角色的留影叙佳期图片",
       "usage": "#留影叙佳期 [UID]",
       "permission": "everyone",
       "trigger": {
