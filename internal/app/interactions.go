@@ -197,7 +197,7 @@ func (a *App) sendCharacterMedia(ctx context.Context, event *rayleabot.EventCont
 		}
 	}
 	if photoOnly {
-		return event.SendText(strings.TrimSpace("暂无图片。" + a.pictureHint(a.Game.Pictures.Photos) + "机器人管理员也可在图库中导入图片并关联角色。"))
+		return event.SendText(strings.TrimSpace("暂无图片。" + a.pictureHint(a.Game.Pictures.photoSources()...) + "机器人管理员也可在图库中导入图片并关联角色。"))
 	}
 	return a.sendView(ctx, event, EntryView(a.Game, entry))
 }

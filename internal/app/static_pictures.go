@@ -19,7 +19,7 @@ type StaticPicture struct {
 // staticCommand sends a static picture command's image.
 func (a *App) staticCommand(event *rayleabot.EventContext, static StaticPicture) error {
 	if !a.Artwork.Ready(static.Source) {
-		return event.SendText("暂无图片素材。" + a.pictureHint([]PictureSource{{Source: static.Source}}))
+		return event.SendText("暂无图片素材。" + a.pictureHint(static.Source))
 	}
 	data, err := a.Artwork.Open(static.Source, static.Path)
 	if err != nil {

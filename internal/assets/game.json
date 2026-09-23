@@ -188,6 +188,19 @@
       ]
     },
     {
+      "id": "atlas",
+      "name": "Atlas 插件资源",
+      "archives": [
+        "https://codeload.github.com/Nwflower/Atlas/tar.gz/HEAD"
+      ],
+      "include": [
+        "resource/Forlibrary/Genshin-Atlas/othername/"
+      ],
+      "extensions": [
+        ".yaml"
+      ]
+    },
+    {
       "id": "xiaoyao-plus",
       "name": "逍遥图鉴",
       "archives": [
@@ -239,24 +252,71 @@
       {
         "source": "genshin-atlas",
         "index": "path.json",
-        "skip": [
-          "card",
-          "material for role"
-        ]
-      },
-      {
-        "source": "xiaoyao-plus",
-        "paths": [
-          "juese_tujian/{name}.png",
-          "wuqi_tujian/{name}.png",
-          "shengyiwu_tujian/{name}.png",
-          "shiwu_tujian/{name}.png",
-          "yuanmo_tujian/{name}.png",
-          "mijin_tujian/{name}.png",
-          "daoju_tujian/{name}.png"
-        ]
+        "othername": {
+          "source": "atlas",
+          "path": "resource/Forlibrary/Genshin-Atlas/othername"
+        },
+        "rules": {
+          "card": {
+            "condition": 2,
+            "pick": [
+              "七圣",
+              "牌"
+            ]
+          },
+          "config": {
+            "condition": 3,
+            "pick": [
+              "图鉴"
+            ]
+          },
+          "food": {
+            "condition": 3,
+            "pick": [
+              "图鉴",
+              "食物"
+            ]
+          },
+          "material for role": {
+            "condition": 5,
+            "pick": [
+              "突破",
+              "材料",
+              "素材",
+              "培养"
+            ]
+          },
+          "material": {
+            "condition": 3,
+            "pick": [
+              "表格",
+              "素材",
+              "表"
+            ]
+          },
+          "specialty": {
+            "condition": 1,
+            "pick": [
+              "图鉴",
+              "在哪里",
+              "哪里有"
+            ]
+          }
+        }
       }
     ],
+    "xiaoyao": {
+      "source": "xiaoyao-plus",
+      "paths": [
+        "juese_tujian/{name}.png",
+        "wuqi_tujian/{name}.png",
+        "shengyiwu_tujian/{name}.png",
+        "shiwu_tujian/{name}.png",
+        "yuanmo_tujian/{name}.png",
+        "mijin_tujian/{name}.png",
+        "daoju_tujian/{name}.png"
+      ]
+    },
     "static": {
       "panel-help": {
         "source": "miao-plugin",

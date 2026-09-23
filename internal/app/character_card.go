@@ -97,6 +97,31 @@ func cardQuery(text string) (name, uid string) {
 	return strings.TrimSpace(cardWords.ReplaceAllString(strings.Replace(text, uid, "", 1), "")), uid
 }
 
+var (
+	// wikiWords is miao's wikiReg, which CharWiki.check reads a message with;
+	// a message naming 星铁 or 开拓者 is read as Star Rail's.
+	wikiWords     = regexp.MustCompile(`^(?:#|喵喵)?(?:星铁)?(.*)(天赋|技能|行迹|命座|命之座|星魂|资料|图鉴|照片|写真|图片|图像)$`)
+	starRailWords = regexp.MustCompile(`星铁|开拓者`)
+)
+
+// miaoAccept is a message as miao's accept checks, which run before every
+// plugin's rules, leave it (e.msg): one naming a character after the prefix
+// becomes #喵喵角色卡片 (AvatarCard.check), one naming a character before a
+// wiki word #喵喵WIKI (CharWiki.check).
+func (a *App) miaoAccept(msg string, aliases func() map[string]string) string {
+	if name, _ := cardQuery(msg); strings.HasPrefix(msg, "#") {
+		if _, ok := a.miaoCharacter(name, aliases()); ok {
+			return "#喵喵角色卡片"
+		}
+	}
+	if match := wikiWords.FindStringSubmatch(msg); match != nil && match[1] != "" && !starRailWords.MatchString(msg) {
+		if _, ok := a.miaoCharacter(match[1], aliases()); ok {
+			return "#喵喵WIKI"
+		}
+	}
+	return msg
+}
+
 // cardPicture picks the card's photo from the same pool as 照片: imported
 // images of the character and its downloaded photos. It returns the render
 // resource, the size and the reference 原图 resends.

@@ -84,6 +84,18 @@ func (a *App) aliasOwner(word string, aliases map[string]string) (entry Entry, c
 	return Entry{}, "", false
 }
 
+// miaoCharacter is miao's Character.get: the character a name or alias,
+// built-in or custom, names, or the Traveler written with an element.
+func (a *App) miaoCharacter(name string, aliases map[string]string) (Entry, bool) {
+	if strings.TrimSpace(name) == "" {
+		return Entry{}, false
+	}
+	if entry, _, ok := a.aliasOwner(name, aliases); ok {
+		return entry, entry.Kind == "character"
+	}
+	return a.Catalog.traveler(strings.ToLower(strings.TrimSpace(name)), aliases)
+}
+
 // aliasesOf are a character's built-in aliases, then its custom ones.
 func aliasesOf(entry Entry, aliases map[string]string) []string {
 	out := slices.Clone(entry.Aliases)

@@ -242,7 +242,7 @@ type App struct {
 	stats              *statisticsCache
 	uidListImage       UIDListImageBuilder
 	rankStatsImage     RankStatsImageBuilder
-	atlases            atlasIndexes
+	atlases            atlasLibraries
 	guides             guideCache
 	emoticons          newsEmoticons
 	aliases            customAliases
@@ -351,6 +351,9 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	}
 	if event.Event.EventType != "message.private" && event.Event.EventType != "message.group" {
 		return event.Result(map[string]any{"handled": false})
+	}
+	if handled, err := a.pictureMessage(ctx, event); handled {
+		return err
 	}
 	if handled, err := a.gachaLinkMessage(ctx, event); handled {
 		return err
@@ -647,15 +650,15 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			view.Image = a.entryImage(ctx, event, command, entries[0])
 			names = []string{entries[0].Name, query}
 		}
-		// Without a drawn page, the downloaded 图鉴 libraries answer as Atlas
-		// and xiaoyao do.
+		// Without a drawn page, the downloaded xiaoyao 图鉴 answers; the Atlas
+		// libraries have answered what they have before any command.
 		if view.Image == nil {
-			if file, ok := a.atlasPicture(names); ok {
+			if file, ok := a.xiaoyaoPicture(names); ok {
 				return a.sendArtwork(event, file)
 			}
 		}
 		if len(entries) == 1 {
-			if hint := a.pictureHint(a.Game.Pictures.Atlas); view.Image == nil && hint != "" {
+			if hint := a.pictureHint(a.Game.Pictures.catalogSources()...); view.Image == nil && hint != "" {
 				view.Note = strings.TrimSpace(view.Note + " " + hint)
 			}
 		} else {

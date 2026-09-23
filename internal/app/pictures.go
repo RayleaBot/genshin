@@ -1,12 +1,9 @@
 package app
 
 import (
-	"bytes"
+	"context"
 	"encoding/base64"
-	"encoding/json"
-	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -24,24 +21,43 @@ type Pictures struct {
 	// Photos are directories of a character's photos; {name} stands for the
 	// character.
 	Photos []PictureSource `json:"photos"`
-	// Atlas are the 图鉴 libraries, tried in order: an Atlas repository's
-	// path.json index, or file paths with {name}.
-	Atlas []PictureSource `json:"atlas"`
+	// Atlas are the Atlas libraries, searched in order.
+	Atlas []AtlasLibrary `json:"atlas"`
+	// Xiaoyao is xiaoyao's 图鉴 library, file paths with {name}.
+	Xiaoyao PictureSource `json:"xiaoyao"`
 	// Static are commands answered with a fixed upstream image, by command.
 	Static map[string]StaticPicture `json:"static"`
 }
 
 type PictureSource struct {
 	Source string   `json:"source"`
-	Index  string   `json:"index,omitempty"`
-	Paths  []string `json:"paths,omitempty"`
-	// Skip are index modules 图鉴 leaves out: Atlas answers them only for
-	// their own words, such as 攻略 or 材料.
-	Skip []string `json:"skip,omitempty"`
+	Paths  []string `json:"paths"`
 }
 
-// artworkFile is a downloaded file of an artwork source.
-type artworkFile struct{ Source, Path string }
+// photoSources are the sources of the character photos.
+func (p Pictures) photoSources() []string {
+	sources := []string{}
+	for _, source := range p.Photos {
+		sources = append(sources, source.Source)
+	}
+	return sources
+}
+
+// catalogSources are the sources of the 图鉴 pictures: the Atlas libraries,
+// then xiaoyao's.
+func (p Pictures) catalogSources() []string {
+	sources := []string{}
+	for _, library := range p.Atlas {
+		sources = append(sources, library.Source)
+	}
+	return append(sources, p.Xiaoyao.Source)
+}
+
+// artworkFile is a file of an artwork source.
+type artworkFile struct {
+	Source string `json:"source"`
+	Path   string `json:"path"`
+}
 
 var pictureExtensions = []string{".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
@@ -67,141 +83,74 @@ func (a *App) characterPhotos(entry Entry) []artworkFile {
 	return files
 }
 
-// atlasIndexes keeps each Atlas path.json, read again when the file changes.
-type atlasIndexes struct {
-	mu    sync.Mutex
-	items map[string]atlasIndex
-}
-
-type atlasIndex struct {
-	modified time.Time
-	// modules are in the file's order, which Atlas searches in.
-	modules []atlasModule
-}
-
-// atlasModule maps the keys of a path.json module to image paths, and the
-// aliases in the library's othername/<module>.yaml to keys, which is how
-// Atlas turns a name into a key; Star Rail's keys are IDs.
-type atlasModule struct {
-	name    string
-	paths   map[string]string
-	aliases map[string]string
-}
-
-func (c *atlasIndexes) read(root string, source PictureSource) []atlasModule {
-	file := filepath.Join(root, source.Source, filepath.FromSlash(source.Index))
-	info, err := os.Stat(file)
-	if err != nil {
-		return nil
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if cached, ok := c.items[source.Source]; ok && cached.modified.Equal(info.ModTime()) {
-		return cached.modules
-	}
-	raw, err := os.ReadFile(file)
-	if err != nil {
-		return nil
-	}
-	modules := []atlasModule{}
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
-		return nil
-	}
-	for decoder.More() {
-		name, err := decoder.Token()
-		if err != nil {
-			return nil
-		}
-		module := atlasModule{name: name.(string), paths: map[string]string{}}
-		if decoder.Decode(&module.paths) != nil {
-			return nil
-		}
-		if aliases, err := os.ReadFile(filepath.Join(root, source.Source, "othername", module.name+".yaml")); err == nil {
-			module.aliases = atlasAliases(aliases)
-		}
-		modules = append(modules, module)
-	}
-	if c.items == nil {
-		c.items = map[string]atlasIndex{}
-	}
-	c.items[source.Source] = atlasIndex{modified: info.ModTime(), modules: modules}
-	return modules
-}
-
-// atlasAliases reads an Atlas othername file: top-level keys, each followed
-// by a list of its names. An alias listed under several keys belongs to the
-// first, as Atlas finds it.
-func atlasAliases(raw []byte) map[string]string {
-	unquote := func(value string) string {
-		if len(value) >= 2 && (value[0] == '\'' || value[0] == '"') && value[len(value)-1] == value[0] {
-			return strings.ReplaceAll(value[1:len(value)-1], "''", "'")
-		}
-		return value
-	}
-	aliases := map[string]string{}
-	key := ""
-	for _, line := range strings.Split(string(raw), "\n") {
-		trimmed := strings.TrimSpace(line)
-		switch {
-		case trimmed == "" || strings.HasPrefix(trimmed, "#"):
-		case strings.HasPrefix(trimmed, "- "):
-			if alias := unquote(strings.TrimSpace(trimmed[2:])); key != "" && alias != "" {
-				if _, taken := aliases[alias]; !taken {
-					aliases[alias] = key
-				}
-			}
-		case line[0] != ' ' && strings.HasSuffix(trimmed, ":"):
-			key = unquote(strings.TrimSuffix(trimmed, ":"))
-		}
-	}
-	return aliases
-}
-
-// atlasPicture finds the first downloaded 图鉴 image of any of the names.
-func (a *App) atlasPicture(names []string) (artworkFile, bool) {
-	for _, source := range a.Game.Pictures.Atlas {
-		if !a.Artwork.Ready(source.Source) {
-			continue
-		}
-		if source.Index != "" {
-			for _, module := range a.atlases.read(a.Artwork.Root, source) {
-				if slices.Contains(source.Skip, module.name) {
-					continue
-				}
-				for _, name := range names {
-					// Atlas looks the name up among the aliases first.
-					key, aliased := module.aliases[name]
-					if !aliased {
-						key = name
-					}
-					// Some modules also index the library's alias files.
-					if file, ok := module.paths[key]; ok && slices.Contains(pictureExtensions, strings.ToLower(path.Ext(file))) {
-						if _, found := a.Artwork.File(source.Source, strings.TrimPrefix(file, "/")); found {
-							return artworkFile{source.Source, strings.TrimPrefix(file, "/")}, true
-						}
-					}
-				}
-			}
-		}
-		for _, pattern := range source.Paths {
-			for _, name := range names {
-				file := strings.ReplaceAll(pattern, "{name}", name)
-				if _, found := a.Artwork.File(source.Source, file); found {
-					return artworkFile{source.Source, file}, true
-				}
+// xiaoyaoPicture finds the first downloaded xiaoyao 图鉴 image of any of the
+// names.
+func (a *App) xiaoyaoPicture(names []string) (artworkFile, bool) {
+	source := a.Game.Pictures.Xiaoyao
+	for _, pattern := range source.Paths {
+		for _, name := range names {
+			file := strings.ReplaceAll(pattern, "{name}", name)
+			if _, found := a.Artwork.File(source.Source, file); found {
+				return artworkFile{source.Source, file}, true
 			}
 		}
 	}
 	return artworkFile{}, false
 }
 
+// pictureMessage answers the messages the picture plugins take before the
+// ones this plugin follows otherwise: on Miao-Yunzai, Atlas's rule sees every
+// message at priority 10, ahead of miao's and Yunzai's rules. handled is
+// false for the messages left to the plugin's own handlers.
+func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
+	if event.Event.Target.Type == "group" {
+		if config, err := a.Groups.Config(groupScope(event)); err == nil && config.Enabled != nil && !*config.Enabled {
+			return false, nil
+		}
+	}
+	// Every message passes here, so the custom aliases are read only when a
+	// name is looked up.
+	aliases := sync.OnceValue(func() map[string]string { return a.aliasMap(event) })
+	// miao's accept checks run before every rule and hand the message on as
+	// their own command word, which no picture plugin answers.
+	msg := a.miaoAccept(yunzaiMessage(event), aliases)
+	run := atlasRun{app: a, aliases: aliases}
+	ended := run.atlas(msg)
+	for _, answer := range run.answers {
+		if _, err := post(ctx, event, a.artworkReply(event, answer.picture)); err != nil {
+			return true, err
+		}
+	}
+	if ended {
+		return true, event.Result(map[string]any{"handled": true})
+	}
+	return false, nil
+}
+
+// yunzaiMessage is a chat message as Yunzai's plugins read it (e.msg): the
+// text segments, each trimmed, with # for the prefix the host parsed.
+func yunzaiMessage(event *rayleabot.EventContext) string {
+	if command := event.Event.Command(); command != "" {
+		return "#" + strings.Join(append([]string{command}, event.Event.Args()...), " ")
+	}
+	if len(event.Event.Message.Segments) == 0 {
+		return strings.TrimSpace(event.Event.Message.PlainText)
+	}
+	text := ""
+	for _, segment := range event.Event.Message.Segments {
+		if segment.Type == "text" {
+			text += strings.TrimSpace(asText(segment.Data["text"]))
+		}
+	}
+	return text
+}
+
 // pictureHint tells how to download the sources a reply found nothing in.
-func (a *App) pictureHint(sources []PictureSource) string {
+func (a *App) pictureHint(sources ...string) string {
 	missing := []string{}
 	for _, source := range sources {
-		if !a.Artwork.Ready(source.Source) && !slices.Contains(missing, source.Source) {
-			missing = append(missing, source.Source)
+		if !a.Artwork.Ready(source) && !slices.Contains(missing, source) {
+			missing = append(missing, source)
 		}
 	}
 	if len(missing) == 0 {
@@ -221,16 +170,22 @@ func (a *App) rememberImage(event *rayleabot.EventContext, ref string) error {
 	})
 }
 
-// sendArtwork sends a downloaded image.
-func (a *App) sendArtwork(event *rayleabot.EventContext, file artworkFile) error {
+// artworkReply is a downloaded image to send, kept for 原图, or the text that
+// tells why it cannot be sent.
+func (a *App) artworkReply(event *rayleabot.EventContext, file artworkFile) rayleabot.Segment {
 	data, err := a.Artwork.Open(file.Source, file.Path)
 	if err != nil {
-		return event.SendText("图片素材读取失败，请重新下载素材。")
+		return rayleabot.Text("图片素材读取失败，请重新下载素材。")
 	}
 	if err = a.rememberImage(event, "artwork:"+file.Source+"/"+file.Path); err != nil {
-		return event.SendText(friendlyError(err))
+		return rayleabot.Text(friendlyError(err))
 	}
-	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(data)))
+	return rayleabot.Image("base64://" + base64.StdEncoding.EncodeToString(data))
+}
+
+// sendArtwork sends a downloaded image.
+func (a *App) sendArtwork(event *rayleabot.EventContext, file artworkFile) error {
+	return event.Send(event.Event.Target.Type, event.Event.Target.ID, a.artworkReply(event, file))
 }
 
 // CharacterFolders are the miao folders of a character's pictures, as miao's

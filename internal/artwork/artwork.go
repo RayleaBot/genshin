@@ -319,6 +319,20 @@ func (s *Store) Ready(id string) bool {
 	return validName(id) && (err == nil && info.IsDir() || s.bundled(id))
 }
 
+// Version tells one download of a source from the next: when its download
+// finished, zero while only the shipped files serve. What is read from a
+// source's files can be kept until it changes.
+func (s *Store) Version(id string) time.Time {
+	if !validName(id) {
+		return time.Time{}
+	}
+	info, err := os.Stat(s.recordPath(id))
+	if err != nil {
+		return time.Time{}
+	}
+	return info.ModTime()
+}
+
 // Open reads a file of a source, for sources that ship indexes next to images.
 func (s *Store) Open(sourceID, name string) ([]byte, error) {
 	file, ok := s.locate(sourceID, name)

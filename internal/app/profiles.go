@@ -191,8 +191,18 @@ func notice(ctx context.Context, event *rayleabot.EventContext, text string) {
 	if text == "" {
 		return
 	}
-	_, _ = event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID,
-		Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
+	_, _ = post(ctx, event, rayleabot.Text(text))
+}
+
+// post sends a reply without ending the event and returns the ID the chat
+// platform gave the message.
+func post(ctx context.Context, event *rayleabot.EventContext, segments ...rayleabot.Segment) (string, error) {
+	result, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID,
+		Message: rayleabot.MessageOut{Segments: segments}})
+	if err != nil {
+		return "", err
+	}
+	return asText(result["message_id"]), nil
 }
 
 // mentionedUser is the first user a message mentions other than the bot.
