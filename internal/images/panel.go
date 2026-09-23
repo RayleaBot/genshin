@@ -1,6 +1,7 @@
 package images
 
 import (
+	"cmp"
 	"regexp"
 	"strconv"
 	"strings"
@@ -57,7 +58,8 @@ var affixPlaceholder = regexp.MustCompile(`\$\[(\d)\]`)
 // chinaTime is the time zone the upstream images print times in.
 var chinaTime = time.FixedZone("UTC+8", 8*3600)
 
-// panelSources are miao's names for the services a panel came from.
+// panelSources are miao's names for the services a panel came from; a panel
+// ark hands over keeps the name miao gave it there.
 var panelSources = map[string]string{"mihoyo": "mysPanel", "enka": "enka", "mihomo": "homo", "change": "面板变换", "share": "share"}
 
 // Panel draws a single character the way miao's profile-detail does: the
@@ -153,7 +155,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	data := map[string]any{
 		"mode": "profile", "elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"talents": talents, "attrs": attrs, "cons_icons": cons,
-		"data_source": panelSources[panel.Source], "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
+		"data_source": cmp.Or(panelSources[panel.Source], panel.Source), "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
 		"artifact_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "圣遗物",
 		"damage_hint":   context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
 	}

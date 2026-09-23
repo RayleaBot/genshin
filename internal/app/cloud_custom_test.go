@@ -84,3 +84,36 @@ func TestCustomRankEntriesAddConstellationTalents(t *testing.T) {
 		t.Fatalf("second row %+v", second)
 	}
 }
+
+func TestCustomRankAvatarReadsArkPlayerData(t *testing.T) {
+	answer := cloudObject(t, `{"retcode":0,"data":{"info":{"uid":"10@@@@543","avatars":{"10000046":{"name":"胡桃","id":10000046,"elem":"pyro","level":90,"promote":6,"cons":1,
+		"talent":{"a":10,"e":10,"q":10},"weapon":{"name":"护摩之杖","level":90,"promote":6,"affix":4},
+		"artis":{"1":{"level":20,"name":"魔女的炎之花","star":5,"mainId":14001,"attrIds":[501033,501201,501223,501244]}},"_source":"enka"}}}}}`)
+	uid, avatar, failure := customRankAvatar(answer, "10000046")
+	if failure != "" || uid != "10@@@@543" || avatar["name"] != "胡桃" {
+		t.Fatalf("read %q %v %q", uid, avatar, failure)
+	}
+	// A character the answer does not hold falls back to its first one.
+	if _, other, _ := customRankAvatar(answer, "10000002"); other["name"] != "胡桃" {
+		t.Fatalf("fallback %v", other)
+	}
+	_, raw, err := cleanCloudAvatar(avatar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	panel, err := pluginApp(t).cloudAvatarPanel(t.Context(), raw)
+	if err != nil || panel.ID != "10000046" || panel.Rank != 1 || panel.Weapon == nil || panel.Weapon.Name != "护摩之杖" || panel.Weapon.Refinement != 4 || len(panel.Equipment) != 1 {
+		t.Fatalf("panel %+v %v", panel, err)
+	}
+	for raw, want := range map[string]string{
+		`{"retcode":-1}`: "未知错误",
+		`{"retcode":1,"message":"query expired"}`:         "query expired",
+		`{"retcode":0,"data":{"playerData":{"uid":"1"}}}`: "返回数据异常",
+		`{"retcode":0,"data":{"uid":"1","avatars":{}}}`:   "未找到对应角色面板",
+		`{"retcode":0,"data":{"avatars":{"1":{"id":1}}}}`: "返回数据异常",
+	} {
+		if _, _, failure := customRankAvatar(cloudObject(t, raw), "10000046"); failure != want {
+			t.Errorf("%s: %q, want %q", raw, failure, want)
+		}
+	}
+}

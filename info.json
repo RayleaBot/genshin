@@ -1567,6 +1567,17 @@
       }
     },
     {
+      "id": "cloud-custom-rank-panel",
+      "name": "ark获取面板",
+      "description": "引用 ark 自定义排行的图片（或发起排行的命令），五分钟内查看其中第 N 名的面板",
+      "usage": "#ark获取面板N（1–20，引用排行图片发送）",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?i:ark)获取面板(?P<index>[1-9]|1[0-9]|20)?$"
+      }
+    },
+    {
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
@@ -1874,6 +1885,7 @@
         "cloud-rank-stats",
         "cloud-custom-rank",
         "cloud-custom-rank-help",
+        "cloud-custom-rank-panel",
         "panel-export",
         "cloud-export",
         "cloud-import",

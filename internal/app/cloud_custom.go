@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"maps"
 	"math"
 	"regexp"
 	"slices"
@@ -367,4 +368,75 @@ func (a *App) customRankHelp(ctx context.Context, event *rayleabot.EventContext)
 		prefix + "ark胡桃排行 cons=0",
 		prefix + "ark雷电将军圣遗物排行 命座<=2",
 	}, "\n"))
+}
+
+var customRankIndex = regexp.MustCompile(`^(?:[1-9]|1[0-9]|20)$`)
+
+// customRankPanel is ark-plugin's #ark获取面板N (apps/customRankPanel.js):
+// replying to a custom ranking, or to the command that asked for it, within
+// five minutes, it reads the Nth entry's panel with rank/custom/specific and
+// shows it as 面板 does, under the UID ark shows. As the panel ark's
+// ProfileDetail receives, it does not enter the group ranking. Without a
+// quoted message the words are left to other plugins.
+func (a *App) customRankPanel(ctx context.Context, event *rayleabot.EventContext, args []string) error {
+	quoted := quotedMessage(event)
+	if len(args) != 1 || !customRankIndex.MatchString(args[0]) || quoted == "" {
+		return event.Result(map[string]any{"handled": false})
+	}
+	index, _ := strconv.Atoi(args[0])
+	remembered, err := event.Actions().KVGet(ctx, customRankKey(event, quoted))
+	cache := asObject(remembered["value"])
+	if err != nil || remembered["exists"] != true || asText(cache["query_id"]) == "" {
+		return event.SendText("未找到该排行图片的查询缓存，请重新发送 " + a.Game.Prefix + "ark自定义排行 后再获取面板")
+	}
+	decoded, err := a.arkRequest(ctx, event, "rank/custom/specific", map[string]any{"query_id": asText(cache["query_id"]), "index": index - 1})
+	if err != nil {
+		return event.SendText("面板服务暂不可用")
+	}
+	uid, avatar, failure := customRankAvatar(asObject(decoded), asText(cache["character_id"]))
+	if failure != "" {
+		return event.SendText("获取面板失败：" + failure)
+	}
+	_, raw, err := cleanCloudAvatar(avatar)
+	if err != nil {
+		return event.SendText("获取面板失败：未找到对应角色面板")
+	}
+	panel, err := a.cloudAvatarPanel(ctx, raw)
+	if err != nil {
+		return event.SendText("获取面板失败：未找到对应角色面板")
+	}
+	// The panel shows the service it came from, as miao names it.
+	if source := cloudText(avatar["_source"]); source != "" && len(source) <= 32 {
+		panel.Source = source
+	}
+	return a.sendView(ctx, event, a.fullPanelView(ctx, event, panel, uid, false, ""))
+}
+
+// customRankAvatar reads a rank/custom/specific answer as upstream's
+// getPanelData and setAvatars do: the player data under info or playerData,
+// its UID as ark shows it, and the ranked character, else the first. failure
+// is upstream's reason when the answer holds none.
+func customRankAvatar(result map[string]any, id string) (uid string, avatar map[string]any, failure string) {
+	if asText(result["retcode"]) != "0" {
+		return "", nil, cmpOr(cloudText(result["message"]), "未知错误")
+	}
+	data := asObject(result["data"])
+	for _, key := range []string{"info", "playerData"} {
+		if nested := asObject(data[key]); nested != nil {
+			data = nested
+			break
+		}
+	}
+	uid, avatars := cloudText(data["uid"]), asObject(data["avatars"])
+	if uid == "" || avatars == nil {
+		return "", nil, "返回数据异常"
+	}
+	avatar = asObject(avatars[id])
+	if ids := slices.Sorted(maps.Keys(avatars)); avatar == nil && len(ids) > 0 {
+		avatar = asObject(avatars[ids[0]])
+	}
+	if avatar == nil {
+		return "", nil, "未找到对应角色面板"
+	}
+	return uid, avatar, ""
 }
