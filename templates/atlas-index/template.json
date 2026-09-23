@@ -1,0 +1,11 @@
+{
+  "id": "atlas-index",
+  "name": "Atlas 图鉴索引",
+  "description": "Atlas 图鉴编号列表不能转发时的图片，布局参照 Atlas resource/massage/text.html",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 600,
+  "height": 8000
+}

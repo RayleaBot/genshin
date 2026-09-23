@@ -40,6 +40,8 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 `templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，换装面板的伤害变化同其伤害表的写法（上游的内联样式改为同值的类）；渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）。
 
+`templates/atlas-index/` 按 Atlas 的 resource/massage/text.html 与 text.css 改写（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`），同上游的 1.5 倍缩放，数字字体取自 Yunzai 的 tttgbnumber；上游的 Source Han Sans CN Bold 字体超过宿主单个渲染资源 16 MiB 的上限，不随附，其余文字使用渲染器的字体。
+
 面板帮助同 miao-plugin 的 character/profile-detail 帮助，直接发送该仓库的 `resources/character/imgs/help.jpg`（MIT），取自 miao 素材来源。
 
 `templates/news/` 与 `templates/news-list/` 按 Yunzai 原神插件的 html/mysNews 与 html/mysNews-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），公告、资讯、活动、米游社搜索、帖子与预估按其 mysNews 的规则出图；详情页的样式去掉了米游社编辑器、加载、提示与回复控件等页面用不到的规则。米游社正文是任意 HTML，而渲染器可以联网，因此正文按页面样式用到的标签、类名与颜色字号等样式重建，图片只经渲染资源引用（官方图片缓存），链接与脚本不保留。与上游不同之处：正文中没有地址的超链图片按帖子的 structured_content 补上（上游显示为空白）；纯图片帖显示全部图片（上游只显示最后一张）；上游按 4000 像素分段截图，这里出一整张长图；二维码由 go-qrcode 生成（MIT，见 `LICENSES/go-qrcode-MIT.txt`），指向帖子所在游戏的米游社地址（上游固定为原神路径）。页面的米游社标志、图标字体、列表页背景与数字字体取自“原神插件图片”素材来源。

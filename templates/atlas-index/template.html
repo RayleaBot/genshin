@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="title">
+    <div class="id">
+      <span>ID：{{ .name }}</span>
+    </div>
+  </div>
+  <div class="littleTest">消息较长，为避免风控已转成图片发送</div>
+  <div class="littleTest">请选择序号或发送指令：</div>
+  {{ range .items }}
+  <div class="item">
+    <div class="right">
+      <span>{{ .num }}</span>
+    </div>
+    <div class="main">
+      <div class="bg"></div>
+      <div class="info">
+        <div class="name">{{ .name }}</div>
+      </div>
+    </div>
+  </div>
+  {{ end }}
+</div>
+</body>
+</html>

@@ -114,10 +114,15 @@ func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext)
 	// miao's accept checks run before every rule and hand the message on as
 	// their own command word, which no picture plugin answers.
 	msg := a.miaoAccept(yunzaiMessage(event), aliases)
-	run := atlasRun{app: a, aliases: aliases}
+	run := atlasRun{app: a, owner: chatOwner(event), aliases: aliases}
 	ended := run.atlas(msg)
 	for _, answer := range run.answers {
-		if _, err := post(ctx, event, a.artworkReply(event, answer.picture)); err != nil {
+		if answer.list != nil {
+			err = a.postAtlasList(ctx, event, answer.list)
+		} else {
+			_, err = post(ctx, event, a.artworkReply(event, answer.picture))
+		}
+		if err != nil {
 			return true, err
 		}
 	}

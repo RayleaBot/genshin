@@ -2,6 +2,9 @@ package app
 
 import (
 	"encoding/json"
+	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/RayleaBot/plugin-genshin/internal/artwork"
@@ -101,6 +104,23 @@ func atlasReply(a *App, msg string) string {
 	return run.answers[0].picture.Path
 }
 
+// atlasAnswers are the replies Atlas sends for a sender's message, a picture
+// as its path and a list joined, with whether Atlas ends the message.
+func atlasAnswers(a *App, sender, msg string) ([]string, bool) {
+	aliases := func() map[string]string { return nil }
+	run := atlasRun{app: a, owner: Subject{ActorID: sender}, aliases: aliases}
+	ended := run.atlas(a.miaoAccept(msg, aliases))
+	replies := []string{}
+	for _, answer := range run.answers {
+		if answer.list != nil {
+			replies = append(replies, strings.Join(answer.list, " "))
+		} else {
+			replies = append(replies, answer.picture.Path)
+		}
+	}
+	return replies, ended
+}
+
 func TestAtlasAnswersMessagesBeforeTheCommands(t *testing.T) {
 	a, _ := atlasApp(t)
 	for msg, want := range map[string]string{
@@ -149,5 +169,76 @@ func TestAtlasReadsTheLibraryAliasesFirstAndAgainAfterADownload(t *testing.T) {
 	writeArtwork(t, root, "genshin-atlas.json", `{}`)
 	if got := atlasReply(a, "#天空之刃"); got != "weapon/护摩之杖.png" {
 		t.Fatal("the downloaded library was not read", got)
+	}
+}
+
+func TestAtlasIndexListsAndPicksByNumber(t *testing.T) {
+	a, root := atlasApp(t)
+	writeArtwork(t, root, "genshin-atlas/index/weapon.yaml", "武器索引:\n  - 五星武器\n  - 四星武器\n五星武器:\n  - 护摩之杖\n  - 雾切\n")
+	writeArtwork(t, root, "genshin-atlas/index/card.yaml", "召唤:\n  - 角色\n")
+	steps := []struct {
+		sender, msg string
+		replies     []string
+		ended       bool
+	}{
+		// A key of the index answers with its list, led by the prefix the
+		// module's rule takes, and the message goes on to the others.
+		{"a", "#五星武器", []string{"#护摩之杖 #雾切"}, false},
+		// A number picks an entry, which answers and ends the message; the
+		// pick counts twice, once more as the entry runs through Atlas, and
+		// an answer resets the count.
+		{"a", "1", []string{"weapon/护摩之杖.png"}, true},
+		{"b", "1", []string{}, false},
+		{"a", "1", []string{"weapon/护摩之杖.png"}, true},
+		// An entry without a picture answers nothing.
+		{"a", "2", []string{}, false},
+		{"a", "你好", []string{}, false},
+		// The fourth count without an answer drops the list.
+		{"a", "1", []string{}, false},
+		{"a", "1", []string{}, false},
+		// An entry that is itself a key answers with its list and ends the
+		// message; its count is left at two, so the next pick drops the list
+		// as it answers.
+		{"b", "#武器索引", []string{"#五星武器 #四星武器"}, false},
+		{"b", "1", []string{"#护摩之杖 #雾切"}, true},
+		{"b", "1", []string{"weapon/护摩之杖.png"}, true},
+		{"b", "1", []string{}, false},
+		// Condition 2 leads the entries with its first Pick word.
+		{"c", "七圣召唤", []string{"七圣角色"}, false},
+		// miao's checks leave Atlas their own command word, which still counts.
+		{"d", "#五星武器", []string{"#护摩之杖 #雾切"}, false},
+		{"d", "#雷神", []string{}, false},
+		{"d", "#雷神图鉴", []string{}, false},
+		{"d", "#雷电将军", []string{}, false},
+		{"d", "1", []string{}, false},
+	}
+	for _, step := range steps {
+		replies, ended := atlasAnswers(a, step.sender, step.msg)
+		if !reflect.DeepEqual(replies, step.replies) || ended != step.ended {
+			t.Fatalf("%s %q: %q %v, want %q %v", step.sender, step.msg, replies, ended, step.replies, step.ended)
+		}
+	}
+}
+
+func TestAtlasPagesFollowReplyMessageArray(t *testing.T) {
+	lines := []string{"请直接发送数字序号或对应指令："}
+	for index := range 200 {
+		lines = append(lines, strconv.Itoa(index+1)+"、#五星武器")
+	}
+	pages := atlasPages(lines)
+	// Lines join until a message reaches 100 characters.
+	if first := pages[0][0]; strings.Count(first, "\n") != 11 || !strings.HasPrefix(first, "请直接发送数字序号或对应指令：\n1、#五星武器") {
+		t.Fatalf("%q", first)
+	}
+	if len(pages) != 1 || pages[0][len(pages[0])-1] != "第1页，共1页" {
+		t.Fatal(pages)
+	}
+	many := []string{}
+	for range 2000 {
+		many = append(many, strings.Repeat("长", 100))
+	}
+	pages = atlasPages(many)
+	if len(pages) != 22 || len(pages[0]) != 96 || pages[0][95] != "第1页...未完待续" || pages[21][len(pages[21])-1] != "第22页，共22页" {
+		t.Fatal(len(pages), len(pages[0]), pages[21][len(pages[21])-1])
 	}
 }

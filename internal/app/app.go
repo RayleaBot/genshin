@@ -100,6 +100,8 @@ type Assets struct {
 	PayLog PayLogImageBuilder
 	// RoleCards draws 月谕圣牌 and 月谕圣牌交换.
 	RoleCards RoleCardsImageBuilder
+	// AtlasIndex draws Atlas's numbered lists that cannot be forwarded.
+	AtlasIndex AtlasIndexImageBuilder
 	// Queries picks the official query, by operation name, for commands that
 	// draw on another operation's data, as 最新深渊 runs whichever record
 	// opened last.
@@ -239,10 +241,12 @@ type App struct {
 	characterCardImage CharacterCardImageBuilder
 	payLogImage        PayLogImageBuilder
 	roleCardsImage     RoleCardsImageBuilder
+	atlasIndexImage    AtlasIndexImageBuilder
 	stats              *statisticsCache
 	uidListImage       UIDListImageBuilder
 	rankStatsImage     RankStatsImageBuilder
 	atlases            atlasLibraries
+	atlasMenus         atlasMenus
 	guides             guideCache
 	emoticons          newsEmoticons
 	aliases            customAliases
@@ -279,7 +283,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, stygianRankImage: assets.StygianRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, payLogImage: assets.PayLog, roleCardsImage: assets.RoleCards, PayLogs: &PayLogStore{Path: filepath.Join(directory, "pay-log.json")}, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory, game.Prefix), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, stygianRankImage: assets.StygianRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, payLogImage: assets.PayLog, roleCardsImage: assets.RoleCards, atlasIndexImage: assets.AtlasIndex, PayLogs: &PayLogStore{Path: filepath.Join(directory, "pay-log.json")}, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory, game.Prefix), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},

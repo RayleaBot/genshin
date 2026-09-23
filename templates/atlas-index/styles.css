@@ -1,0 +1,81 @@
+/* Converted from Atlas resource/massage/text.css; the page scales the body
+   by 1.5. Its Source Han Sans CN Bold font is larger than a render resource
+   may be, so text other than numbers uses the renderer's fonts. */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+body {
+  font-size: 16px;
+  zoom: 1.5;
+  font-family: tttgbnumber, serif;
+  color: #1e1f20;
+  position: relative;
+  width: 400px;
+}
+.container {
+  width: 400px;
+  background: #f0eae3;
+  padding: 5px;
+  overflow: hidden;
+  position: relative;
+}
+.littleTest {
+  color: #504c49;
+  font-size: 18px;
+  z-index: 1000;
+}
+.title {
+  display: flex;
+  position: relative;
+  margin-bottom: 12px;
+  color: #504c49;
+}
+.title .id {
+  flex: 1;
+  line-height: 18px;
+  padding-left: 10px;
+}
+.title .id:before {
+  content: " ";
+  position: absolute;
+  width: 5px;
+  height: 24px;
+  border-radius: 1px;
+  left: 0;
+  top: -3px;
+  background: #d3bc8d;
+}
+.item {
+  border: 1px solid #dfd8d1;
+  display: flex;
+  height: 35px;
+  margin-top: 5px;
+}
+.item .main {
+  display: flex;
+  flex: 1;
+  background-color: #f5f1eb;
+  position: relative;
+}
+.item .main .info {
+  padding-top: 8px;
+}
+.item .main .info .name {
+  font-size: 16px;
+  line-height: 1;
+  margin: 0 0 0 15px;
+}
+.item .right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 100%;
+  background-color: #ece3d8;
+  font-size: 16px;
+  color: #504c49;
+  line-height: 55px;
+}
