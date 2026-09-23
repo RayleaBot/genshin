@@ -45,15 +45,20 @@ func dailyMaterialDay(word string, now time.Time) int {
 	return day
 }
 
-// dailyMaterial is miao's 今日素材. As miao refreshes a player's characters
-// from the account when they are over two hours old, the user's own UID is
-// read again from the account first.
-func (a *App) dailyMaterial(ctx context.Context, event *rayleabot.EventContext) error {
+// dailyMaterial is miao's 今日素材 for the UID written after the word, as
+// miao reads one from the message, or the UID in use. As miao refreshes a
+// player's characters from the account when they are over two hours old, the
+// user's own UID is read again from the account first.
+func (a *App) dailyMaterial(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	day := dailyMaterialDay(event.Event.Command(), time.Now())
 	if day == 6 {
 		return event.SendText("今天周日，全部素材都可以刷哦~")
 	}
-	owner, err := a.panelOwner(ctx, event, "")
+	uid := ""
+	if len(args) > 0 {
+		uid = args[0]
+	}
+	owner, err := a.panelOwner(ctx, event, uid)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}

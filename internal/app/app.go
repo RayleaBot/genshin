@@ -475,7 +475,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	case "cloud-reforge":
 		return a.reforgeCommand(ctx, event)
 	case "daily-material":
-		return a.dailyMaterial(ctx, event)
+		return a.dailyMaterial(ctx, event, args)
 	case "cloud-character-rank", "cloud-total-rank", "cloud-rank-stats":
 		return a.cloudChatCommand(ctx, event, command, args)
 	case "cloud-custom-rank":

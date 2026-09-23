@@ -252,6 +252,10 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"202507剧诗练度统计100000001", "theater-training", []string{"202507", "100000001"}},
 			{"天赋100000001", "talent-stat", []string{"100000001"}},
 			{"周三五星天赋统计100000001", "talent-stat", []string{"100000001"}},
+			{"今日天赋100000001", "talent-stat", []string{"100000001"}},
+			{"今日素材100000001", "daily-material", []string{"100000001"}},
+			{"每日天赋100000001", "daily-material", []string{"100000001"}},
+			{"周三材料100000001", "daily-material", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {
