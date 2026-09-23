@@ -355,6 +355,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.rankCommand(ctx, event, command, args)
 	case "panel-refresh", "panel-refresh-account", "panel-list", "panel-delete":
 		return a.panelCommand(ctx, event, command, args)
+	case "talent-refresh":
+		return a.talentRefresh(ctx, event)
 	case "artifact-list":
 		return a.artifactList(ctx, event, args)
 	case "panel-change":

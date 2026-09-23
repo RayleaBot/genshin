@@ -159,7 +159,18 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?|(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:天赋|技能))$"
+        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?)$"
+      }
+    },
+    {
+      "id": "talent-refresh",
+      "name": "刷新天赋",
+      "description": "从米游社重新读取全部角色的天赋，供练度统计与天赋统计使用",
+      "usage": "#刷新天赋",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:原神)?(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:天赋|技能)$"
       }
     },
     {
@@ -1615,6 +1626,7 @@
         "character",
         "panel-refresh",
         "panel-refresh-account",
+        "talent-refresh",
         "panel-list",
         "panel-delete",
         "original-image",

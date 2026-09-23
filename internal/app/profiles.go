@@ -430,6 +430,30 @@ func (a *App) panelCommand(ctx context.Context, event *rayleabot.EventContext, c
 	return a.sendPanelList(ctx, event, saved, updated, service)
 }
 
+// talentRefresh answers 刷新天赋 as miao's refreshTalent does: every
+// character of the bound account is read again from 米游社, without the panel
+// cooldown, and the reply points to the statistics that use them.
+func (a *App) talentRefresh(ctx context.Context, event *rayleabot.EventContext) error {
+	owner, err := a.panelOwner(ctx, event, "")
+	if err == nil && !owner.Owned {
+		err = gameError("role_missing", "只能用米游社更新已绑定账号的 UID。")
+	}
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	panels, err := a.accountPanels(ctx, a.accountClient(event), owner.Choice)
+	if err == nil && len(panels) > 0 {
+		_, err = a.Profiles.Keep(owner.UID, panels, "米游社", &ShowcaseProfile{Nickname: owner.Role.Nickname, Level: owner.Role.Level})
+	}
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	if text := a.panelReply("talent_failed", nil); len(panels) == 0 && text != "" {
+		return event.SendText(text)
+	}
+	return event.SendText(a.panelReply("talent_refreshed", map[string]string{"count": strconv.Itoa(len(panels))}))
+}
+
 // sendPanelList answers with 面板列表, marking the characters a refresh
 // updated and, in a group that ranks panels, the UID's places.
 func (a *App) sendPanelList(ctx context.Context, event *rayleabot.EventContext, saved SavedProfiles, updated map[string]bool, service string) error {

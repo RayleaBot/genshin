@@ -106,7 +106,9 @@
       "delete_owner": "为确保数据安全，目前仅允许绑定CK用户删除自己UID的面板数据，请联系Bot主人删除...",
       "delete_confirm": "你确认要删除面板数据吗？ 请回复 {prefix}删除面板{uid} 以删除面板数据",
       "delete_denied": "仅允许删除自己的UID数据[{uids}]",
-      "deleted": "UID{uid}的本地数据已删除，排名数据已清除..."
+      "deleted": "UID{uid}的本地数据已删除，排名数据已清除...",
+      "talent_refreshed": "角色天赋更新成功，共{count}个角色\n你现在可以通过【{prefix}练度统计】【{prefix}天赋统计】来查看角色信息了...",
+      "talent_failed": "角色天赋未能更新..."
     }
   },
   "artwork": [
