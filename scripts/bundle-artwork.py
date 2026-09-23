@@ -67,7 +67,6 @@ BUNDLES = {
         "resources/font/HYWenHei-55W.ttf",
         "resources/img/abyss/*",
         "resources/img/other/*",
-        "resources/img/combat/*",
         "resources/img/element/*",
         "resources/img/gacha/items/*",
         "resources/img/roleCard/bg1.jpg",

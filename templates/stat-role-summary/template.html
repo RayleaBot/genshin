@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="elem-hydro default-mode">
+<div class="container" id="container">
+  <div class="head-box type">
+    <div class="title">#幻想真境剧诗<span>{{ .month }}月 · {{ .difficulty }}模式</span></div>
+    <div class="uid">UID:{{ .uid }}</div>
+  </div>
+  <div class="info_box">
+    <div class="role-stat-cont">
+      <div class="role-stat">
+        <div class="cont star-display">
+          <div class="stat-title"><span>明星挑战星章</span></div>
+          <div class="stat-msg">
+            {{ range .medals }}
+            {{ if .line }}<div class="line"></div>{{ end }}
+            <div class="stat-star-container"><div class="stat-star"{{ with .medal }} data-render-resource="{{ . }}"{{ end }}></div></div>
+            {{ end }}
+          </div>
+        </div>
+        <div class="cont" style="width:120px">
+          <div class="stat-title"><span>总耗时</span></div>
+          <div class="stat-msg"><strong>{{ .time }} 秒</strong></div>
+        </div>
+        <div class="cont">
+          <div class="stat-title"><span>消耗幻剧之花</span></div>
+          <div class="stat-msg"><strong>{{ .coins }}</strong></div>
+        </div>
+        <div class="cont">
+          <div class="stat-title"><span>场外观众声援</span></div>
+          <div class="stat-msg"><strong>{{ .bonus }} 次</strong></div>
+        </div>
+        <div class="cont">
+          <div class="stat-title"><span>支援其他玩家</span></div>
+          <div class="stat-msg"><strong>{{ .rent }} 次</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{ range .acts }}
+  <div class="cont">
+    <div class="cont-body">
+      <div class="role-title">
+        <div class="role-star"{{ with .medal }} data-render-resource="{{ . }}"{{ end }}></div>
+        <strong>{{ .title }}</strong>
+        <span>{{ .time }}</span>
+      </div>
+      <div class="role-floor-team">
+        <div class="role-team">{{ range .team }}{{ template "card" . }}{{ end }}</div>
+        <div class="line"></div>
+        <div class="role-buff">
+          <div class="role-buff-line">
+            <div class="role-enemy-container">
+              <div class="role-choice-cards-header">选择敌人</div>
+              <div class="role-choice-cards-content">
+                <div class="role-content-container"><div class="role-content-icon"{{ with .enemy }} data-render-resource="{{ . }}"{{ end }}></div></div>
+              </div>
+            </div>
+            <div class="role-splendour-container">
+              <div class="role-choice-cards-header">辉彩祝福</div>
+              <div class="role-choice-cards-content" style="flex-direction: column">
+                <div style="color: #0D0D0D">等级 {{ .level }}</div>
+                <div style="color: #0D0DFF">生命值 +{{ .hp }}
+                  <span style="color: #FD0D0D">攻击力 +{{ .atk }}</span>
+                </div>
+                <div style="color: #A0A00D">防御力 +{{ .def }}
+                  <span style="color: #00A000">元素精通 +{{ .em }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="role-splendour-buff-container">
+              <div class="role-choice-cards-header">辉彩祝福 buff</div>
+              <div class="role-choice-cards-content">
+                {{ range .blessings }}
+                <div class="role-content-container">
+                  <div class="role-content-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div>
+                  <div style="color: black">Lv. {{ .level }}</div>
+                </div>
+                {{ end }}
+              </div>
+            </div>
+          </div>
+          <div class="role-buff-line">
+            <div class="role-choice-cards-container">
+              <div class="role-choice-cards-header">神秘收获 x {{ len .gains }}</div>
+              <div class="role-choice-cards-content">
+                {{ range .gains }}<div class="role-content-container"><div class="role-content-icon"{{ with . }} data-render-resource="{{ . }}"{{ end }}></div></div>{{ end }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{ end }}
+  <div class="cont role-notice">
+    <div class="cont-body">
+      <ul class="cont-msg">
+        <li><strong>明星挑战星章</strong>不仅作为展示用，<strong>也会</strong>影响挑战的奖励领取~</li>
+        <li>各关卡按照<strong>挑战时间顺序</strong>展示</li>
+        <li>仅展示<strong>已挑战成功</strong>的<strong>圣牌挑战</strong>，未挑战成功的<strong>圣牌挑战</strong>不会被展示</li>
+        <li>角色装备与圣遗物为当前最新状态</li>
+      </ul>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
+{{ define "card" }}
+<div class="avatar-card elem-{{ .elem }} avatar-{{ .name }} card-{{ .type }}">
+  <div class="card">
+    {{ if .known }}
+    <div class="avatar-face item-icon star{{ .star }}">
+      <div class="img mini"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></div>
+      <div class="img wide avatar-{{ .name }}"{{ with .gacha }} data-render-resource="{{ . }}"{{ end }}></div>
+      <span class="cons cons-{{ .cons }} mini">{{ .cons }}</span>
+      <div class="avatar-level"><span>Lv</span>{{ .level }} {{ .abbr }}</div>
+    </div>
+    <div class="avatar-info">
+      <div class="avatar-name wide">
+        <strong>{{ .abbr }}</strong>
+        <div class="lv-info">
+          <span class="cons cons-{{ .cons }}">{{ .cons }}</span>
+          <span class="avatar-level">Lv{{ .level }}</span>
+        </div>
+        <div class="line"></div>
+      </div>
+      {{ with .talents }}
+      <div class="avatar-talent">{{ range . }}<span class="talent-item talent-{{ .key }} talent-{{ if .crown }}crown{{ else }}none{{ end }} talent-{{ if .plus }}plus{{ else }}none{{ end }}">{{ .level }}</span>{{ end }}</div>
+      {{ else }}
+      <div class="avatar-talent no-talent"><span>暂无天赋数据</span></div>
+      {{ end }}
+      <div class="line"></div>
+      <div class="avatar-detail">
+        <div class="item avatar-weapon">
+          {{ with .weapon }}
+          <div class="item-icon star{{ .star }}">
+            <span class="img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></span>
+            <span class="cons cons-{{ .badge }}">{{ .affix }}</span>
+          </div>
+          {{ else }}
+          <div class="item-icon star"><span class="img"></span><span class="cons cons-"></span></div>
+          {{ end }}
+        </div>
+        <div class="item avatar-artis artis{{ len .artis }}">
+          <div class="artis item-icon">{{ range .artis }}<div class="img" data-render-resource="{{ . }}"></div>{{ end }}</div>
+          <div class="item-info wide"></div>
+        </div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
