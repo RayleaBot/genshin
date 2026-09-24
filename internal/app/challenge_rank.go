@@ -371,9 +371,9 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	uid := ""
 	for _, arg := range args[1:] {
 		switch arg {
-		case "本期", "1":
+		case "本期":
 			period = 1
-		case "上期", "2":
+		case "上期":
 			period = 2
 		default:
 			if uid != "" || !uidPattern.MatchString(arg) {
