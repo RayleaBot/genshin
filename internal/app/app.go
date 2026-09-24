@@ -837,11 +837,6 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 	if len(args) > 0 {
 		uid = args[0]
 	}
-	// Miao's and Yunzai's abyss rules end in [ |0-9]*, and only a UID among
-	// those digits names whose record to read; others leave the current UID.
-	if (operation.Input == "period" || operation.Name == a.Game.ID+".abyss_summary") && !uidPattern.MatchString(uid) {
-		uid = ""
-	}
 	return input, uid, nil
 }
 

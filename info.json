@@ -51,7 +51,7 @@
       "id": "profile",
       "name": "角色卡片",
       "description": "玩家信息与角色展示卡片",
-      "usage": "#角色卡片 [UID]",
+      "usage": "#角色卡片 / #探索 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",

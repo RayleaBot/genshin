@@ -321,6 +321,67 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 	}
 }
 
+// Words sent after a command whose upstream rule reads to the end are read
+// as that rule reads them: a UID among digits counts, other digits are
+// ignored, and words the rule does not take pass the command over.
+func TestTrailingWordsFollowUpstreamRules(t *testing.T) {
+	manifest, err := pluginmeta.Read(pluginFile(t, "info.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := newCommandSet(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		word string
+		sent []string
+		id   string
+		args []string
+	}{
+		{"深渊", []string{"2"}, "abyss-summary", nil},
+		{"深渊", []string{"2", "100000001"}, "abyss-summary", []string{"100000001"}},
+		{"深渊", []string{"100000001", "数据"}, "abyss-summary", []string{"100000001"}},
+		{"深渊100000001", []string{"1800000001"}, "abyss-summary", []string{"100000001"}},
+		{"上期深渊", []string{"2"}, "abyss", []string{"上期"}},
+		{"深渊12层", []string{"2"}, "abyss-floor", nil},
+		{"五星武器", []string{"100000001"}, "weapons", []string{"100000001"}},
+		{"探索", []string{"3"}, "profile", nil},
+		{"练度统计", []string{"100000001"}, "training", []string{"100000001"}},
+		{"202507剧诗练度统计", []string{"100000001"}, "theater-training", []string{"202507", "100000001"}},
+		{"今日素材", []string{"2"}, "daily-material", nil},
+		{"剧诗", []string{"100000001", "数据"}, "theater", []string{"100000001"}},
+		// The plugin's own word keeps its words.
+		{"信息", []string{"100000001"}, "profile", []string{"100000001"}},
+	} {
+		id, args, ok := set.resolve(tc.word, tc.sent)
+		if len(args) == 0 {
+			args = nil
+		}
+		if !ok || id != tc.id || !reflect.DeepEqual(args, tc.args) {
+			t.Errorf("%s %v resolved to %q %v %v, want %s %v", tc.word, tc.sent, id, args, ok, tc.id, tc.args)
+		}
+	}
+	// Words upstream's rule does not take leave the command out.
+	for _, tc := range []struct {
+		word string
+		sent []string
+		id   string
+	}{
+		{"深渊", []string{"abc"}, "abyss-summary"},
+		{"深渊数据", []string{"100000001"}, "abyss-summary"},
+		{"上期深渊", []string{"上期"}, "abyss"},
+		{"武器", []string{"雷"}, "weapons"},
+		{"角色卡片", []string{"100000001"}, "profile"},
+		{"面板练度统计", []string{"100000001"}, "training"},
+		{"uid100000001", []string{"2"}, "characters"},
+	} {
+		if id, _, _ := set.resolve(tc.word, tc.sent); id == tc.id {
+			t.Errorf("%s %v resolved to %s", tc.word, tc.sent, id)
+		}
+	}
+}
+
 // As on the host, a fallback command takes a word only when no ordinary
 // command does, wherever the manifest declares it.
 func TestFallbackCommandsResolveAfterOrdinaryOnes(t *testing.T) {

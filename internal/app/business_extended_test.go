@@ -62,18 +62,4 @@ func TestExtendedCommandInputs(t *testing.T) {
 			t.Errorf("%s = %v, %v", word, input["schedule_type"], err)
 		}
 	}
-	// A number after an abyss command names no period; as upstream, one that
-	// is no UID leaves the current UID.
-	if input, uid, err := app.commandInput(Operation{Input: "period"}, []string{"2"}, nil); err != nil || uid != "" || input["schedule_type"] != nil {
-		t.Errorf("深渊12层 2 = %v %q %v", input, uid, err)
-	}
-	if input, uid, err := app.commandInput(Operation{Input: "period"}, []string{"上期", "2"}, nil); err != nil || uid != "" || input["schedule_type"] != 2 {
-		t.Errorf("上期深渊 2 = %v %q %v", input, uid, err)
-	}
-	summary := Operation{Name: ".abyss_summary", Input: "none"}
-	for arg, want := range map[string]string{"2": "", "100000001": "100000001"} {
-		if _, uid, err := app.commandInput(summary, []string{arg}, nil); err != nil || uid != want {
-			t.Errorf("深渊 %s = %q %v", arg, uid, err)
-		}
-	}
 }
