@@ -72,6 +72,39 @@ func TestOfficialPanelWritesSubstatsTheOldToleranceRejected(t *testing.T) {
 		t.Fatalf("flower = %v under %v, want attrIds %s under mysPanel", flower, avatar["_source"], want)
 	}
 }
+
+// miao leaves out an artifact its data does not name, or whose main stat it
+// cannot map, and still writes the character; one without artifacts keeps
+// none.
+func TestCloudAvatarLeavesOutArtifactsMiaoCannotWrite(t *testing.T) {
+	result, err := AccountsClient{Game: "genshin", Caller: &ocrCaller{}}.Execute(t.Context(), Selection{"account", "role"}, "genshin.character", map[string]any{"character_ids": []any{"10000046"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	panel := NormalizePanels(result, Catalog{})[0]
+	game := testGame(t)
+	_, raw, err := panelCloudAvatar(t.Context(), game, panel, miaoSource(panel))
+	if err != nil || strings.Contains(string(raw), `"artis"`) {
+		t.Fatalf("without artifacts: %s, %v", raw, err)
+	}
+	flower := PanelEquipment{Name: "魔女的炎之花", SetName: "炽烈的炎之魔女", Slot: 1, Level: 20, Rarity: "5", Complete: true, Main: []PanelStat{{ID: "2", Key: "hpPlus", Value: "4780"}}, Sub: []PanelStat{{ID: "20", Key: "cpct", Value: "3.9%"}}}
+	unnamed := flower
+	unnamed.Name, unnamed.SetName, unnamed.Slot = "未收录之羽", "未收录的套装", 2
+	unmapped := flower
+	unmapped.Name, unmapped.Slot, unmapped.Main = "魔女的心之火", 4, []PanelStat{{ID: "26", Key: "heal", Value: "35.9%"}}
+	panel.Equipment = []PanelEquipment{flower, unnamed, unmapped}
+	_, raw, err = panelCloudAvatar(t.Context(), game, panel, miaoSource(panel))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var avatar map[string]any
+	if err = json.Unmarshal(raw, &avatar); err != nil {
+		t.Fatal(err)
+	}
+	if artis := asObject(avatar["artis"]); len(artis) != 1 || asText(fieldAt(avatar, "artis.1.name")) != "魔女的炎之花" {
+		t.Fatalf("artis = %v, want only the flower", artis)
+	}
+}
 func TestOfficialCloudCaptureKeepsOriginalTalentAndWeaponIdentity(t *testing.T) {
 	caller := &ocrCaller{}
 	client := AccountsClient{Game: "genshin", Caller: caller}

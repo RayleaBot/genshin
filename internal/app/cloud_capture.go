@@ -102,15 +102,17 @@ var gsCloudMain = map[int]map[string]int{1: {"hpPlus": 14001}, 2: {"atkPlus": 12
 
 // panelCloudGear writes an artifact as miao keeps it in player data. The
 // official panel and the showcase count each substat's upgrades, 0 for one
-// roll; the other sources keep a count only above 0.
-func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any, error) {
-	if !gear.Complete || len(gear.Main) != 1 {
-		return nil, gameError("cloud_invalid", "官方装备资料不完整，无法导出。")
+// roll; the other sources keep a count only above 0. Like miao's
+// MysPanelData and EnkaData, it gives nothing for an artifact without its
+// main stat, one miao's data does not name or one whose main stat miao cannot
+// map, and the character is written without it; the star is the rarity, or 5
+// without one.
+func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any, bool) {
+	if len(gear.Main) != 1 {
+		return nil, false
 	}
-	star, err := strconv.Atoi(gear.Rarity)
-	if err != nil || star < 1 || star > 5 {
-		return nil, gameError("cloud_invalid", "官方装备品质无效。")
-	}
+	star, _ := strconv.Atoi(gear.Rarity)
+	star = cmp.Or(star, 5)
 	counted := source == "mihoyo" || source == "enka"
 	d := *g.Data.CloudGear
 	itemKey := gear.Name
@@ -125,13 +127,13 @@ func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any,
 
 	item, ok := d.Items[itemKey]
 	if !ok || item.Slot != gear.Slot {
-		return nil, gameError("cloud_invalid", "固定资料未收录此装备，无法可靠导出。")
+		return nil, false
 	}
 	out := map[string]any{"level": gear.Level, "star": star}
 	out["name"] = itemKey
 	id := gsCloudMain[gear.Slot][gear.Main[0].Key]
 	if id == 0 {
-		return nil, gameError("cloud_invalid", "官方主词条无法映射。")
+		return nil, false
 	}
 	out["mainId"] = id
 
@@ -146,7 +148,7 @@ func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any,
 		}
 	}
 	out["attrIds"] = attrs
-	return out, nil
+	return out, true
 }
 func resolveCloudPromotions(ctx context.Context, engine *reference.Engine, record reference.Character, profile BuildProfile) (int, int, error) {
 	if profile.Promote != nil && profile.Weapon.Promote != nil {
@@ -244,11 +246,13 @@ func panelCloudAvatar(ctx context.Context, g Game, panel CharacterPanel, source 
 		avatar["weapon"] = weapon
 	}
 	for _, gear := range panel.Equipment {
-		converted, err := panelCloudGear(g, gear, panel.Source)
-		if err != nil {
-			return "", nil, err
+		if converted, ok := panelCloudGear(g, gear, panel.Source); ok {
+			avatar["artis"].(map[string]any)[strconv.Itoa(gear.Slot)] = converted
 		}
-		avatar["artis"].(map[string]any)[strconv.Itoa(gear.Slot)] = converted
+	}
+	// miao leaves out artifacts when it keeps none.
+	if len(avatar["artis"].(map[string]any)) == 0 {
+		delete(avatar, "artis")
 	}
 	// Normalize through JSON so exported slices use the same representation as imported files.
 	var data map[string]any
