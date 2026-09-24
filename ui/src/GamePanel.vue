@@ -269,7 +269,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
       <template v-else-if="page === 'assets'"><CodesPanel :roles="roleOptions" :invoke="invoke"/><BillingRecords :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'community'"><CommunityPanel :accounts="accounts" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多社区账号</button></template>
       <template v-else-if="page === 'cloud'">
-        <CloudQueries :invoke="invoke" :prefix="game.prefix" />
+        <CloudQueries :invoke="invoke" :prefix="game.prefix" :game="game.id" />
       </template>
       <template v-else-if="page === 'signin'">
         <p v-if="accountIssue" role="alert" class="feedback attention">{{accountIssue}}</p>
