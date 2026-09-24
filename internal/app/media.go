@@ -26,10 +26,12 @@ import (
 const mediaMaxBytes = 4 * 1024 * 1024
 
 var mediaRefPattern = regexp.MustCompile(`^[A-Z2-7]{26}$`)
-var mediaKinds = []string{"character", "weapon", "food", "enemy", "domain", "artifact", "material", "guide", "birthday", "photo", "other"}
 
-// mediaLabels name the categories as the image library page does.
-var mediaLabels = map[string]string{"character": "角色图鉴", "weapon": "装备", "food": "食物", "enemy": "怪物", "domain": "秘境", "artifact": "套装", "material": "材料", "guide": "攻略", "birthday": "生日", "photo": "角色照片", "other": "其他"}
+// mediaKinds are the categories of the images a chat command reads: a
+// character's images, which 照片 and the character card draw from. Images an
+// earlier version filed under other categories stay where they are but are
+// no longer read.
+var mediaKinds = []string{"character", "birthday", "photo"}
 
 type MediaEntry struct {
 	Ref       string `json:"ref"`
@@ -117,6 +119,9 @@ func (s *MediaStore) entries() ([]MediaEntry, error) {
 		entry, err := s.metadata(strings.TrimSuffix(f.Name(), ".json"))
 		if err != nil {
 			return nil, err
+		}
+		if !slices.Contains(mediaKinds, entry.Category) {
+			continue
 		}
 		out = append(out, entry)
 	}

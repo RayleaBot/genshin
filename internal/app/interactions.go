@@ -236,29 +236,6 @@ func (a *App) interactionCommand(ctx context.Context, event *rayleabot.EventCont
 			return event.SendText("请提供可唯一识别的角色名。")
 		}
 		return a.sendCharacterMedia(ctx, event, entry, true)
-	case "image-library":
-		category := ""
-		for key, label := range mediaLabels {
-			if len(args) > 0 && (args[0] == key || args[0] == label) {
-				category = key
-			}
-		}
-		if category == "" {
-			labels := []string{}
-			for _, key := range mediaKinds {
-				labels = append(labels, mediaLabels[key])
-			}
-			return event.SendText("使用“" + a.Game.Prefix + "图鉴图 分类 [关键词]”，分类：" + strings.Join(labels, "、") + "。")
-		}
-		result, err := a.mediaAction("media.list", map[string]any{"category": category, "query": strings.Join(args[1:], " ")})
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		items := result["items"].([]MediaEntry)
-		if len(items) == 0 {
-			return event.SendText("本地图库没有匹配素材。")
-		}
-		return a.sendMedia(event, items[rand.IntN(len(items))])
 	}
 	return event.Result(map[string]any{"handled": false})
 }

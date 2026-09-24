@@ -15,7 +15,7 @@ var helpIcons = map[string]int{
 	"character": 66, "build": 66, "panel-list": 63, "panel-refresh": 63, "score": 65,
 	"abyss-summary": 64, "abyss": 64, "abyss-floor": 64, "theater": 64, "hard_challenge": 64, "challenge-submit": 77,
 	"gacha-detail": 6, "gacha-background": 6, "gacha-stat": 21, "simulation": 8, "simulation-fate": 8,
-	"catalog": 60, "talent-wiki": 53, "materials": 67, "guides": 20, "photo": 88, "image-library": 88, "interaction": 59,
+	"catalog": 60, "talent-wiki": 53, "materials": 67, "guides": 20, "photo": 88, "interaction": 59,
 	"live-calendar": 83, "signin": 86, "role-cards": 35, "role-cards-exchange": 35,
 	"help": 79, "version": 79, "group-settings": 32, "artwork": 35, "artwork-status": 35,
 }

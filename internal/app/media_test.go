@@ -74,7 +74,7 @@ func TestMediaAtomicChunksOriginalBytesEditAndRemoval(t *testing.T) {
 	if _, err = a.mediaAction("media.remove", map[string]any{"ref": ref, "revision": 0, "confirm": true}); err == nil {
 		t.Fatal("stale remove")
 	}
-	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "guide", "license": "fixture"}); err != nil {
+	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "character", "license": "fixture"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = a.mediaAction("media.remove", map[string]any{"ref": ref, "revision": 2, "confirm": true}); err != nil {
@@ -85,6 +85,26 @@ func TestMediaAtomicChunksOriginalBytesEditAndRemoval(t *testing.T) {
 	}
 	if _, err = a.mediaAction("media.read", map[string]any{"ref": ref}); err == nil {
 		t.Fatal("removed image read")
+	}
+}
+
+// An image an earlier version filed under a category no command reads stays
+// on disk but is no longer listed or drawn from.
+func TestMediaLeavesRetiredCategoriesUnread(t *testing.T) {
+	s := &MediaStore{Directory: t.TempDir()}
+	if _, err := s.add(MediaEntry{Title: "攻略图", Category: "guide", License: "fixture"}, pngFixture(t)); err != nil {
+		t.Fatal(err)
+	}
+	photo, err := s.add(MediaEntry{Title: "胡桃照片1", Category: "photo", CatalogID: "10000046", License: "fixture"}, pngFixture(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, err := s.entries()
+	if err != nil || len(entries) != 1 || entries[0].Ref != photo.Ref {
+		t.Fatal(entries, err)
+	}
+	if files, _ := filepath.Glob(filepath.Join(s.Directory, "*.json")); len(files) != 2 {
+		t.Fatal("retired image removed", files)
 	}
 }
 func TestWebPDimensionsAndInvalidContainer(t *testing.T) {

@@ -431,7 +431,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.helpCommand(ctx, event, command, args)
 	case "artwork", "artwork-status":
 		return a.artworkCommand(event, command, args)
-	case "photo", "image-library", "original-image":
+	case "photo", "original-image":
 		return a.interactionCommand(ctx, event, command, args)
 	case "interaction":
 		return a.wifeCommand(ctx, event, args)

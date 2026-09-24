@@ -975,19 +975,6 @@
       }
     },
     {
-      "id": "image-library",
-      "name": "图鉴图",
-      "description": "按分类发送一张图库图片",
-      "usage": "#图鉴图 分类 [关键词]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "图鉴图"
-        ]
-      }
-    },
-    {
       "id": "original-image",
       "name": "原图",
       "description": "发送本人最近十分钟查看的图库图片原图",
@@ -1912,7 +1899,6 @@
       "commands": [
         "photo",
         "photo-upload",
-        "image-library",
         "interaction"
       ]
     },
