@@ -704,19 +704,6 @@
       }
     },
     {
-      "id": "cloud-private-panel",
-      "name": "云面板",
-      "description": "本人私聊读取并保存已验证的长期云面板",
-      "usage": "#云面板 获取 UID 确认 / 进度 / 保存 / 取消",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "云面板"
-        ]
-      }
-    },
-    {
       "id": "community-status",
       "name": "米游币查询",
       "description": "查询社区米游币与任务",
@@ -1836,7 +1823,6 @@
         "cloud-export",
         "cloud-import",
         "cloud-reforge",
-        "cloud-private-panel",
         "cloud-bind",
         "cloud-verify"
       ]

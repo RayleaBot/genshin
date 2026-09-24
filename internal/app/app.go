@@ -463,8 +463,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.accountTaskCommand(ctx, event, command, args)
 	case "community-status", "community-sign", "cloud-game-status", "cloud-game-sign":
 		return a.communityCommand(ctx, event, command, args)
-	case "cloud-private-panel":
-		return a.privateCloudPanelCommand(ctx, event, args)
 	case "signin-task":
 		return a.signinTaskCommand(ctx, event, args)
 	case "signin", "signin-status":

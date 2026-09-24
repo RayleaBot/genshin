@@ -42,10 +42,8 @@ type CloudInput struct {
 	Filters     []CloudFilter `json:"filters,omitempty"`
 	Ref         string        `json:"ref,omitempty"`
 	Index       *int          `json:"index,omitempty"`
-	owner       *Subject
 }
 type CloudJob struct {
-	mode string
 	CloudResult
 	Ref         string `json:"ref"`
 	State       string `json:"state"`
@@ -56,7 +54,6 @@ type CloudJob struct {
 	done        chan struct{}
 	game        string
 	characterID string
-	owner       *Subject
 }
 
 type CloudResult struct {
@@ -146,9 +143,6 @@ func cloudRequest(input CloudInput) (string, map[string]any, error) {
 		return "", nil, gameError("cloud_credential_missing", "授权查询需要机器人管理员在账号插件中配置 ark 令牌。")
 	}
 	body := map[string]any{"version": "0.1.0"}
-	if input.Mode == "private_panel" {
-		return privateCloudPanelRequest(input)
-	}
 	if input.Mode == "exchange_upload" || input.Mode == "exchange_download" {
 		return cloudExchangeRequest(input)
 	}
@@ -225,17 +219,6 @@ func (c *CloudClient) Start(game Game, input CloudInput) (CloudJob, error) {
 	if err != nil {
 		return CloudJob{}, err
 	}
-	if input.owner != nil {
-		for ref, j := range c.jobs {
-			if j.owner != nil && *j.owner == *input.owner && j.game == game.ID {
-				if j.State == "running" {
-					return CloudJob{}, gameError("cloud_limit", "已有本人私聊云请求正在处理，请先查询进度。")
-				}
-				j.cancel()
-				delete(c.jobs, ref)
-			}
-		}
-	}
 	if len(c.jobs) >= 8 {
 		oldest := ""
 		var oldestMS int64
@@ -256,11 +239,7 @@ func (c *CloudClient) Start(game Game, input CloudInput) (CloudJob, error) {
 		c.jobs = map[string]*CloudJob{}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	job := &CloudJob{mode: input.Mode, Ref: rand.Text(), State: "running", CreatedAtMS: time.Now().UnixMilli(), cancel: cancel, game: game.ID, characterID: input.CharacterID}
-	if input.owner != nil {
-		owner := *input.owner
-		job.owner = &owner
-	}
+	job := &CloudJob{Ref: rand.Text(), State: "running", CreatedAtMS: time.Now().UnixMilli(), cancel: cancel, game: game.ID, characterID: input.CharacterID}
 	c.jobs[job.Ref] = job
 	expiry := time.AfterFunc(5*time.Minute, func() {
 		c.mu.Lock()
@@ -312,13 +291,7 @@ func (c *CloudClient) Wait(ctx context.Context, job CloudJob) CloudJob {
 func (c *CloudClient) Poll(ref string, cancel bool) (CloudJob, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.pollLocked(ref, cancel, nil)
-}
-func (c *CloudClient) pollLocked(ref string, cancel bool, owner *Subject) (CloudJob, error) {
 	job := c.jobs[ref]
-	if job != nil && job.owner != nil && (owner == nil || *owner != *job.owner) {
-		return CloudJob{}, gameError("cloud_missing", "云查询任务不存在。")
-	}
 	if job != nil && time.Since(time.UnixMilli(job.CreatedAtMS)) > 5*time.Minute {
 		job.cancel()
 		delete(c.jobs, ref)
@@ -451,16 +424,6 @@ func projectCloud(game Game, input CloudInput, decoded any) (CloudResult, error)
 	}
 	if err := cloudRetcode(result); err != nil {
 		return CloudResult{}, err
-	}
-	if input.Mode == "private_panel" {
-		q := input
-		q.Mode = "exchange_download"
-		out, err := cloudExchangeResult(game, q, result)
-		if out.View != nil {
-			out.View.Title = game.Name + "本人长期云面板"
-			out.View.Note = "来源：ark.ivny.cn；已按本人 QQ 与 UID 请求，属于云端历史资料。"
-		}
-		return out, err
 	}
 	if input.Mode == "exchange_upload" || input.Mode == "exchange_download" {
 		return cloudExchangeResult(game, input, result)
