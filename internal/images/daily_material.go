@@ -128,19 +128,16 @@ func DailyMaterial(context app.ImageContext, page app.DailyMaterialImage) (app.I
 	}
 	for _, kept := range page.Panels {
 		panel := kept.Panel
-		var record reference.Character
-		for _, candidate := range metadata.Characters {
-			if candidate.ID == panel.ID && (record.ID == "" || strings.EqualFold(candidate.Element, panel.Element)) {
-				record = candidate
-			}
-		}
+		record := panelRecord(metadata.Characters, panel)
 		character, ok := context.Catalog.Get(panel.ID)
 		if !ok || record.ID == "" {
 			continue
 		}
 		star := app.Int(record.Data["star"])
 		id, _ := strconv.Atoi(panel.ID)
-		path := "resources/meta-gs/character/" + record.Name + "/imgs/"
+		// miao's face and side of the Traveler are 空's or 荧's.
+		portraits, _ := app.CharacterFolders(panel.ID, record.Name, "")
+		path := portraits + "imgs/"
 		levels := app.PanelTalents(panel, record)
 		talents, lowest := []any{}, math.MaxInt
 		for _, key := range []string{"a", "e", "q"} {

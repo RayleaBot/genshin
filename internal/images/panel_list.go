@@ -39,18 +39,13 @@ func PanelList(context app.ImageContext, list app.PanelListImage) (app.Image, bo
 	chars := []any{}
 	for _, saved := range list.Panels {
 		panel := saved.Panel
-		// The Traveler has a record per element; the panel names its own.
-		var record reference.Character
-		for _, candidate := range characters {
-			if candidate.ID == panel.ID && (record.ID == "" || strings.EqualFold(candidate.Element, panel.Element)) {
-				record = candidate
-			}
-		}
+		record := panelRecord(characters, panel)
 		star := app.Int(record.Data["star"])
 		if star != 4 {
 			star = 5
 		}
-		path := "resources/meta-gs/character/" + record.Name + "/imgs/"
+		portraits, _ := app.CharacterFolders(panel.ID, record.Name, "")
+		path := portraits + "imgs/"
 		face := resources.Artwork("face-"+panel.ID, "miao-plugin", path+"face-q.webp")
 		if face == "" {
 			face = resources.Artwork("face-"+panel.ID, "miao-plugin", path+"face.webp")
@@ -81,4 +76,25 @@ func PanelList(context app.ImageContext, list app.PanelListImage) (app.Image, bo
 		data["update_time"] = time.UnixMilli(list.Profiles.RefreshedAtMS).In(chinaTime).Format("01-02 15:04")
 	}
 	return app.Image{Template: "panel-list", Data: data, Resources: resources.List}, true
+}
+
+// panelRecord is the reference record of a kept panel's character. The
+// Traveler has a record per element, under 荧's ID, which 空 shares as miao's
+// Character does; the panel names its element. The record keeps the panel's
+// ID.
+func panelRecord(characters []reference.Character, panel app.CharacterPanel) reference.Character {
+	id := panel.ID
+	if id == "10000005" {
+		id = "10000007"
+	}
+	var record reference.Character
+	for _, candidate := range characters {
+		if candidate.ID == id && (record.ID == "" || strings.EqualFold(candidate.Element, panel.Element)) {
+			record = candidate
+		}
+	}
+	if record.ID != "" {
+		record.ID = panel.ID
+	}
+	return record
 }
