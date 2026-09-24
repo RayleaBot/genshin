@@ -181,8 +181,9 @@ func TestImportedCloudAvatarBecomesAPanel(t *testing.T) {
 }
 
 // ark's 导出面板 and 导出面板数据 send miao's whole player data, whatever each
-// character was read from. The showcase keeps rounded substats with how
-// often each rolled; a panel read back from player data keeps their sums.
+// character was read from. A showcase panel kept before its roll IDs were
+// saved has rounded substats with how often each rolled; a panel read back
+// from player data keeps their sums.
 func TestExportWritesEveryKeptPanel(t *testing.T) {
 	game := testGame(t)
 	a := App{Game: game}

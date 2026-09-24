@@ -30,6 +30,12 @@ type PanelEquipment struct {
 	Sub        []PanelStat     `json:"sub"`
 	Complete   bool            `json:"complete"`
 	Score      *EquipmentScore `json:"score,omitempty"`
+	// MainID and AttrIDs are an artifact's main stat and roll IDs as the
+	// showcase gives them (its reliquary mainPropId and appendPropIdList),
+	// which miao's EnkaData saves as they are. Other sources, and showcase
+	// panels kept before they were saved, have none.
+	MainID  int   `json:"main_id,omitempty"`
+	AttrIDs []int `json:"attr_ids,omitempty"`
 }
 type PanelSkill struct {
 	SkillType   int    `json:"skill_type,omitempty"`

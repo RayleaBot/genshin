@@ -100,9 +100,11 @@ func mapCloudStat(key string) string {
 
 var gsCloudMain = map[int]map[string]int{1: {"hpPlus": 14001}, 2: {"atkPlus": 12001}, 3: {"hp": 10002, "atk": 10004, "def": 10006, "recharge": 10007, "mastery": 10008}, 4: {"hp": 15002, "atk": 15004, "def": 15006, "mastery": 15007, "phy": 15015, "pyro": 15008, "electro": 15009, "hydro": 15011, "dendro": 15014, "anemo": 15012, "geo": 15013, "cryo": 15010}, 5: {"hp": 13002, "atk": 13004, "def": 13006, "cpct": 13007, "cdmg": 13008, "heal": 13009, "mastery": 13010}}
 
-// panelCloudGear writes an artifact as miao keeps it in player data. The
-// official panel and the showcase count each substat's upgrades, 0 for one
-// roll; the other sources keep a count only above 0. Like miao's
+// panelCloudGear writes an artifact as miao keeps it in player data: with
+// the showcase's own IDs when the artifact keeps them, else with its rolls
+// restored from the substats. The official panel and the showcase count each
+// substat's upgrades, 0 for one roll; the other sources keep a count only
+// above 0. Like miao's
 // MysPanelData and EnkaData, it gives nothing for an artifact without its
 // main stat, one miao's data does not name or one whose main stat miao cannot
 // map, and the character is written without it; the star is the rarity, or 5
@@ -131,6 +133,15 @@ func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any,
 	}
 	out := map[string]any{"level": gear.Level, "star": star}
 	out["name"] = itemKey
+	// EnkaData saves the showcase's main stat and roll IDs as they are.
+	if gear.MainID != 0 && len(gear.AttrIDs) > 0 {
+		attrs := make([]any, len(gear.AttrIDs))
+		for index, id := range gear.AttrIDs {
+			attrs[index] = id
+		}
+		out["mainId"], out["attrIds"] = gear.MainID, attrs
+		return out, true
+	}
 	id := gsCloudMain[gear.Slot][gear.Main[0].Key]
 	if id == 0 {
 		return nil, false
@@ -144,7 +155,8 @@ func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any,
 			times = -1
 		}
 		for _, id := range cloudRolls(d, gear.Rarity, times, stat) {
-			// EnkaData keeps the showcase's appendPropIdList, numbers; the
+			// EnkaData keeps the showcase's appendPropIdList, numbers, which a
+			// showcase panel kept before the IDs were saved restores; the
 			// official panel's rolls are the table's keys, text.
 			if source == "enka" {
 				attrs = append(attrs, json.Number(id))

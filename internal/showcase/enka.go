@@ -42,6 +42,7 @@ type enkaAvatar struct {
 		ItemID    int `json:"itemId"`
 		Reliquary *struct {
 			Level            int   `json:"level"`
+			MainPropID       int   `json:"mainPropId"`
 			AppendPropIDList []int `json:"appendPropIdList"`
 		} `json:"reliquary"`
 		Weapon *struct {
@@ -216,7 +217,9 @@ func parseAvatar(game app.Game, catalog app.Catalog, sets map[string]string, ava
 			if slot == 0 || set == "" || equip.Flat.ReliquaryMainstat == nil {
 				continue
 			}
-			piece := app.PanelEquipment{ID: id, Slot: slot, Level: min(20, equip.Reliquary.Level-1), Rarity: strconv.Itoa(equip.Flat.RankLevel), SetName: set, Main: []app.PanelStat{}, Sub: []app.PanelStat{}, Complete: true}
+			// miao's EnkaData keeps the main stat and roll IDs as they are.
+			piece := app.PanelEquipment{ID: id, Slot: slot, Level: min(20, equip.Reliquary.Level-1), Rarity: strconv.Itoa(equip.Flat.RankLevel), SetName: set, Main: []app.PanelStat{}, Sub: []app.PanelStat{}, Complete: true,
+				MainID: equip.Reliquary.MainPropID, AttrIDs: slices.Clone(equip.Reliquary.AppendPropIDList)}
 			if names := catalog.ArtifactPieces[set]; slot <= len(names) {
 				piece.Name = names[slot-1]
 			}

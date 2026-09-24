@@ -2,6 +2,7 @@ package showcase_test
 
 import (
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/RayleaBot/plugin-genshin/internal/app"
@@ -48,6 +49,10 @@ func TestParseReadsEnkaLikeMiao(t *testing.T) {
 	piece := panel.Equipment[0]
 	if piece.Slot != 1 || piece.SetName != "染血的骑士道" || piece.Name != "染血的铁之心" || piece.Level != 20 || piece.Main[0].Value != "4780" {
 		t.Fatalf("artifact = %+v", piece)
+	}
+	// miao's EnkaData keeps the main stat and roll IDs as they are.
+	if piece.MainID != 14001 || !slices.Equal(piece.AttrIDs, []int{501082, 501063, 501221, 501242, 501222, 501082, 501223, 501064}) {
+		t.Fatalf("artifact IDs = %d %v", piece.MainID, piece.AttrIDs)
 	}
 	times := map[string]int{}
 	for _, stat := range piece.Sub {
