@@ -543,19 +543,6 @@
       }
     },
     {
-      "id": "cloud-verify",
-      "name": "云验证",
-      "description": "本人私聊显式验证 ark 跨机器人 UID 关联",
-      "usage": "#云验证 获取/提交/状态 UID 确认 | 进度/取消",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "云验证"
-        ]
-      }
-    },
-    {
       "id": "gacha-full",
       "name": "设置全量更新抽卡记录",
       "description": "十分钟内发送的抽卡链接重新读取全部记录，用于修复官方记录有效期内的错误",
@@ -1453,6 +1440,32 @@
       }
     },
     {
+      "id": "cloud-bind",
+      "name": "ark绑定原神uid",
+      "description": "向 ark 获取当前 UID 的签名验证码，签名改为验证码后用 ark验证原神uid 验证",
+      "usage": "#ark绑定原神uid",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "ark绑定原神uid"
+        ]
+      }
+    },
+    {
+      "id": "cloud-verify",
+      "name": "ark验证原神uid",
+      "description": "由 ark 核对游戏签名，把当前 UID 与发送者的 QQ 绑定，在其他机器人上无需再次验证（仅 OneBot11）",
+      "usage": "#ark验证原神uid",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "ark验证原神uid"
+        ]
+      }
+    },
+    {
       "id": "cloud-custom-rank",
       "name": "ark自定义排行",
       "description": "ark 收录的该角色面板全服排行，可按命座等筛选、指定条数，按 miao 排行图出图",
@@ -1824,6 +1837,7 @@
         "cloud-import",
         "cloud-reforge",
         "cloud-private-panel",
+        "cloud-bind",
         "cloud-verify"
       ]
     },

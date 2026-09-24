@@ -1,101 +1,86 @@
 package app
 
 import (
+	"context"
 	"regexp"
-	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 var cloudQQPattern = regexp.MustCompile(`^[1-9][0-9]{4,11}$`)
-var cloudCodePattern = regexp.MustCompile(`^[A-Za-z0-9_:\-]{1,128}$`)
 
-func cloudVerifyRequest(input CloudInput) (string, map[string]any, error) {
-	if input.owner == nil || input.owner.SourceProtocol != "onebot11" || input.owner.SourceAdapter == "" || input.owner.BotID == "" || !cloudQQPattern.MatchString(input.owner.ActorID) || !uidPattern.MatchString(input.UID) || !input.Consent {
-		return "", nil, gameError("input_invalid", "云验证需要本人 OneBot11 私聊身份、有效 UID 和明确确认。")
-	}
-	body := map[string]any{"version": "0.1.0", "uid": input.UID, "type": arkGame}
-	if input.Mode == "verify_code" {
-		return "verify/code", body, nil
-	}
-	body["qq"] = input.owner.ActorID
-	if input.Mode == "verify_bind" {
-		return "verify", body, nil
-	}
-	if input.Mode == "verify_status" {
-		return "verify/user", body, nil
-	}
-	return "", nil, gameError("operation_denied", "云验证操作不存在。")
+// arkErrors is ark-plugin's ERROR_MAP (apps/user.js): the reply for each
+// retcode ark refuses a request with.
+var arkErrors = map[string]string{
+	"-1":  "插件版本过低，请更新插件",
+	"101": "角色ID不存在",
+	"102": "未查询到角色信息",
+	"103": "请求参数错误",
+	"104": "请求超过速率限制",
+	"105": "未知错误",
+	"106": "数据过大，请确保导出的数据小于2MB",
+	"201": "请求超过速率限制，请5分钟后重试",
+	"202": "未发现该用户的数据，请重新导出面板",
+	"301": "请求类型仅支持原神/星铁",
+	"302": "验证失败，个人签名不匹配，请五分钟后重试",
+	"303": "验证失败，请稍后再试",
+	"304": "该uid未验证号主，请通过 #ark验证原神/星铁uid 验证uid",
+	"305": "验证超时，请重新绑定",
+	"306": "验证失败，未获取到签名，请五分钟后重试",
+	"307": "服务器中无该uid数据...",
 }
-func cloudVerifyResult(game Game, input CloudInput, result map[string]any) (CloudResult, error) {
-	code := asText(result["retcode"])
-	if code != "100" {
-		messages := map[string]string{"200": "服务尚未确认此 QQ 与 UID 的关联。", "302": "游戏签名与验证码不符，请核对并等待签名生效后重试。", "304": "此 UID 尚未完成号主验证。", "305": "验证已过期，请重新获取验证码。", "306": "云服务暂未读到游戏签名，请稍后重试。", "307": "云服务尚未收录此 UID。", "104": "云服务查询过于频繁，请稍后重试。", "201": "云服务查询过于频繁，请五分钟后重试。"}
-		message := messages[code]
-		if message == "" {
-			message = "云服务未能完成验证，请稍后检查状态。"
-		}
-		return CloudResult{}, gameError("cloud_verification_failed", message)
-	}
-	v := View{Title: game.Name + "云 UID 验证", Subtitle: "UID " + input.UID, Rows: []Row{}, Note: "第三方 ark.ivny.cn 的跨机器人关联，不改变本地账号授权。"}
-	switch input.Mode {
-	case "verify_code":
-		value := asText(asObject(result["data"])["verifyCode"])
-		if !cloudCodePattern.MatchString(value) {
-			return CloudResult{}, gameError("cloud_invalid", "验证码格式暂不兼容，请稍后重新获取。")
-		}
-		v.Rows = append(v.Rows, Row{Label: "签名验证码", Value: value})
-		v.Note = "将验证码设为游戏公开签名，等待签名审核/生效后，在本私聊发送“" + game.Prefix + "云验证 提交 " + input.UID + " 确认”。验证码由服务提供，有效期 24 小时；无需发送 CK。"
-	case "verify_bind":
-		v.Rows = append(v.Rows, Row{Label: "验证状态", Value: "服务已确认本人 QQ 与 UID 的关联"})
-	case "verify_status":
-		v.Rows = append(v.Rows, Row{Label: "验证状态", Value: "本人 QQ 与 UID 已关联"})
-	default:
-		return CloudResult{}, gameError("operation_denied", "云验证操作不存在。")
-	}
-	return CloudResult{View: &v}, nil
+
+// arkError is ark-plugin's dealError: the reply for ark's answer to a request
+// that did not succeed. A request that failed has no answer, which upstream
+// reads as 未知错误 too.
+func arkError(result map[string]any) string {
+	return cmpOr(arkErrors[asText(result["retcode"])], "未知错误")
 }
-func (c *CloudClient) pollVerification(game string, owner Subject, cancel bool) (CloudJob, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for ref, j := range c.jobs {
-		if j.game == game && strings.HasPrefix(j.mode, "verify_") && j.owner != nil && *j.owner == owner {
-			return c.pollLocked(ref, cancel, &owner)
-		}
-	}
-	return CloudJob{}, gameError("cloud_missing", "没有有效的云验证请求，请先获取验证码或查询关联状态。")
-}
-func (a *App) cloudVerifyCommand(event *rayleabot.EventContext, args []string) error {
-	if event.Event.EventType != "message.private" || event.Event.SourceProtocol != "onebot11" {
-		return event.SendText("云 UID 验证仅支持 OneBot11 本人私聊；不会把其他协议的开放 ID 当作 QQ。")
-	}
-	owner := Subject{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, BotID: event.Bot.ID, ActorID: event.Event.Actor.ID}
-	if len(args) == 1 && (args[0] == "进度" || args[0] == "取消") {
-		j, err := a.Cloud.pollVerification(a.Game.ID, owner, args[0] == "取消")
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		if j.State == "running" {
-			return event.SendText("云验证仍在处理，最长等待 25 秒，请稍后再次查询进度。")
-		}
-		if j.State == "canceled" {
-			return event.SendText("本地云验证等待已取消。已到达云服务的提交可能仍生效，可重新查询关联状态。")
-		}
-		if j.State == "failed" {
-			return event.SendText(j.Message)
-		}
-		return event.SendText(j.View.Text())
-	}
-	mode := ""
-	if len(args) > 0 {
-		mode = map[string]string{"获取": "verify_code", "提交": "verify_bind", "状态": "verify_status"}[args[0]]
-	}
-	if len(args) != 3 || args[2] != "确认" || mode == "" {
-		return event.SendText("云验证由 ark.ivny.cn 提供。获取会发送游戏 UID；提交/状态会发送你的 QQ 与 UID，提交通过后用于跨机器人关联。使用“" + a.Game.Prefix + "云验证 获取/提交/状态 UID 确认”，然后用“" + a.Game.Prefix + "云验证 进度”查看。验证码需自行写入游戏签名，不发送 CK。")
-	}
-	_, err := a.Cloud.Start(a.Game, CloudInput{Mode: mode, UID: args[1], Consent: true, owner: &owner})
+
+// arkVerifyCommand is ark-plugin's ark绑定原神uid (arkGetBindUid) and
+// ark验证原神uid (arkBindUid) for the UID in use or of a mentioned player:
+// 绑定 asks ark for the code to write into the game signature, 验证 has ark
+// read the signature and tie the UID to the sender's QQ, so other bots take
+// it as verified.
+func (a *App) arkVerifyCommand(ctx context.Context, event *rayleabot.EventContext, command string) error {
+	owner, err := a.panelOwner(ctx, event, "")
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	return event.SendText("云验证请求已开始，结果保留 5 分钟。请发送“" + a.Game.Prefix + "云验证 进度”查看；不要重复提交。")
+	route, body, refusal := arkVerifyRequest(command, owner.UID, chatOwner(event))
+	if refusal != "" {
+		return event.SendText(refusal)
+	}
+	decoded, err := a.arkRequest(ctx, event, route, body)
+	if err != nil {
+		return event.SendText(arkError(nil))
+	}
+	return event.SendText(arkVerifyReply(command, a.Game.Prefix, asObject(decoded)))
+}
+
+// arkVerifyRequest is the ark request of 绑定 (cloud-bind) or 验证
+// (cloud-verify). ark knows a player only by QQ number, which 验证 sends, so
+// a sender that is not a OneBot11 QQ user is refused instead.
+func arkVerifyRequest(command, uid string, sender Subject) (route string, body map[string]any, refusal string) {
+	body = map[string]any{"uid": uid, "type": arkGame}
+	if command == "cloud-bind" {
+		return "verify/code", body, ""
+	}
+	if sender.SourceProtocol != "onebot11" || !cloudQQPattern.MatchString(sender.ActorID) {
+		return "", nil, "ark 按 QQ 号验证 UID，当前平台无法验证"
+	}
+	body["qq"] = sender.ActorID
+	return "verify", body, ""
+}
+
+// arkVerifyReply is ark-plugin's reply to ark's answer: the code with its
+// directions for 绑定, 验证成功 for 验证, and ark's error otherwise.
+func arkVerifyReply(command, prefix string, result map[string]any) string {
+	if asText(result["retcode"]) != "100" {
+		return arkError(result)
+	}
+	if command == "cloud-verify" {
+		return "验证成功"
+	}
+	return "验证码: " + asText(asObject(result["data"])["verifyCode"]) + "\n使用方式：\n①原神：派蒙头像——右上角编辑资料——设置签名——填入验证码，待签名审核通过后输入 " + prefix + "ark验证原神uid\n②星铁：手机——右上角三点——漫游签证——设置签名——填入验证码，5-10分钟后输入 " + prefix + "ark验证星铁uid\n验证码有效期24小时，验证通过后自动与QQ绑定，在其他Bot上无需再次绑定"
 }

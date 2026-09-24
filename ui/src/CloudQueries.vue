@@ -48,7 +48,7 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
     <h2>云排名与面板</h2>
     <p class="hint">由第三方 ark.ivny.cn 提供，可使用匿名额度或本游戏已配置的授权额度。排名按服务收录与算法计算，云面板是服务保存的历史资料。</p>
     <p class="hint">授权查询使用账号插件管理页“ark 授权令牌”中配置的令牌，由账号插件代发请求，本插件不保存令牌。</p>
-    <details><summary>验证跨机器人 UID 关联</summary><p class="hint">在机器人本人私聊发送“{{ prefix }}云验证 获取 UID 确认”，随后发送“{{ prefix }}云验证 进度”取回签名验证码。将验证码设为游戏签名，生效后发送“{{ prefix }}云验证 提交 UID 确认”。完成云验证后，可私聊发送“{{prefix}}云面板 获取 UID 确认”读取长期云面板，再用“{{prefix}}云面板 进度/保存”查看或保存。提交、状态与长期面板请求会把你的 QQ 与 UID 发送给 ark；仅支持 OneBot11，本页不能代填他人 QQ。</p></details>
+    <details><summary>验证跨机器人 UID 关联</summary><p class="hint">在聊天中发送“{{ prefix }}ark绑定原神uid”获取当前 UID 的签名验证码，将验证码设为游戏签名，审核通过后发送“{{ prefix }}ark验证原神uid”。验证会把你的 QQ 与 UID 发送给 ark，仅支持 OneBot11。完成验证后，可私聊发送“{{prefix}}云面板 获取 UID 确认”读取长期云面板，再用“{{prefix}}云面板 进度/保存”查看或保存；长期面板请求同样发送 QQ 与 UID，本页不能代填他人 QQ。</p></details>
     <form @submit.prevent="start">
       <fieldset :disabled="pending || detailPending"><legend class="sr-only">云查询参数</legend>
         <label class="check"><input v-model="authenticated" type="checkbox" :disabled="mode==='akasha_stygian'">使用已配置的 ark 授权令牌</label>

@@ -149,9 +149,6 @@ func cloudRequest(input CloudInput) (string, map[string]any, error) {
 	if input.Mode == "private_panel" {
 		return privateCloudPanelRequest(input)
 	}
-	if strings.HasPrefix(input.Mode, "verify_") {
-		return cloudVerifyRequest(input)
-	}
 	if input.Mode == "exchange_upload" || input.Mode == "exchange_download" {
 		return cloudExchangeRequest(input)
 	}
@@ -451,9 +448,6 @@ func projectCloud(game Game, input CloudInput, decoded any) (CloudResult, error)
 	result := asObject(decoded)
 	if result == nil {
 		return CloudResult{}, gameError("cloud_invalid", "云服务对象格式暂不兼容。")
-	}
-	if strings.HasPrefix(input.Mode, "verify_") {
-		return cloudVerifyResult(game, input, result)
 	}
 	if err := cloudRetcode(result); err != nil {
 		return CloudResult{}, err

@@ -147,79 +147,6 @@ func TestCloudAnonymousPanelPreservesPrivacyAndSelectedCharacter(t *testing.T) {
 	}
 }
 
-func TestCloudVerificationScopeConsentAndNoAutomaticRetry(t *testing.T) {
-	owner := Subject{SourceProtocol: "onebot11", SourceAdapter: "test", BotID: "10000", ActorID: "10001"}
-	input := CloudInput{Mode: "verify_bind", UID: "100000001", Consent: true}
-	if _, _, err := cloudRequest(input); err == nil {
-		t.Fatal("management impersonation accepted")
-	}
-	input.owner = &owner
-	route, body, err := cloudRequest(input)
-	if err != nil || route != "verify" || body["qq"] != owner.ActorID || body["uid"] != input.UID {
-		t.Fatal(body, err)
-	}
-	input.Mode = "verify_code"
-	_, body, err = cloudRequest(input)
-	if err != nil || body["qq"] != nil {
-		t.Fatal("get code sent QQ")
-	}
-	started := make(chan struct{})
-	release := make(chan struct{})
-	calls := 0
-	c := CloudClient{HTTP: cloudDoer(func(r *http.Request) (*http.Response, error) {
-		calls++
-		close(started)
-		<-release
-		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"retcode":100,"data":{"verifyCode":"synthetic-123"},"token":"not-for-ui"}`))}, nil
-	})}
-	defer c.Close()
-	j, err := c.Start(testGame(t), input)
-	if err != nil {
-		t.Fatal(err)
-	}
-	<-started
-	if _, err = c.Start(testGame(t), input); err == nil {
-		t.Fatal("concurrent verification accepted")
-	}
-	if _, err = c.Poll(j.Ref, false); err == nil {
-		t.Fatal("private result exposed to management")
-	}
-	if _, err = c.Poll(j.Ref, true); err == nil {
-		t.Fatal("management canceled private result")
-	}
-	other := owner
-	other.BotID = "20000"
-	if _, err = c.pollVerification("genshin", other, false); err == nil {
-		t.Fatal("cross bot read accepted")
-	}
-	close(release)
-	for range 500 {
-		j, err = c.pollVerification("genshin", owner, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if j.State != "running" {
-			break
-		}
-		time.Sleep(time.Millisecond)
-	}
-	if j.State != "completed" || !strings.Contains(j.View.Text(), "synthetic-123") || strings.Contains(j.View.Text(), "not-for-ui") || calls != 1 {
-		t.Fatal(j, err)
-	}
-	if _, err = c.pollVerification("genshin", owner, true); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = c.pollVerification("genshin", owner, false); err == nil {
-		t.Fatal("canceled verification retained")
-	}
-	for _, code := range []string{"302", "305", "306", "-1"} {
-		_, err := cloudVerifyResult(Game{}, CloudInput{Mode: "verify_bind"}, map[string]any{"retcode": code, "message": "private-upstream"})
-		if err == nil || strings.Contains(err.Error(), "private-upstream") {
-			t.Fatal(err)
-		}
-	}
-}
-
 func TestCanceledCloudRequestsReleaseCapacity(t *testing.T) {
 	c := CloudClient{HTTP: cloudDoer(func(req *http.Request) (*http.Response, error) {
 		<-req.Context().Done()
@@ -277,8 +204,5 @@ func TestPrivateCloudPanelCannotBeRequestedOrReadFromManagement(t *testing.T) {
 	other.BotID = "other"
 	if _, err = c.pollPrivatePanel("genshin", other, false); err == nil {
 		t.Fatal("cross bot private data")
-	}
-	if _, err = c.pollVerification("genshin", owner, false); err == nil {
-		t.Fatal("panel reused as verification")
 	}
 }

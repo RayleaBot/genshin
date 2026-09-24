@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -85,5 +86,36 @@ func TestPanelDataRefusalFollowsArkPermission(t *testing.T) {
 	}
 	if hasAccount(Accounts{Items: []Account{{Roles: nil}}}) || !hasAccount(Accounts{Items: []Account{{}, {Roles: []Role{{UID: "100000001"}}}}}) {
 		t.Fatal("account")
+	}
+}
+
+// ark绑定 sends ark only the UID; ark验证 adds the sender's QQ, which only a
+// OneBot11 QQ user has. The replies are ark-plugin's.
+func TestArkVerifyFollowsArkPlugin(t *testing.T) {
+	qq := Subject{SourceProtocol: "onebot11", SourceAdapter: "fixture", BotID: "10000", ActorID: "10001"}
+	route, body, refusal := arkVerifyRequest("cloud-bind", "100000001", Subject{SourceProtocol: "qq_official", ActorID: "open-id"})
+	if route != "verify/code" || refusal != "" || body["uid"] != "100000001" || body["type"] != arkGame || body["qq"] != nil {
+		t.Fatalf("bind: %s %v %q", route, body, refusal)
+	}
+	route, body, refusal = arkVerifyRequest("cloud-verify", "100000001", qq)
+	if route != "verify" || refusal != "" || body["uid"] != "100000001" || body["qq"] != "10001" {
+		t.Fatalf("verify: %s %v %q", route, body, refusal)
+	}
+	for _, sender := range []Subject{{SourceProtocol: "qq_official", ActorID: "10001"}, {SourceProtocol: "onebot11", ActorID: "open-id"}} {
+		if _, _, refusal := arkVerifyRequest("cloud-verify", "100000001", sender); refusal == "" {
+			t.Fatalf("verified %+v without a QQ number", sender)
+		}
+	}
+	code := arkVerifyReply("cloud-bind", "#", cloudObject(t, `{"retcode":100,"data":{"verifyCode":"ABC123"}}`))
+	if !strings.HasPrefix(code, "验证码: ABC123\n使用方式：\n①原神：") || !strings.Contains(code, "输入 #ark验证原神uid\n") {
+		t.Fatalf("code reply:\n%s", code)
+	}
+	for raw, want := range map[string]string{`{"retcode":100}`: "验证成功", `{"retcode":302}`: "验证失败，个人签名不匹配，请五分钟后重试", `{"retcode":999}`: "未知错误"} {
+		if got := arkVerifyReply("cloud-verify", "#", cloudObject(t, raw)); got != want {
+			t.Errorf("%s: %q", raw, got)
+		}
+	}
+	if got := arkError(nil); got != "未知错误" {
+		t.Errorf("failed request: %q", got)
 	}
 }

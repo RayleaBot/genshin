@@ -465,8 +465,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.communityCommand(ctx, event, command, args)
 	case "cloud-private-panel":
 		return a.privateCloudPanelCommand(ctx, event, args)
-	case "cloud-verify":
-		return a.cloudVerifyCommand(event, args)
 	case "signin-task":
 		return a.signinTaskCommand(ctx, event, args)
 	case "signin", "signin-status":
@@ -507,6 +505,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.stygianRankCommand(ctx, event, args)
 	case "cloud-export", "cloud-import":
 		return a.cloudExchangeCommand(ctx, event, command, args)
+	case "cloud-bind", "cloud-verify":
+		return a.arkVerifyCommand(ctx, event, command)
 	case "calendar", "banner-history":
 		return a.poolCommand(ctx, event, command, args)
 	case "materials":
