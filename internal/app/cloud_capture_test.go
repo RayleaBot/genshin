@@ -63,13 +63,9 @@ func TestOfficialPanelWritesSubstatsTheOldToleranceRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var avatar map[string]any
-	if err = json.Unmarshal(raw, &avatar); err != nil {
-		t.Fatal(err)
-	}
-	flower := asObject(asObject(avatar["artis"])["1"])
-	if got, want := fmt.Sprint(flower["attrIds"]), "[501204 501224 501051 501051]"; got != want || avatar["_source"] != "mysPanel" {
-		t.Fatalf("flower = %v under %v, want attrIds %s under mysPanel", flower, avatar["_source"], want)
+	// miao writes the official panel's rolls as the table's keys, text.
+	if want := `"attrIds":["501204","501224","501051","501051"]`; !strings.Contains(string(raw), want) || !strings.Contains(string(raw), `"_source":"mysPanel"`) {
+		t.Fatalf("avatar = %s, want %s under mysPanel", raw, want)
 	}
 }
 
@@ -270,6 +266,14 @@ func TestExportWritesEveryKeptPanel(t *testing.T) {
 		if err := json.Unmarshal(avatars[id], &avatar); err != nil || avatar["_source"] != want {
 			t.Errorf("%s _source = %v, want %s", id, avatar["_source"], want)
 		}
+	}
+	// miao keeps the showcase's roll IDs as numbers.
+	var showcaseAvatar map[string]any
+	if err := json.Unmarshal(avatars["10000030"], &showcaseAvatar); err != nil {
+		t.Fatal(err)
+	}
+	if ids := asList(fieldAt(showcaseAvatar, "artis.1.attrIds")); len(ids) == 0 || fmt.Sprintf("%T", ids[0]) != "float64" {
+		t.Errorf("showcase attrIds = %v, want numbers", ids)
 	}
 	got = rolls(avatars["10000030"])
 	if len(got) != len(want) {

@@ -144,7 +144,13 @@ func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any,
 			times = -1
 		}
 		for _, id := range cloudRolls(d, gear.Rarity, times, stat) {
-			attrs = append(attrs, id)
+			// EnkaData keeps the showcase's appendPropIdList, numbers; the
+			// official panel's rolls are the table's keys, text.
+			if source == "enka" {
+				attrs = append(attrs, json.Number(id))
+			} else {
+				attrs = append(attrs, id)
+			}
 		}
 	}
 	out["attrIds"] = attrs

@@ -119,6 +119,12 @@ func cleanCloudGear(value any) (map[string]any, error) {
 				if text == "" || len(text) > 64 || strings.Trim(text, "0123456789,") != "" {
 					return nil, gameError("cloud_invalid", "装备副词条编号无效。")
 				}
+				// miao keeps each ID as it came: EnkaData's roll IDs are
+				// numbers, MysPanelData's text.
+				if _, ok := v.(string); !ok {
+					rows = append(rows, json.Number(text))
+					continue
+				}
 				rows = append(rows, text)
 			}
 		}

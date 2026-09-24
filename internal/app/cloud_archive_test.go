@@ -37,6 +37,10 @@ func TestCloudArchiveSanitizesAndPreservesMiaoBusinessFields(t *testing.T) {
 	if strings.Contains(string(encoded), "discard-") || !strings.Contains(string(encoded), `"_source":"share"`) || !strings.Contains(string(encoded), `"cons":0`) {
 		t.Fatal("credential metadata retained or zero lost")
 	}
+	// Roll IDs keep their type, as miao keeps the player data it reads.
+	if !strings.Contains(string(encoded), `"attrIds":[501204]`) {
+		t.Fatalf("roll IDs changed: %s", encoded)
+	}
 	if _, err = cleanCloudPlayer("100000002", raw); err == nil {
 		t.Fatal("wrong UID accepted")
 	}
