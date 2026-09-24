@@ -91,6 +91,37 @@ func cloudScores(data map[string]any) []float64 {
 	return scores
 }
 
+// distributionSections are rank/specific's distributions in text, read as
+// ark's panel page reads them: the first ranks artifact scores, the second
+// damage in the calculation it names; ark-plugin reads no others. Each lists
+// the UIDs ark counted and the score at each ranking percentile; one ark did
+// not give is left out.
+func distributionSections(list []any) []Section {
+	sections := []Section{}
+	for index, title := range []string{"圣遗物评分", "伤害"} {
+		if index >= len(list) {
+			break
+		}
+		data := asObject(asObject(list[index])["data"])
+		scores := cloudScores(data)
+		if scores == nil {
+			continue
+		}
+		if name := plainGameText(asText(data["name"])); index == 1 && name != "" {
+			title += " · " + name
+		}
+		rows := []Row{}
+		if total := cloudNumber(data["total"]); total != "" {
+			rows = append(rows, Row{Label: "收录总量", Value: total})
+		}
+		for i, score := range scores {
+			rows = append(rows, Row{Label: "TOP " + strconv.Itoa(cloudPercentiles[i]) + "%", Value: strconv.FormatFloat(score, 'f', -1, 64)})
+		}
+		sections = append(sections, Section{Title: title, Rows: rows})
+	}
+	return sections
+}
+
 type CloudClient struct {
 	mu     sync.Mutex
 	HTTP   HTTPDoer
@@ -410,23 +441,11 @@ func projectCloud(game Game, input CloudInput, decoded any) (CloudResult, error)
 		if input.Mode != "distribution" || len(list) == 0 || len(list) > 20 {
 			return CloudResult{}, gameError("cloud_invalid", "云服务列表格式暂不兼容。")
 		}
-		combined := View{Title: game.Name + "角色云统计", Rows: []Row{}, Note: "来源：ark.ivny.cn；同一角色的不同计算条目分别显示。固定服务结果不代表官方结论。"}
-		for _, raw := range list {
-			item := asObject(raw)
-			if asText(item["retcode"]) != "100" {
-				return CloudResult{}, gameError("cloud_rejected", "云服务未能提供完整统计条目。")
-			}
-			view, err := cloudView(game, input, item)
-			if err != nil {
-				return CloudResult{}, err
-			}
-			section := Section{Title: view.Subtitle, Rows: view.Rows}
-			combined.Sections = append(combined.Sections, section)
-			for _, s := range view.Sections {
-				s.Title = view.Subtitle + " · " + s.Title
-				combined.Sections = append(combined.Sections, s)
-			}
+		sections := distributionSections(list)
+		if len(sections) == 0 {
+			return CloudResult{}, gameError("cloud_rejected", "云服务未能提供完整统计条目。")
 		}
+		combined := View{Title: game.Name + "角色云统计", Rows: []Row{}, Sections: sections, Note: "来源：ark.ivny.cn；圣遗物评分与伤害的分布分别显示。固定服务结果不代表官方结论。"}
 		return CloudResult{View: &combined}, nil
 	}
 	result := asObject(decoded)
@@ -543,46 +562,6 @@ func cloudView(game Game, input CloudInput, result map[string]any) (View, error)
 		}
 		if score != "" {
 			v.Rows = append(v.Rows, Row{Label: "服务伤害评分", Value: score})
-		}
-	case "distribution":
-		v.Title = game.Name + "角色云统计"
-		v.Subtitle = plainGameText(asText(data["name"]))
-		if total := asText(data["total"]); total != "" {
-			v.Rows = append(v.Rows, Row{Label: "收录总量", Value: total})
-		}
-		scores := data["scores"]
-		rows := []Row{}
-		if percentiles := cloudScores(data); percentiles != nil {
-			for i, score := range percentiles {
-				rows = append(rows, Row{Label: "TOP " + strconv.Itoa(cloudPercentiles[i]) + "%", Value: strconv.FormatFloat(score, 'f', -1, 64)})
-			}
-			scores = nil
-		}
-		switch values := scores.(type) {
-		case []any:
-			for i, value := range values[:min(50, len(values))] {
-				text := asText(value)
-				if obj := asObject(value); obj != nil {
-					text = strings.Join([]string{firstText(obj, "score", "dmg", "value"), firstText(obj, "count", "num", "total")}, " · ")
-				}
-				if text != "" {
-					rows = append(rows, Row{Label: strconv.Itoa(i + 1), Value: text})
-				}
-			}
-		case map[string]any:
-			keys := []string{}
-			for key := range values {
-				keys = append(keys, key)
-			}
-			slices.Sort(keys)
-			for _, key := range keys[:min(50, len(keys))] {
-				rows = append(rows, Row{Label: plainGameText(key), Value: asText(values[key])})
-			}
-		}
-		if len(rows) > 0 && scores == nil {
-			v.Sections = []Section{{Title: "排名趋势", Rows: rows}}
-		} else if len(rows) > 0 {
-			v.Sections = []Section{{Title: "服务返回的分布（前 50 项）", Rows: rows}}
 		}
 	}
 	if len(v.Rows) == 0 && len(v.Sections) == 0 {

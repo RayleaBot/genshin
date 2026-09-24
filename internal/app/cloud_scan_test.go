@@ -46,14 +46,19 @@ func TestReforgeMatchesKeptPieceBySubstats(t *testing.T) {
 	}
 }
 
-// The management page lists each distribution ark answers with by ark's
-// ranking percentiles.
+// The management page lists the distributions ark answers with by ark's
+// ranking percentiles, the first as artifact scores and the second as damage
+// in the calculation ark names.
 func TestDistributionListsArkPercentileScores(t *testing.T) {
-	data := cloudList(t, `[{"retcode":100,"data":{"scores":["268.70","255.60","248.70","240.40","233.90","223.00","210.80","187.10","170.00","104.90"],"total":60184,"top1":"294.00"}},
-		{"retcode":100,"data":{"scores":["68249.76","56693.54","52188.35","48193.57","45706.58","41279.80","35789.10","23696.87","15476.92","4425.55"],"total":60391,"top1":"86620.75"}}]`)
+	data := cloudList(t, `[{"retcode":100,"data":{"name":"重击伤害","scores":["268.70","255.60","248.70","240.40","233.90","223.00","210.80","187.10","170.00","104.90"],"total":60184,"top1":"294.00"}},
+		{"retcode":100,"data":{"name":"重击伤害","scores":["68249.76","56693.54","52188.35","48193.57","45706.58","41279.80","35789.10","23696.87","15476.92","4425.55"],"total":60391,"top1":"86620.75"}}]`)
 	result, err := projectCloud(testGame(t), CloudInput{Mode: "distribution", CharacterID: "10000046"}, data)
 	if err != nil {
 		t.Fatal(err)
+	}
+	sections := result.View.Sections
+	if len(sections) != 2 || sections[0].Title != "圣遗物评分" || sections[1].Title != "伤害 · 重击伤害" {
+		t.Fatalf("sections = %+v", sections)
 	}
 	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：268.7") || !strings.Contains(text, "TOP 99%：4425.55") || !strings.Contains(text, "收录总量：60391") {
 		t.Fatal(text)

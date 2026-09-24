@@ -32,7 +32,7 @@
 
 ### 云排名与公开云面板
 
-`cloud.start/poll/cancel` 提供 ark 匿名额度、玩家角色排名及角色分布查询。`start` 需显式 `consent=true`，选择 `mode=usage/rank/distribution`，排名输入公开 `uid` 和 `character_id`，分布仅需角色；固定访问 `https://ark.ivny.cn/` 的既有路由，不发送 CK 或 QQ，不接受任意 URL/请求头。
+`cloud.start/poll/cancel` 提供 ark 匿名额度、玩家角色排名及角色分布查询。`start` 需显式 `consent=true`，选择 `mode=usage/rank/distribution`，排名输入公开 `uid` 和 `character_id`，分布仅需角色，结果按 ark 面板页的读法分别列出第 0 项圣遗物评分与第 1 项伤害（附其计算名）两条分布的收录总量与各百分位分数；固定访问 `https://ark.ivny.cn/` 的既有路由，不发送 CK 或 QQ，不接受任意 URL/请求头。
 
 `mode=custom` 使用 `rank/custom`，输入 `character_id`、`sort=dmg_avg/mark_score`（默认伤害）、`limit`（1–50，默认 20）及最多两个 `filters`（`op` 为 >=、=、<=、>、<、!=，`value` 为 0–6 的整数）。匿名筛选固定为命座 `cons`，不将未知筛选列或任意查询对象发送到服务。结果包含 `ranking.rows` 的公开 UID、等级、命座、装备、技能、伤害与评分；服务空榜单显示为空，不视为解析错误。
 
