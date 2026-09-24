@@ -4,7 +4,7 @@ import BusinessView from './BusinessView.vue'
 import CloudOCRComparison from './CloudOCRComparison.vue'
 import CloudExchange from './CloudExchange.vue'
 import { cloudTask } from './cloud'
-const props = defineProps<{ prefix: string; game: string; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
+const props = defineProps<{ prefix: string; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
 const main = cloudTask(props.invoke), detail = cloudTask(props.invoke)
 const { job, busy, error } = main
 interface FilterField {key:string;label:string;kind:string;options?:string[]}
@@ -52,12 +52,12 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
     <form @submit.prevent="start">
       <fieldset :disabled="pending || detailPending"><legend class="sr-only">云查询参数</legend>
         <label class="check"><input v-model="authenticated" type="checkbox" :disabled="mode==='akasha_stygian'">使用已配置的 ark 授权令牌</label>
-        <label>云查询内容<select v-model="mode"><option value="usage">查询额度</option><option value="rank">玩家角色排名</option><option value="distribution">角色总体分布</option><option value="custom">自定义角色排名</option><option value="panel">接收云端面板</option><option value="ocr">装备截图识别与比较</option><option value="self_rank">同 UID 多角色排名</option><option value="group_rank">同角色多 UID 排名</option><option v-if="game==='genshin'" value="stygian">幽境排名 · ark</option><option v-if="game==='genshin'" value="akasha_stygian">历史幽境排名 · Akasha</option></select></label>
+        <label>云查询内容<select v-model="mode"><option value="usage">查询额度</option><option value="rank">玩家角色排名</option><option value="distribution">角色总体分布</option><option value="custom">自定义角色排名</option><option value="panel">接收云端面板</option><option value="ocr">装备截图识别与比较</option><option value="self_rank">同 UID 多角色排名</option><option value="group_rank">同角色多 UID 排名</option><option value="stygian">幽境排名 · ark</option><option value="akasha_stygian">历史幽境排名 · Akasha</option></select></label>
         <label v-if="['rank','panel','self_rank'].includes(mode)">发送给云服务的公开 UID<input v-model="uid" inputmode="numeric" pattern="[0-9]{6,12}" required></label>
         <p v-if="mode === 'panel'" class="hint">请先在原机器人向 ark 上传面板，再于十分钟有效期内接收。这里只查看角色资料，不覆盖本地数据。</p>
         <label v-if="['rank', 'distribution', 'custom','group_rank'].includes(mode)">角色名称或 ID<input v-model="character" required></label>
         <label v-if="['group_rank','stygian','akasha_stygian'].includes(mode)">公开 UID 列表<textarea v-model="uidList" rows="3" maxlength="700" placeholder="逗号或空格分隔，最多 50 个" required></textarea></label>
-        <template v-if="mode==='ocr'"><label>装备图片 HTTPS 地址<input v-model="imageURL" type="url" maxlength="4096" placeholder="https://…" required></label><label>截图装备部位<select v-model="ocrSlot"><option v-for="slot in (game==='genshin'?5:6)" :key="slot" :value="slot">部位 {{slot}}</option></select></label><label class="check"><input v-model="forge" type="checkbox">截图包含重塑 / 重投前后两件装备</label><p class="hint">图片链接将发送给 ark OCR；请使用不含账号凭据的游戏装备截图。识别后可自行选择角色作模拟对比。</p></template>
+        <template v-if="mode==='ocr'"><label>装备图片 HTTPS 地址<input v-model="imageURL" type="url" maxlength="4096" placeholder="https://…" required></label><label>截图装备部位<select v-model="ocrSlot"><option v-for="slot in 5" :key="slot" :value="slot">部位 {{slot}}</option></select></label><label class="check"><input v-model="forge" type="checkbox">截图包含重塑 / 重投前后两件装备</label><p class="hint">图片链接将发送给 ark OCR；请使用不含账号凭据的游戏装备截图。识别后可自行选择角色作模拟对比。</p></template>
         <label v-if="mode==='self_rank'">角色 ID 列表<textarea v-model="characterIDs" rows="3" maxlength="3000" placeholder="逗号或空格分隔，最多 250 个" required></textarea></label>
         <label v-if="mode==='akasha_stygian'">幽境游戏版本<input v-model="cloudVersion" pattern="[0-9]{1,2}[._][0-9]{1,2}" placeholder="例如 6.0" required></label>
         <p v-if="mode==='akasha_stygian'" class="hint">UID 列表与版本将发送至 akasha.cv，不发送 ark 令牌。与 ark 分开展示服务结果。</p>
