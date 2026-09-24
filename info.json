@@ -1195,12 +1195,12 @@
     {
       "id": "photo",
       "name": "照片",
-      "description": "随机发送该角色的照片，取自已下载的 miao 角色图与导入的图库",
+      "description": "按 miao 随机发送该角色的一张图片，取自 miao 角色图与上传的照片",
       "usage": "#<角色>照片",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:照片|(?P<character>.+?)(?:照片|写真|图片|图像))$"
+        "pattern": "^(?P<character>.+?)(?:照片|写真|图片|图像)$"
       }
     },
     {

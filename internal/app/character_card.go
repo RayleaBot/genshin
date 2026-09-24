@@ -122,20 +122,10 @@ func (a *App) miaoAccept(msg string, aliases func() map[string]string) string {
 	return msg
 }
 
-// cardPicture picks the card's photo from the same pool as 照片: imported
-// images of the character and its downloaded photos. It returns the render
-// resource, the size and the reference 原图 resends.
+// cardPicture picks the card's photo from the same pool as 照片. It returns
+// the render resource, the size and the reference 原图 resends.
 func (a *App) cardPicture(ctx context.Context, entry Entry) (rayleabot.RenderImageResource, int, int, string) {
-	a.Media.mu.Lock()
-	all, _ := a.Media.entries()
-	a.Media.mu.Unlock()
-	media := []MediaEntry{}
-	for _, item := range all {
-		if item.CatalogID == entry.ID && (item.Category == "photo" || item.Category == "character" || item.Category == "birthday") {
-			media = append(media, item)
-		}
-	}
-	photos := a.characterPhotos(entry)
+	media, photos := a.cardPictures(entry)
 	total := len(media) + len(photos)
 	if total == 0 {
 		return rayleabot.RenderImageResource{}, 0, 0, ""

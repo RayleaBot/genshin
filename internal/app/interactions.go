@@ -161,45 +161,45 @@ func (a *App) handlePoke(ctx context.Context, event *rayleabot.EventContext) err
 	}
 	return a.characterCardFor(ctx, event, player, entry)
 }
-func (a *App) sendMedia(event *rayleabot.EventContext, entry MediaEntry) error {
+
+// sendCharacterPicture is miao's 照片, CharWiki's pic mode: a random one of
+// the pictures getCardImg picks the character's from, or 暂无图片.
+func (a *App) sendCharacterPicture(event *rayleabot.EventContext, entry Entry) error {
+	uploads, photos := a.cardPictures(entry)
+	total := len(uploads) + len(photos)
+	if total == 0 {
+		return event.SendText("暂无图片")
+	}
+	pick := rand.IntN(total)
+	if pick >= len(uploads) {
+		return a.sendArtwork(event, photos[pick-len(uploads)])
+	}
 	a.Media.mu.Lock()
-	v, err := a.Media.read(entry.Ref)
+	v, err := a.Media.read(uploads[pick].Ref)
 	a.Media.mu.Unlock()
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	if err = a.rememberImage(event, entry.Ref); err != nil {
+	if err = a.rememberImage(event, v.Entry.Ref); err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Text(entry.Title+"\n来源："+entry.Source), rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(v.Data)))
+	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(v.Data)))
 }
-func (a *App) sendCharacterMedia(ctx context.Context, event *rayleabot.EventContext, entry Entry, photoOnly bool) error {
+
+// cardPictures are the pictures miao's getCardImg picks a character's from,
+// for 照片 and the character card: the photos uploaded for it, as 上传照片
+// fills its upload folder, and its downloaded photos.
+func (a *App) cardPictures(entry Entry) ([]MediaEntry, []artworkFile) {
 	a.Media.mu.Lock()
-	all, err := a.Media.entries()
+	all, _ := a.Media.entries()
 	a.Media.mu.Unlock()
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	matches := []MediaEntry{}
-	for _, v := range all {
-		if v.CatalogID == entry.ID && (v.Category == "photo" || v.Category == "character" || v.Category == "birthday") {
-			matches = append(matches, v)
+	uploads := []MediaEntry{}
+	for _, item := range all {
+		if item.CatalogID == entry.ID {
+			uploads = append(uploads, item)
 		}
 	}
-	// Imported images and downloaded photos are drawn from together, as
-	// miao draws from character-img and its upload directory.
-	photos := a.characterPhotos(entry)
-	if total := len(matches) + len(photos); total > 0 {
-		if pick := rand.IntN(total); pick < len(matches) {
-			return a.sendMedia(event, matches[pick])
-		} else {
-			return a.sendArtwork(event, photos[pick-len(matches)])
-		}
-	}
-	if photoOnly {
-		return event.SendText(strings.TrimSpace("暂无图片。" + a.pictureHint(a.Game.Pictures.photoSources()...) + "机器人管理员也可在图库中导入图片并关联角色。"))
-	}
-	return a.sendView(ctx, event, EntryView(a.Game, entry))
+	return uploads, a.characterPhotos(entry)
 }
 
 func (a *App) interactionCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
@@ -231,11 +231,16 @@ func (a *App) interactionCommand(ctx context.Context, event *rayleabot.EventCont
 		}
 		return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(v.Data)))
 	case "photo":
-		entry, ok := a.Catalog.Resolve(strings.Join(args, " "), "character", a.aliasMap(event))
-		if len(args) == 0 || !ok {
-			return event.SendText("请提供可唯一识别的角色名。")
+		// miao's wikiReg ends at the word, and a name it cannot read leaves the
+		// message to others.
+		if len(args) != 1 {
+			return event.Result(map[string]any{"handled": false})
 		}
-		return a.sendCharacterMedia(ctx, event, entry, true)
+		entry, ok := a.Catalog.Resolve(args[0], "character", a.aliasMap(event))
+		if !ok {
+			return event.Result(map[string]any{"handled": false})
+		}
+		return a.sendCharacterPicture(event, entry)
 	}
 	return event.Result(map[string]any{"handled": false})
 }

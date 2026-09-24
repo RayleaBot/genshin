@@ -37,15 +37,6 @@ type PictureSource struct {
 	Paths  []string `json:"paths"`
 }
 
-// photoSources are the sources of the character photos.
-func (p Pictures) photoSources() []string {
-	sources := []string{}
-	for _, source := range p.Photos {
-		sources = append(sources, source.Source)
-	}
-	return sources
-}
-
 // catalogSources are the sources of the 图鉴 pictures: the Atlas libraries,
 // then xiaoyao's.
 func (p Pictures) catalogSources() []string {
@@ -64,8 +55,13 @@ type artworkFile struct {
 
 var pictureExtensions = []string{".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
-// characterPhotos lists a character's downloaded photos; the Traveler's are
-// both twins', as miao's.
+// photoExtensions are the files miao's getCardImg takes from a folder.
+var photoExtensions = []string{".png", ".jpg", ".webp", ".jpeg"}
+
+// characterPhotos lists a character's downloaded photos, the files directly
+// in its character-img folder: miao reads its se subfolder only with
+// charPicSe, off by default, and has no miao-res-plus unless installed. The
+// Traveler's are both twins', as miao's.
 func (a *App) characterPhotos(entry Entry) []artworkFile {
 	names := []string{entry.Name}
 	if entry.Name == "旅行者" {
@@ -76,7 +72,7 @@ func (a *App) characterPhotos(entry Entry) []artworkFile {
 		for _, pattern := range source.Paths {
 			for _, name := range names {
 				for _, file := range a.Artwork.List(source.Source, strings.ReplaceAll(pattern, "{name}", name)) {
-					if slices.Contains(pictureExtensions, strings.ToLower(path.Ext(file))) {
+					if slices.Contains(photoExtensions, strings.ToLower(path.Ext(file))) {
 						files = append(files, artworkFile{source.Source, file})
 					}
 				}

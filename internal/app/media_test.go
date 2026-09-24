@@ -74,7 +74,7 @@ func TestMediaAtomicChunksOriginalBytesEditAndRemoval(t *testing.T) {
 	if _, err = a.mediaAction("media.remove", map[string]any{"ref": ref, "revision": 0, "confirm": true}); err == nil {
 		t.Fatal("stale remove")
 	}
-	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "character", "license": "fixture"}); err != nil {
+	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "photo", "license": "fixture"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = a.mediaAction("media.remove", map[string]any{"ref": ref, "revision": 2, "confirm": true}); err != nil {

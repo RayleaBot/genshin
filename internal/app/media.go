@@ -27,11 +27,12 @@ const mediaMaxBytes = 4 * 1024 * 1024
 
 var mediaRefPattern = regexp.MustCompile(`^[A-Z2-7]{26}$`)
 
-// mediaKinds are the categories of the images a chat command reads: a
-// character's images, which 照片 and the character card draw from. Images an
-// earlier version filed under other categories stay where they are but are
-// no longer read.
-var mediaKinds = []string{"character", "birthday", "photo"}
+// mediaKinds are the categories of the images a chat command reads: the
+// photos uploaded for a character, which 照片 and the character card draw
+// from as miao's getCardImg reads its upload folder. Images an earlier
+// version filed under other categories stay where they are but are no longer
+// read.
+var mediaKinds = []string{"photo"}
 
 type MediaEntry struct {
 	Ref       string `json:"ref"`
@@ -355,7 +356,6 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 	if action == "media.list" {
 		var q struct {
 			Query     string `json:"query"`
-			Category  string `json:"category"`
 			CatalogID string `json:"catalog_id"`
 			Offset    int    `json:"offset"`
 		}
@@ -370,7 +370,7 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 		totalBytes := 0
 		for _, e := range all {
 			totalBytes += e.Bytes
-			if q.Category != "" && e.Category != q.Category || q.CatalogID != "" && e.CatalogID != q.CatalogID || q.Query != "" && !strings.Contains(strings.ToLower(e.Title+" "+e.Source+" "+e.CatalogID), strings.ToLower(q.Query)) {
+			if q.CatalogID != "" && e.CatalogID != q.CatalogID || q.Query != "" && !strings.Contains(strings.ToLower(e.Title+" "+e.Source+" "+e.CatalogID), strings.ToLower(q.Query)) {
 				continue
 			}
 			items = append(items, e)
@@ -380,7 +380,7 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 		if end < len(items) {
 			next = &end
 		}
-		return map[string]any{"items": items[start:end], "total": len(items), "next_offset": next, "total_bytes": totalBytes, "all_count": len(all), "categories": mediaKinds}, nil
+		return map[string]any{"items": items[start:end], "total": len(items), "next_offset": next, "total_bytes": totalBytes, "all_count": len(all)}, nil
 	}
 	ref := asText(input["ref"])
 	v, err := s.read(ref)
