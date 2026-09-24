@@ -29,8 +29,8 @@ func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	// upstream refuses any answer without retcode 100.
 	for raw, want := range map[string]string{`{"retcode":102}`: "未查询到角色信息", `{"retcode":100,"data":{"scores":[1,2,3,4,5,6,7,8,9,10]}}`: "未知错误", `[{"retcode":102},{"retcode":102}]`: "未知错误"} {
 		decoded := cloudList(t, raw)
-		if _, ok := readRankStats(entry, decoded); ok || arkError(asObject(decoded)) != want {
-			t.Errorf("%s: read %v, reply %q", raw, ok, arkError(asObject(decoded)))
+		if _, ok := readRankStats(entry, decoded); ok || arkError("#", asObject(decoded)) != want {
+			t.Errorf("%s: read %v, reply %q", raw, ok, arkError("#", asObject(decoded)))
 		}
 	}
 }
@@ -108,7 +108,7 @@ func TestArkVerifyFollowsArkPlugin(t *testing.T) {
 		}
 	}
 	code := arkVerifyReply("cloud-bind", "#", cloudObject(t, `{"retcode":100,"data":{"verifyCode":"ABC123"}}`))
-	if !strings.HasPrefix(code, "验证码: ABC123\n使用方式：\n①原神：") || !strings.Contains(code, "输入 #ark验证原神uid\n") {
+	if !strings.HasPrefix(code, "验证码: ABC123\n使用方式：\n原神：") || !strings.Contains(code, "输入 #ark验证原神uid\n") || strings.Contains(code, "星铁") {
 		t.Fatalf("code reply:\n%s", code)
 	}
 	if got := arkVerifyReply("cloud-verify", "#", cloudObject(t, `{"retcode":100}`)); got != "验证成功" {
@@ -120,11 +120,11 @@ func TestArkVerifyFollowsArkPlugin(t *testing.T) {
 // a failed request read as 未知错误. Scores are written with toFixed(2).
 func TestArkRepliesFollowArkPlugin(t *testing.T) {
 	for raw, want := range map[string]string{`{"retcode":302}`: "验证失败，个人签名不匹配，请五分钟后重试", `{"retcode":-1}`: "插件版本过低，请更新插件", `{"retcode":999}`: "未知错误", `{}`: "未知错误"} {
-		if got := arkError(cloudObject(t, raw)); got != want {
+		if got := arkError("#", cloudObject(t, raw)); got != want {
 			t.Errorf("%s: %q", raw, got)
 		}
 	}
-	if got := arkError(nil); got != "未知错误" {
+	if got := arkError("#", nil); got != "未知错误" {
 		t.Errorf("failed request: %q", got)
 	}
 	for raw, want := range map[string]string{`{"score":12345.678}`: "12345.68", `{"score":0.125}`: "0.13", `{"score":7}`: "7.00"} {

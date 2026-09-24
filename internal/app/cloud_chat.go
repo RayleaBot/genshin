@@ -117,11 +117,11 @@ func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContex
 	id, _ := strconv.Atoi(character.ID)
 	decoded, err := a.arkRequest(ctx, event, "rank/specific", map[string]any{"id": id, "percent": 0})
 	if err != nil {
-		return event.SendText(arkError(nil))
+		return event.SendText(arkError(a.Game.Prefix, nil))
 	}
 	image, ok := readRankStats(character, decoded)
 	if !ok {
-		return event.SendText(arkError(asObject(decoded)))
+		return event.SendText(arkError(a.Game.Prefix, asObject(decoded)))
 	}
 	view := View{Title: character.Name + "排名统计", Rows: []Row{}, Sections: distributionSections(asList(decoded))}
 	if a.rankStatsImage != nil {

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"regexp"
+	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -10,7 +11,8 @@ import (
 var cloudQQPattern = regexp.MustCompile(`^[1-9][0-9]{4,11}$`)
 
 // arkErrors is ark-plugin's ERROR_MAP (apps/user.js): the reply for each
-// retcode ark refuses a request with.
+// retcode ark refuses a request with. 304 names this plugin's verify command
+// with the prefix replies use, as the plugin serves only Genshin.
 var arkErrors = map[string]string{
 	"-1":  "插件版本过低，请更新插件",
 	"101": "角色ID不存在",
@@ -24,7 +26,7 @@ var arkErrors = map[string]string{
 	"301": "请求类型仅支持原神/星铁",
 	"302": "验证失败，个人签名不匹配，请五分钟后重试",
 	"303": "验证失败，请稍后再试",
-	"304": "该uid未验证号主，请通过 #ark验证原神/星铁uid 验证uid",
+	"304": "该uid未验证号主，请通过 {prefix}ark验证原神uid 验证uid",
 	"305": "验证超时，请重新绑定",
 	"306": "验证失败，未获取到签名，请五分钟后重试",
 	"307": "服务器中无该uid数据...",
@@ -33,8 +35,8 @@ var arkErrors = map[string]string{
 // arkError is ark-plugin's dealError: the reply for ark's answer to a request
 // that did not succeed. A request that failed has no answer, which upstream
 // reads as 未知错误 too.
-func arkError(result map[string]any) string {
-	return cmpOr(arkErrors[asText(result["retcode"])], "未知错误")
+func arkError(prefix string, result map[string]any) string {
+	return strings.ReplaceAll(cmpOr(arkErrors[asText(result["retcode"])], "未知错误"), "{prefix}", prefix)
 }
 
 // arkAnswer sends a chat command's ark request as ArkApi.req does and reads
@@ -43,11 +45,11 @@ func arkError(result map[string]any) string {
 func (a *App) arkAnswer(ctx context.Context, event *rayleabot.EventContext, route string, body map[string]any) (map[string]any, string) {
 	decoded, err := a.arkRequest(ctx, event, route, body)
 	if err != nil {
-		return nil, arkError(nil)
+		return nil, arkError(a.Game.Prefix, nil)
 	}
 	result := asObject(decoded)
 	if asText(result["retcode"]) != "100" {
-		return nil, arkError(result)
+		return nil, arkError(a.Game.Prefix, result)
 	}
 	return result, ""
 }
@@ -55,7 +57,7 @@ func (a *App) arkAnswer(ctx context.Context, event *rayleabot.EventContext, rout
 // needUIDReply is what miao's getTargetUid replies when the sender has no UID
 // to read, as ark-plugin's commands take it.
 func (a *App) needUIDReply() string {
-	return "请先发送【" + a.Game.Prefix + "绑定+你的UID】来绑定查询目标\n星铁请使用【" + a.Game.Prefix + "星铁绑定+UID】"
+	return "请先发送【" + a.Game.Prefix + "绑定+你的UID】来绑定查询目标"
 }
 
 // arkVerifyCommand is ark-plugin's ark绑定原神uid (arkGetBindUid) and
@@ -100,5 +102,5 @@ func arkVerifyReply(command, prefix string, result map[string]any) string {
 	if command == "cloud-verify" {
 		return "验证成功"
 	}
-	return "验证码: " + asText(asObject(result["data"])["verifyCode"]) + "\n使用方式：\n①原神：派蒙头像——右上角编辑资料——设置签名——填入验证码，待签名审核通过后输入 " + prefix + "ark验证原神uid\n②星铁：手机——右上角三点——漫游签证——设置签名——填入验证码，5-10分钟后输入 " + prefix + "ark验证星铁uid\n验证码有效期24小时，验证通过后自动与QQ绑定，在其他Bot上无需再次绑定"
+	return "验证码: " + asText(asObject(result["data"])["verifyCode"]) + "\n使用方式：\n原神：派蒙头像——右上角编辑资料——设置签名——填入验证码，待签名审核通过后输入 " + prefix + "ark验证原神uid\n验证码有效期24小时，验证通过后自动与QQ绑定，在其他Bot上无需再次绑定"
 }
