@@ -59,7 +59,7 @@ func (a *App) panelRank(ctx context.Context, event *rayleabot.EventContext, pane
 	send := true
 	if ark.LocalPanelRank {
 		body["uid"] = "999999999"
-		_, raw, err := officialCloudAvatar(ctx, a.Game, panel, panel.Official)
+		_, raw, err := panelCloudAvatar(ctx, a.Game, panel)
 		// ark sends miao's own profile; one the plugin cannot write out has no
 		// place.
 		body["data"], send = json.RawMessage(raw), err == nil
@@ -190,7 +190,7 @@ func (a *App) groupTotalRanks(ctx context.Context, event *rayleabot.EventContext
 			// A panel the plugin cannot write out goes as null, as upstream
 			// sends a UID without player data.
 			var panel any
-			if _, raw, err := officialCloudAvatar(ctx, a.Game, *entry.Panel, entry.Panel.Official); err == nil {
+			if _, raw, err := panelCloudAvatar(ctx, a.Game, *entry.Panel); err == nil {
 				panel = json.RawMessage(raw)
 			}
 			panels = append(panels, panel)
