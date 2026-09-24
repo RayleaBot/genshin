@@ -15,8 +15,8 @@ const rankSpecificAnswer = `[{"retcode":100,"data":{"scores":["268.70","255.60",
 func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	entry := Entry{ID: "10000046", Name: "胡桃"}
 	image, err := readRankStats(entry, cloudList(t, rankSpecificAnswer))
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || image.DamageTitle != "重击伤害" {
+		t.Fatalf("image = %+v %v", image, err)
 	}
 	if damage := image.Damage; damage.Top != 100 || math.Abs(damage.Scores[0]-78.79) > 0.01 || damage.Total != "60391" || damage.Percent != -100 {
 		t.Fatalf("damage = %+v", damage)

@@ -16,7 +16,8 @@ var rankStatsArtwork = [][2]string{
 // RankStats draws <角色>排名统计 as the panel's 排名统计 block, on the
 // character's element background: ark's damage and artifact distributions
 // with no panel to mark, so the area keeps one colour and nothing is written
-// on the curve, and under each the UIDs ark counted, as ark's graph/stats
+// on the curve; beside the title 排名趋势 and the calculation the damage
+// ranks, and under each chart the UIDs ark counted, as ark's graph/stats
 // wrote them, or 暂无数据 as under a chart ark did not send.
 func RankStats(context app.ImageContext, image app.RankStatsImage) (app.Image, bool) {
 	resources := &app.ImageResources{Context: context}
@@ -50,5 +51,5 @@ func RankStats(context app.ImageContext, image app.RankStatsImage) (app.Image, b
 		}
 		charts, totals = append(charts, chart), append(totals, total)
 	}
-	return app.Image{Template: "rank-stats", Data: map[string]any{"elem": elem, "title": image.Character.Name + "排名统计", "charts": charts, "totals": totals}, Resources: resources.List}, true
+	return app.Image{Template: "rank-stats", Data: map[string]any{"elem": elem, "name": image.Character.Name, "title": image.DamageTitle, "charts": charts, "totals": totals}, Resources: resources.List}, true
 }

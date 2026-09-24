@@ -16,8 +16,8 @@ func TestRankStatsDrawsThePanelBlockWithoutAPanel(t *testing.T) {
 	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog}
 	character, _ := application.Catalog.Get("10000046")
 	damage := &app.RankCurve{Scores: []float64{99, 90, 80, 70, 60, 50, 40, 30, 20, 10}, Top: 100, Total: "60391", Percent: -100, Score: -100}
-	image, ok := images.RankStats(context, app.RankStatsImage{Character: character, Damage: damage})
-	if !ok || image.Template != "rank-stats" || image.Data["elem"] != "pyro" || image.Data["title"] != "胡桃排名统计" {
+	image, ok := images.RankStats(context, app.RankStatsImage{Character: character, Damage: damage, DamageTitle: "重击伤害"})
+	if !ok || image.Template != "rank-stats" || image.Data["elem"] != "pyro" || image.Data["name"] != "胡桃" || image.Data["title"] != "重击伤害" {
 		t.Fatalf("image = %v", image.Data)
 	}
 	charts := image.Data["charts"].([]any)

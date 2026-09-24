@@ -80,6 +80,12 @@ body {
   padding: 10px 20px;
   text-align: left;
 }
+.cont-title span {
+  font-size: 12px;
+  color: #aaa;
+  margin-left: 10px;
+  font-weight: normal;
+}
 
 /* The 排名统计 block. */
 .no-data {

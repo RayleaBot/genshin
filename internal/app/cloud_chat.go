@@ -116,14 +116,19 @@ func readRankStats(character Entry, decoded any) (RankStatsImage, error) {
 	if image.Damage == nil && image.Artis == nil {
 		return RankStatsImage{}, gameError("cloud_invalid", "云服务数据格式暂不兼容。")
 	}
+	if image.Damage != nil {
+		image.DamageTitle = plainGameText(asText(asObject(asObject(distributions[1])["data"])["name"]))
+	}
 	return image, nil
 }
 
-// RankStatsImage is what <角色>排名统计 draws: the character and ark's damage
-// and artifact distributions, each nil when ark has none.
+// RankStatsImage is what <角色>排名统计 draws: the character, ark's damage
+// and artifact distributions, each nil when ark has none, and the
+// calculation the damage ranks.
 type RankStatsImage struct {
 	Character     Entry
 	Damage, Artis *RankCurve
+	DamageTitle   string
 }
 
 // RankStatsImageBuilder draws 排名统计 with the plugin's template.

@@ -5,7 +5,7 @@
 <div class="container elem-bg">
 <div class="profile-cont">
   <div class="dmg-cont dmg-list cont">
-    <div class="cont-title">{{ .title }}</div>
+    <div class="cont-title">{{ .name }}排名统计{{ with .title }}<span>排名趋势 · {{ . }}</span>{{ end }}</div>
     <div class="echarts-artis " style="display: table; width: 100%; border-collapse: separate;">
       <div style="display: table-row;">
         {{ range .charts }}

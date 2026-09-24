@@ -1,9 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["elem", "title", "charts", "totals"],
+  "required": ["elem", "name", "title", "charts", "totals"],
   "properties": {
     "elem": { "type": "string" },
+    "name": { "type": "string" },
     "title": { "type": "string" },
     "charts": { "type": "array" },
     "totals": { "type": "array" },

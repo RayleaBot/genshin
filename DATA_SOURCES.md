@@ -36,7 +36,7 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 `templates/stygian-rank/` 按 ark-plugin 的 character/stygian-rank-list 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），样式为其 common/common.css（与 miao 相同）与 stygian-rank-list.css 的转换，页面宽度同 `apps/user.js` 按显示的排名栏计算；难度奖章取自“ark 插件图片”素材来源的 `resources/character/img/`，字体与背景取自 miao 的相同文件。上游样式引用的物品底图与名次徽标不在 ark 的资源中，上游页面上为空白，这里同样留空。akasha.cv 的排行按上游的查询读取（上游在查询中写死了一个开发者的 UID 参数，对结果没有影响，这里留空）。
 
-`templates/rank-stats/` 是 `templates/panel/` 中 ark-plugin 排名统计块的单独成页（MIT，见 `LICENSES/ark-plugin-MIT.txt`）：ark 的 `<角色>排名统计` 按其 graph/stats 画 `rank/specific` 旧回答中的一条分布，ark 现已改为回答圣遗物与伤害两条分布（其面板页按此读取），这里按面板页的块在角色元素背景上画这两条，没有本面板，不画标记与红带，两张图下写出 ark 的样本数（graph/stats 写作“统计样本 N 个UID”）；页面框架为 miao-plugin 的 character/profile-detail 样式，卡片底图、元素背景与字体取自 miao 素材来源。
+`templates/rank-stats/` 是 `templates/panel/` 中 ark-plugin 排名统计块的单独成页（MIT，见 `LICENSES/ark-plugin-MIT.txt`）：ark 的 `<角色>排名统计` 按其 graph/stats 画 `rank/specific` 旧回答中的一条分布，ark 现已改为回答圣遗物与伤害两条分布（其面板页按此读取），这里按面板页的块在角色元素背景上画这两条，没有本面板，不画标记与红带，标题旁与两张图下按 graph/stats 写出“排名趋势 · <伤害计算名>”与 ark 的样本数（“统计样本 N 个UID”）；页面框架为 miao-plugin 的 character/profile-detail 样式，卡片底图、元素背景与字体取自 miao 素材来源。
 
 `templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，换装面板的伤害变化同其伤害表的写法（上游的内联样式改为同值的类）；渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）。
 
