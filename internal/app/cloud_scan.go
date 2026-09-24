@@ -92,13 +92,14 @@ func (a *App) scanGear(ctx context.Context, image string, forge bool) ([]scanned
 	return gears, nil
 }
 
-// scannedPieces reads every attached screenshot for 面板换装, by slot.
-func (a *App) scannedPieces(ctx context.Context, images []string) (map[int]PanelEquipment, error) {
+// scannedPieces reads every attached screenshot for 面板换装, by slot. As
+// ark-plugin, a screenshot the OCR does not read is passed over.
+func (a *App) scannedPieces(ctx context.Context, images []string) map[int]PanelEquipment {
 	pieces := map[int]PanelEquipment{}
 	for _, image := range images[:min(len(images), 6)] {
 		gears, err := a.scanGear(ctx, image, false)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		for _, gear := range gears {
 			if piece := readGear(a.Game, gear); piece != nil {
@@ -106,10 +107,7 @@ func (a *App) scannedPieces(ctx context.Context, images []string) (map[int]Panel
 			}
 		}
 	}
-	if len(pieces) == 0 {
-		return nil, gameError("cloud_invalid", "未能从截图识别出圣遗物。")
-	}
-	return pieces, nil
+	return pieces
 }
 
 // readGear explains a piece the OCR read, in the slot its answer names or,
@@ -162,7 +160,8 @@ func mainKey(piece PanelEquipment) string {
 
 // reforgeCommand is ark-plugin's ark重塑识别: it reads the screenshot of a
 // reforge, finds the piece before it among the UID's kept panels, and
-// answers with that character's panel wearing the piece after it.
+// answers with that character's panel wearing the piece after it. Upstream
+// stops without a reply when the OCR does not read both pieces.
 func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext) error {
 	if a.Game.Calc == nil {
 		return event.Result(map[string]any{"handled": false})
@@ -177,11 +176,8 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 		return event.SendText("请发送圣遗物" + word + "图片")
 	}
 	gears, err := a.scanGear(ctx, images[0], true)
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	if len(gears) != 2 {
-		return event.SendText("未能从截图识别出圣遗物的前后两件。")
+	if err != nil || len(gears) != 2 {
+		return event.Result(map[string]any{"handled": true})
 	}
 	before, after := gears[0], gears[1]
 	saved, err := a.Profiles.Read(owner.UID)
@@ -193,7 +189,7 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 	}
 	original := readGear(a.Game, before)
 	if original == nil {
-		return event.SendText("未能解释截图中的原圣遗物。")
+		return event.SendText("未在本地数据中找到匹配的圣遗物/遗器")
 	}
 	// A match with the same main stat first, as ark-plugin prefers.
 	ids := []string{}
@@ -213,7 +209,7 @@ func (a *App) reforgeCommand(ctx context.Context, event *rayleabot.EventContext)
 		}
 	}
 	if wearer == "" {
-		return event.SendText("未在本地数据中找到匹配的圣遗物")
+		return event.SendText("未在本地数据中找到匹配的圣遗物/遗器")
 	}
 	// The reforged piece keeps what the answer leaves out of the original.
 	for _, key := range []string{"name", "id", "star"} {

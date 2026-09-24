@@ -1353,11 +1353,11 @@
       "id": "cloud-character-rank",
       "name": "角色排名",
       "description": "ark 云端该角色的全服伤害排名（先更新）",
-      "usage": "#角色排名雷电将军 [UID]",
+      "usage": "#角色排名雷电将军123456789",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^角色排名(?P<text>.+)$"
+        "pattern": "^角色排名(?P<text>.*)$"
       }
     },
     {

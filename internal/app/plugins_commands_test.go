@@ -82,6 +82,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"胡桃排名", "rank", nil},
 			{"总排名", "cloud-total-rank", nil},
 			{"角色排名胡桃100000001", "cloud-character-rank", []string{"胡桃100000001"}},
+			{"角色排名", "cloud-character-rank", nil},
 			{"胡桃排名统计", "cloud-rank-stats", []string{"胡桃"}},
 			{"导出面板数据", "cloud-export", nil},
 			{"导入面板数据100000001", "cloud-import", []string{"100000001"}},

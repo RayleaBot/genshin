@@ -500,11 +500,10 @@ func (a *App) panelChangeCommand(ctx context.Context, event *rayleabot.EventCont
 		return event.Result(map[string]any{"handled": false})
 	}
 	if len(images) > 0 {
-		scanned, err := a.scannedPieces(ctx, images)
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		change.Scanned = scanned
+		change.Scanned = a.scannedPieces(ctx, images)
+	}
+	if !ok && len(change.Scanned) == 0 {
+		return event.Result(map[string]any{"handled": false})
 	}
 	owner, err := a.panelOwner(ctx, event, change.UID)
 	if err != nil {

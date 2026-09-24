@@ -14,65 +14,96 @@ import (
 
 var cloudRankUID = regexp.MustCompile(`[0-9]{9,10}`)
 
-// cloudChatCommand answers ark-plugin's rank words in chat: 角色排名<角色>
-// [UID] is the character's rank among ark's uploaded panels, updated first;
-// 总排名 [UID] ranks every character kept for the UID. Each runs the matching
-// ark query and replies with its result. <角色>排名统计 draws the character's
-// distributions.
+// Upstream's 角色排名 reads the character and the UID out of its words by
+// dropping the digits or everything else.
+var (
+	rankDigits    = regexp.MustCompile(`\d+`)
+	rankNonDigits = regexp.MustCompile(`\D+`)
+)
+
+// cloudChatCommand answers ark-plugin's rank words in chat (characterRank in
+// apps/user.js): 角色排名<角色><UID> is the character's rank among ark's
+// uploaded panels, updated first; 总排名 [UID] ranks every character kept
+// for the UID; <角色>排名统计 draws the character's distributions. Each
+// replies as upstream does, and with dealError's reply when ark refuses.
 func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
-	text := strings.Join(args, "")
-	q := CloudInput{Consent: true}
+	text := strings.Join(args, " ")
 	switch command {
 	case "cloud-character-rank":
-		q.Mode, q.Query, q.Refresh = "rank", "dmg", true
-		q.UID = cloudRankUID.FindString(text)
-		name := strings.TrimSpace(cloudRankUID.ReplaceAllString(text, ""))
-		entry, ok := a.Catalog.Resolve(name, "character", a.aliasMap(event))
-		if !ok {
-			return event.SendText("命令格式错误，示例：" + a.Game.Prefix + "角色排名雷电将军123456789")
-		}
-		q.CharacterID = entry.ID
+		return a.characterRankCommand(ctx, event, text)
 	case "cloud-total-rank":
-		q.Mode, q.UID = "self_rank", cloudRankUID.FindString(text)
-	case "cloud-rank-stats":
-		entry, ok := a.Catalog.Resolve(strings.TrimSpace(text), "character", a.aliasMap(event))
-		if !ok {
-			return event.SendText("未找到该角色，请使用角色全名或别名。")
-		}
-		return a.rankStatsCommand(ctx, event, entry)
+		return a.totalRankCommand(ctx, event, text)
 	}
-	owner, err := a.panelOwner(ctx, event, q.UID)
-	if err != nil {
-		return event.SendText("请先绑定UID")
+	entry, ok := a.Catalog.Resolve(strings.TrimSpace(text), "character", a.aliasMap(event))
+	if !ok {
+		// Upstream swallows a name it cannot read.
+		return event.Result(map[string]any{"handled": true})
 	}
-	q.UID = owner.UID
-	if q.Mode == "self_rank" {
-		// ark ranks the characters upstream keeps for the UID.
-		saved, err := a.Profiles.Read(q.UID)
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		for id := range saved.Panels {
-			q.CharacterIDs = append(q.CharacterIDs, id)
-		}
-		slices.Sort(q.CharacterIDs)
-		if len(q.CharacterIDs) == 0 {
-			return event.SendText(a.panelReply("list_empty", map[string]string{"uid": q.UID}))
-		}
+	return a.rankStatsCommand(ctx, event, entry)
+}
+
+// characterRankCommand is ark-plugin's getRank. A character upstream cannot
+// read is left to other plugins.
+func (a *App) characterRankCommand(ctx context.Context, event *rayleabot.EventContext, text string) error {
+	name := strings.TrimSpace(rankDigits.ReplaceAllString(text, ""))
+	uid := rankNonDigits.ReplaceAllString(text, "")
+	if name == "" || uid == "" {
+		return event.SendText("命令格式错误，示例：" + a.Game.Prefix + "角色排名雷电将军123456789")
 	}
-	job, err := a.Cloud.Start(a.Game, q)
+	entry, ok := a.Catalog.Resolve(name, "character", a.aliasMap(event))
+	if !ok {
+		return event.Result(map[string]any{"handled": false})
+	}
+	id, _ := strconv.Atoi(entry.ID)
+	result, failure := a.arkAnswer(ctx, event, "rank/data", map[string]any{"uid": uid, "id": id, "update": 1})
+	if failure != "" {
+		return event.SendText(failure)
+	}
+	return event.SendText("uid:" + uid + "的" + entry.Name + "全服伤害排名为 " + asText(result["rank"]) + "，伤害评分: " + arkScore(result["score"]))
+}
+
+// totalRankCommand is ark-plugin's getAllRank: ark's rank of every character
+// kept for the UID named, mentioned or in use, listing those ark ranked.
+func (a *App) totalRankCommand(ctx context.Context, event *rayleabot.EventContext, text string) error {
+	owner, err := a.panelOwner(ctx, event, cloudRankUID.FindString(text))
+	if err != nil || owner.UID == "" {
+		return event.SendText(a.needUIDReply())
+	}
+	saved, err := a.Profiles.Read(owner.UID)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	job = a.Cloud.Wait(ctx, job)
-	if job.View == nil {
-		message := "ark 云服务暂未返回结果，请稍后重试。"
-		if job.Message != "" {
-			message = job.Message
-		}
-		return event.SendText(message)
+	ids := []string{}
+	for id := range saved.Panels {
+		ids = append(ids, id)
 	}
-	return a.sendView(ctx, event, *job.View)
+	slices.Sort(ids)
+	result, failure := a.arkAnswer(ctx, event, "rank/self", map[string]any{"ids": ids, "uid": owner.UID, "type": arkGame})
+	if failure != "" {
+		return event.SendText(failure)
+	}
+	reply := "uid:" + owner.UID + "的" + a.Game.Name + "全服排名数据:\n"
+	for index, raw := range asList(result["rank"]) {
+		item := asObject(raw)
+		if index >= len(ids) || asText(item["retcode"]) != "100" {
+			continue
+		}
+		name := ids[index]
+		if entry, ok := a.Catalog.Get(name); ok {
+			name = entry.Name
+		}
+		reply += name + "全服伤害排名为" + asText(item["rank"]) + "，伤害评分: " + arkScore(item["score"]) + "\n"
+	}
+	return event.SendText(reply)
+}
+
+// arkScore is a damage score as ark-plugin writes it, with toFixed(2).
+func arkScore(value any) string {
+	score, err := strconv.ParseFloat(asText(value), 64)
+	if err != nil {
+		return asText(value)
+	}
+	return JSFixed(score, 2)
 }
 
 // rankStatsCommand is ark-plugin's <角色>排名统计. Upstream draws the one
@@ -80,16 +111,17 @@ func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContex
 // sends: it now answers with the artifact and damage distributions ark's
 // panel page reads for its 排名统计, so this draws those two as the panel
 // does, with no panel to mark. Without a picture the reply lists them as the
-// management page does.
+// management page does. An answer that holds neither is refused as upstream
+// refuses one without retcode 100.
 func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContext, character Entry) error {
 	id, _ := strconv.Atoi(character.ID)
 	decoded, err := a.arkRequest(ctx, event, "rank/specific", map[string]any{"id": id, "percent": 0})
 	if err != nil {
-		return event.SendText(friendlyError(err))
+		return event.SendText(arkError(nil))
 	}
-	image, err := readRankStats(character, decoded)
-	if err != nil {
-		return event.SendText(friendlyError(err))
+	image, ok := readRankStats(character, decoded)
+	if !ok {
+		return event.SendText(arkError(asObject(decoded)))
 	}
 	view := View{Title: character.Name + "排名统计", Rows: []Row{}, Sections: distributionSections(asList(decoded))}
 	if a.rankStatsImage != nil {
@@ -101,25 +133,19 @@ func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContex
 }
 
 // readRankStats reads rank/specific's answer as ark's panel page reads it,
-// with no panel placed on the distributions. An answer that is not the list,
-// as a failed one, is read as ark's other refusals.
-func readRankStats(character Entry, decoded any) (RankStatsImage, error) {
-	distributions, ok := decoded.([]any)
-	if !ok {
-		if err := cloudRetcode(asObject(decoded)); err != nil {
-			return RankStatsImage{}, err
-		}
-	}
+// with no panel placed on the distributions; false when it holds neither.
+func readRankStats(character Entry, decoded any) (RankStatsImage, bool) {
+	distributions, _ := decoded.([]any)
 	none := RankCurve{Percent: -100, Score: -100}
 	image := RankStatsImage{Character: character}
 	image.Damage, image.Artis = rankCurves(distributions, [2]RankCurve{none, none})
 	if image.Damage == nil && image.Artis == nil {
-		return RankStatsImage{}, gameError("cloud_invalid", "云服务数据格式暂不兼容。")
+		return RankStatsImage{}, false
 	}
 	if image.Damage != nil {
 		image.DamageTitle = plainGameText(asText(asObject(asObject(distributions[1])["data"])["name"]))
 	}
-	return image, nil
+	return image, true
 }
 
 // RankStatsImage is what <角色>排名统计 draws: the character, ark's damage
@@ -134,12 +160,16 @@ type RankStatsImage struct {
 // RankStatsImageBuilder draws 排名统计 with the plugin's template.
 type RankStatsImageBuilder func(ImageContext, RankStatsImage) (Image, bool)
 
-// cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>:
-// export uploads all the UID's kept panels, as the exchange format, for ten
-// minutes; import downloads a UID's upload into the UID's kept panels. Who
-// may do either is ark's exportPanelData and importPanelData; the UID is the
-// one named, mentioned or in use.
+// cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>
+// (uploadPanelData and downloadPanelData): export uploads all the UID's kept
+// panels, as the exchange format, for ten minutes; import downloads a UID's
+// upload into the UID's kept panels. The UID is the one named, mentioned or
+// in use; who may do either is ark's exportPanelData and importPanelData.
 func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
+	owner, err := a.panelOwner(ctx, event, cloudRankUID.FindString(strings.Join(args, "")))
+	if err != nil || owner.UID == "" {
+		return event.SendText(a.needUIDReply())
+	}
 	level := settings(event).Ark.ImportPanelData
 	if command == "cloud-export" {
 		level = settings(event).Ark.ExportPanelData
@@ -147,10 +177,6 @@ func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventCo
 	listed, _ := a.accountClient(event).List(ctx, 0)
 	if refusal := panelDataRefusal(level, hasAccount(listed), slices.Contains(event.SuperAdmins, event.Event.Actor.ID)); refusal != "" {
 		return event.SendText(refusal)
-	}
-	owner, err := a.panelOwner(ctx, event, cloudRankUID.FindString(strings.Join(args, "")))
-	if err != nil {
-		return event.SendText(friendlyError(err))
 	}
 	if command == "cloud-export" {
 		saved, err := a.Profiles.Read(owner.UID)
@@ -162,22 +188,16 @@ func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventCo
 			return event.SendText("面板数据文件不存在，请先更新面板数据")
 		}
 		raw, _ := json.Marshal(map[string]any{"uid": owner.UID, "avatars": avatars})
-		job, err := a.arkExchange(ctx, event, CloudInput{Mode: "exchange_upload", UID: owner.UID, Consent: true, exchangeData: string(raw)})
-		if err == nil && job.State == "completed" {
-			return event.SendText("导出成功，请在另一个安装此插件的Bot上输入 " + a.Game.Prefix + "导入面板数据" + owner.UID + " ，有效期十分钟~")
-		} else if err == nil {
-			return event.SendText(cmpOr(job.Message, "ark 云服务暂未返回结果，请稍后重试。"))
+		if _, failure := a.arkAnswer(ctx, event, "panel/upload", map[string]any{"uid": owner.UID, "type": arkGame, "data": string(raw)}); failure != "" {
+			return event.SendText(failure)
 		}
-		return event.SendText(friendlyError(err))
+		return event.SendText("导出成功，请在另一个安装此插件的Bot上输入 " + a.Game.Prefix + "导入面板数据" + owner.UID + " ，有效期十分钟~")
 	}
-	job, err := a.arkExchange(ctx, event, CloudInput{Mode: "exchange_download", UID: owner.UID, Consent: true})
-	if err != nil {
-		return event.SendText(friendlyError(err))
+	result, failure := a.arkAnswer(ctx, event, "panel/download", map[string]any{"uid": owner.UID, "type": arkGame})
+	if failure != "" {
+		return event.SendText(failure)
 	}
-	if job.State != "completed" || len(job.exchange) == 0 {
-		return event.SendText(cmpOr(job.Message, "ark 云服务暂未返回结果，请稍后重试。"))
-	}
-	data, err := cloudPlayerObject(string(job.exchange))
+	data, err := cloudPlayerObject(result["data"])
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
@@ -278,18 +298,6 @@ func panelDataRefusal(level int, account, superAdmin bool) string {
 // hasAccount is Yunzai's user.hasCk: an account of the game is bound.
 func hasAccount(listed Accounts) bool {
 	return slices.ContainsFunc(listed.Items, func(account Account) bool { return len(account.Roles) > 0 })
-}
-
-// arkExchange runs a panel exchange as ark-plugin's ArkApi does: with the ark
-// token when the accounts plugin keeps one, else anonymously, and waits for
-// its answer.
-func (a *App) arkExchange(ctx context.Context, event *rayleabot.EventContext, q CloudInput) (CloudJob, error) {
-	q.Authenticated = a.arkConfigured(ctx, event)
-	out, err := a.startCloudJob(ctx, event, q)
-	if err != nil {
-		return CloudJob{}, err
-	}
-	return a.Cloud.Wait(ctx, out["job"].(CloudJob)), nil
 }
 
 func cmpOr(value, fallback string) string {

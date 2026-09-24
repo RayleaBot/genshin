@@ -37,6 +37,27 @@ func arkError(result map[string]any) string {
 	return cmpOr(arkErrors[asText(result["retcode"])], "未知错误")
 }
 
+// arkAnswer sends a chat command's ark request as ArkApi.req does and reads
+// the answer as ark-plugin's characterRank does: the answer when its retcode
+// is 100, else the reply dealError gives.
+func (a *App) arkAnswer(ctx context.Context, event *rayleabot.EventContext, route string, body map[string]any) (map[string]any, string) {
+	decoded, err := a.arkRequest(ctx, event, route, body)
+	if err != nil {
+		return nil, arkError(nil)
+	}
+	result := asObject(decoded)
+	if asText(result["retcode"]) != "100" {
+		return nil, arkError(result)
+	}
+	return result, ""
+}
+
+// needUIDReply is what miao's getTargetUid replies when the sender has no UID
+// to read, as ark-plugin's commands take it.
+func (a *App) needUIDReply() string {
+	return "请先发送【" + a.Game.Prefix + "绑定+你的UID】来绑定查询目标\n星铁请使用【" + a.Game.Prefix + "星铁绑定+UID】"
+}
+
 // arkVerifyCommand is ark-plugin's ark绑定原神uid (arkGetBindUid) and
 // ark验证原神uid (arkBindUid) for the UID in use or of a mentioned player:
 // 绑定 asks ark for the code to write into the game signature, 验证 has ark
@@ -44,18 +65,18 @@ func arkError(result map[string]any) string {
 // it as verified.
 func (a *App) arkVerifyCommand(ctx context.Context, event *rayleabot.EventContext, command string) error {
 	owner, err := a.panelOwner(ctx, event, "")
-	if err != nil {
-		return event.SendText(friendlyError(err))
+	if err != nil || owner.UID == "" {
+		return event.SendText(a.needUIDReply())
 	}
 	route, body, refusal := arkVerifyRequest(command, owner.UID, chatOwner(event))
 	if refusal != "" {
 		return event.SendText(refusal)
 	}
-	decoded, err := a.arkRequest(ctx, event, route, body)
-	if err != nil {
-		return event.SendText(arkError(nil))
+	result, failure := a.arkAnswer(ctx, event, route, body)
+	if failure != "" {
+		return event.SendText(failure)
 	}
-	return event.SendText(arkVerifyReply(command, a.Game.Prefix, asObject(decoded)))
+	return event.SendText(arkVerifyReply(command, a.Game.Prefix, result))
 }
 
 // arkVerifyRequest is the ark request of 绑定 (cloud-bind) or 验证
@@ -73,12 +94,9 @@ func arkVerifyRequest(command, uid string, sender Subject) (route string, body m
 	return "verify", body, ""
 }
 
-// arkVerifyReply is ark-plugin's reply to ark's answer: the code with its
-// directions for 绑定, 验证成功 for 验证, and ark's error otherwise.
+// arkVerifyReply is ark-plugin's reply when ark accepts: the code with its
+// directions for 绑定, 验证成功 for 验证.
 func arkVerifyReply(command, prefix string, result map[string]any) string {
-	if asText(result["retcode"]) != "100" {
-		return arkError(result)
-	}
 	if command == "cloud-verify" {
 		return "验证成功"
 	}

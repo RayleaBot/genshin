@@ -15,9 +15,9 @@ const rankSpecificAnswer = `[{"retcode":100,"data":{"scores":["268.70","255.60",
 // no panel placed on them.
 func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	entry := Entry{ID: "10000046", Name: "胡桃"}
-	image, err := readRankStats(entry, cloudList(t, rankSpecificAnswer))
-	if err != nil || image.DamageTitle != "重击伤害" {
-		t.Fatalf("image = %+v %v", image, err)
+	image, ok := readRankStats(entry, cloudList(t, rankSpecificAnswer))
+	if !ok || image.DamageTitle != "重击伤害" {
+		t.Fatalf("image = %+v", image)
 	}
 	if damage := image.Damage; damage.Top != 100 || math.Abs(damage.Scores[0]-78.79) > 0.01 || damage.Total != "60391" || damage.Percent != -100 {
 		t.Fatalf("damage = %+v", damage)
@@ -25,11 +25,12 @@ func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	if artis := image.Artis; artis.Top != 294 || artis.Scores[9] != 104.9 || artis.Total != "60184" {
 		t.Fatalf("artis = %+v", artis)
 	}
-	// A failed answer is ark's refusal; one with nothing to draw cannot be
-	// read.
-	for raw, code := range map[string]string{`{"retcode":102}`: "plugin.game_cloud_rejected", `{"retcode":100,"data":{"scores":[1,2,3,4,5,6,7,8,9,10]}}`: "plugin.game_cloud_invalid", `[{"retcode":102},{"retcode":102}]`: "plugin.game_cloud_invalid"} {
-		if _, err := readRankStats(entry, cloudList(t, raw)); PublicError(err).Code != code {
-			t.Errorf("%s: %v", raw, err)
+	// An answer with nothing to draw is refused with dealError's reply, as
+	// upstream refuses any answer without retcode 100.
+	for raw, want := range map[string]string{`{"retcode":102}`: "未查询到角色信息", `{"retcode":100,"data":{"scores":[1,2,3,4,5,6,7,8,9,10]}}`: "未知错误", `[{"retcode":102},{"retcode":102}]`: "未知错误"} {
+		decoded := cloudList(t, raw)
+		if _, ok := readRankStats(entry, decoded); ok || arkError(asObject(decoded)) != want {
+			t.Errorf("%s: read %v, reply %q", raw, ok, arkError(asObject(decoded)))
 		}
 	}
 }
@@ -110,12 +111,25 @@ func TestArkVerifyFollowsArkPlugin(t *testing.T) {
 	if !strings.HasPrefix(code, "验证码: ABC123\n使用方式：\n①原神：") || !strings.Contains(code, "输入 #ark验证原神uid\n") {
 		t.Fatalf("code reply:\n%s", code)
 	}
-	for raw, want := range map[string]string{`{"retcode":100}`: "验证成功", `{"retcode":302}`: "验证失败，个人签名不匹配，请五分钟后重试", `{"retcode":999}`: "未知错误"} {
-		if got := arkVerifyReply("cloud-verify", "#", cloudObject(t, raw)); got != want {
+	if got := arkVerifyReply("cloud-verify", "#", cloudObject(t, `{"retcode":100}`)); got != "验证成功" {
+		t.Errorf("verify reply: %q", got)
+	}
+}
+
+// ark's refusals read as ark-plugin's ERROR_MAP; a code it does not list and
+// a failed request read as 未知错误. Scores are written with toFixed(2).
+func TestArkRepliesFollowArkPlugin(t *testing.T) {
+	for raw, want := range map[string]string{`{"retcode":302}`: "验证失败，个人签名不匹配，请五分钟后重试", `{"retcode":-1}`: "插件版本过低，请更新插件", `{"retcode":999}`: "未知错误", `{}`: "未知错误"} {
+		if got := arkError(cloudObject(t, raw)); got != want {
 			t.Errorf("%s: %q", raw, got)
 		}
 	}
 	if got := arkError(nil); got != "未知错误" {
 		t.Errorf("failed request: %q", got)
+	}
+	for raw, want := range map[string]string{`{"score":12345.678}`: "12345.68", `{"score":0.125}`: "0.13", `{"score":7}`: "7.00"} {
+		if got := arkScore(cloudObject(t, raw)["score"]); got != want {
+			t.Errorf("%s: %q", raw, got)
+		}
 	}
 }
