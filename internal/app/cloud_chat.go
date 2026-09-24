@@ -79,24 +79,44 @@ func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContex
 // damage distribution rank/specific answered with, which ark no longer
 // sends: it now answers with the artifact and damage distributions ark's
 // panel page reads for its 排名统计, so this draws those two as the panel
-// does, with no panel to mark. An answer without either, or one that cannot
-// be drawn, gets the reply other ark queries give without a result.
+// does, with no panel to mark. Without a picture the reply lists them as the
+// management page does.
 func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContext, character Entry) error {
 	id, _ := strconv.Atoi(character.ID)
 	decoded, err := a.arkRequest(ctx, event, "rank/specific", map[string]any{"id": id, "percent": 0})
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	none := RankCurve{Percent: -100, Score: -100}
-	damage, artis := rankCurves(asList(decoded), [2]RankCurve{none, none})
-	if (damage != nil || artis != nil) && a.rankStatsImage != nil {
-		if drawn, ok := a.rankStatsImage(a.imageContext(ctx), RankStatsImage{Character: character, Damage: damage, Artis: artis}); ok {
-			if path := a.renderView(ctx, event, View{Title: character.Name + "排名统计", Image: &drawn}); path != "" {
-				return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image(path))
-			}
+	image, err := readRankStats(character, decoded)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	view := View{Title: character.Name + "排名统计", Rows: []Row{}, Sections: distributionSections(asList(decoded))}
+	if a.rankStatsImage != nil {
+		if drawn, ok := a.rankStatsImage(a.imageContext(ctx), image); ok {
+			view.Image = &drawn
 		}
 	}
-	return event.SendText("ark 云服务暂未返回结果，请稍后重试。")
+	return a.sendView(ctx, event, view)
+}
+
+// readRankStats reads rank/specific's answer as ark's panel page reads it,
+// with no panel placed on the distributions. An answer that is not the list,
+// as a failed one, is read as ark's other refusals.
+func readRankStats(character Entry, decoded any) (RankStatsImage, error) {
+	distributions, ok := decoded.([]any)
+	if !ok {
+		if err := cloudRetcode(asObject(decoded)); err != nil {
+			return RankStatsImage{}, err
+		}
+	}
+	none := RankCurve{Percent: -100, Score: -100}
+	image := RankStatsImage{Character: character}
+	image.Damage, image.Artis = rankCurves(distributions, [2]RankCurve{none, none})
+	if image.Damage == nil && image.Artis == nil {
+		return RankStatsImage{}, gameError("cloud_invalid", "云服务数据格式暂不兼容。")
+	}
+	return image, nil
 }
 
 // RankStatsImage is what <角色>排名统计 draws: the character and ark's damage
