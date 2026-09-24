@@ -87,7 +87,7 @@ func AbyssFloor(context app.ImageContext, result app.QueryResult) (app.Image, bo
 				avatar, _ := rawAvatar.(map[string]any)
 				id := app.Text(avatar["id"])
 				avatars = append(avatars, map[string]any{"name": abbreviations[id], "life": lives[id], "rarity": app.Text(avatar["rarity"]), "level": app.Text(avatar["level"]),
-					"icon": resources.Artwork("face-"+id, "miao-plugin", "resources/meta-gs/character/"+names[id]+"/imgs/face.webp")})
+					"icon": portrait(resources, names, id, "face", avatar["icon"])})
 			}
 			halves = append(halves, map[string]any{"index": app.Text(battle["index"]), "avatars": avatars})
 		}

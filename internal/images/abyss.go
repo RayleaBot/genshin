@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
@@ -20,30 +19,10 @@ func Abyss(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 		return app.Image{}, false
 	}
 	names := characterNames(context)
-	resources := []rayleabot.RenderImageResource{}
-	add := func(id, source, name string) bool {
-		resource, ok := context.ArtworkResource(id, source, name)
-		if ok {
-			resources = append(resources, resource)
-		}
-		return ok
-	}
-	add("tttgbnumber", "yunzai-genshin", "resources/font/tttgbnumber.ttf")
+	resources := &app.ImageResources{Context: context}
+	resources.Artwork("tttgbnumber", "yunzai-genshin", "resources/font/tttgbnumber.ttf")
 	for _, image := range []string{"abyss/bg", "other/bg5", "other/bg4", "other/bg105", "other/fill"} {
-		add("img-"+strings.ReplaceAll(image, "/", "-"), "yunzai-genshin", "resources/img/"+image+".png")
-	}
-	portraits := map[string]string{}
-	portrait := func(id, kind string) string {
-		resource := kind + "-" + app.Text(id)
-		if known, seen := portraits[resource]; seen {
-			return known
-		}
-		name := names[app.Text(id)]
-		if name == "" || !add(resource, "miao-plugin", "resources/meta-gs/character/"+name+"/imgs/"+kind+".webp") {
-			resource = ""
-		}
-		portraits[kind+"-"+app.Text(id)] = resource
-		return resource
+		resources.Artwork("img-"+strings.ReplaceAll(image, "/", "-"), "yunzai-genshin", "resources/img/"+image+".png")
 	}
 
 	start := time.Unix(int64(app.Int(data["start_time"])), 0).In(chinaTime)
@@ -63,15 +42,16 @@ func Abyss(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	for _, key := range []string{"damage", "take_damage", "defeat", "normal_skill", "energy_skill"} {
 		list, _ := data[key+"_rank"].([]any)
 		id, value := "10000007", 0
+		var icon any
 		if len(list) > 0 {
 			first, _ := list[0].(map[string]any)
-			id, value = app.Text(first["avatar_id"]), app.Int(first["value"])
+			id, value, icon = app.Text(first["avatar_id"]), app.Int(first["value"]), first["avatar_icon"]
 		}
 		num := strconv.Itoa(value)
 		if value > 1000 {
 			num = fmt.Sprintf("%.1f w", float64(value)/10000)
 		}
-		ranks[key] = map[string]any{"num": num, "icon": portrait(id, "side")}
+		ranks[key] = map[string]any{"num": num, "icon": portrait(resources, names, id, "side", icon)}
 	}
 	used := []any{}
 	reveals, _ := data["reveal_rank"].([]any)
@@ -79,13 +59,13 @@ func Abyss(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 		reveal, _ := raw.(map[string]any)
 		id := app.Text(reveal["avatar_id"])
 		// Upstream shows the badge only when the entry carries "life".
-		used = append(used, map[string]any{"life": app.Int(reveal["life"]), "rarity": app.Int(reveal["rarity"]), "icon": portrait(id, "face"), "value": app.Int(reveal["value"])})
+		used = append(used, map[string]any{"life": app.Int(reveal["life"]), "rarity": app.Int(reveal["rarity"]), "icon": portrait(resources, names, id, "face", reveal["avatar_icon"]), "value": app.Int(reveal["value"])})
 	}
 	return app.Image{Template: "abyss", Data: map[string]any{
 		"uid": result.Role.UID, "time": strconv.Itoa(int(start.Month())) + "月",
 		"max_floor": app.Text(data["max_floor"]), "total_star": strconv.Itoa(total) + "（" + strings.Join(stars, "-") + "）",
 		"list": used, "total_battle_times": app.Int(data["total_battle_times"]), "ranks": ranks,
-	}, Resources: resources}, true
+	}, Resources: resources.List}, true
 }
 
 // characterNames maps character IDs to the names miao keeps its images under.
@@ -98,4 +78,19 @@ func characterNames(context app.ImageContext) map[string]string {
 		names[record.ID] = record.Name
 	}
 	return names
+}
+
+// portrait adds a character's miao portrait, face or side, where Yunzai's
+// abyss pages take it from miao's Character: under 空 or 荧 for the
+// Traveler, else under the character's name. miao keeps no side portrait of
+// its newest characters and no pictures of characters newer than its data;
+// the icon the official answer links for the character stands in then.
+func portrait(resources *app.ImageResources, names map[string]string, id, kind string, icon any) string {
+	if name := names[id]; name != "" || id == "10000005" {
+		folder, _ := app.CharacterFolders(id, name, "")
+		if found := resources.Artwork(kind+"-"+id, "miao-plugin", folder+"imgs/"+kind+".webp"); found != "" {
+			return found
+		}
+	}
+	return resources.URL("mihoyo", icon)
 }
