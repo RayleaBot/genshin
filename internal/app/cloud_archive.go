@@ -126,13 +126,21 @@ func cleanCloudGear(value any) (map[string]any, error) {
 	}
 	return out, nil
 }
+
+// cleanCloudAvatar keeps the fields of the exchange format of a miao avatar,
+// marked share as imported data.
 func cleanCloudAvatar(value any) (string, json.RawMessage, error) {
+	return cleanAvatar(value, "share")
+}
+
+// cleanAvatar is cleanCloudAvatar under the _source given.
+func cleanAvatar(value any, source string) (string, json.RawMessage, error) {
 	obj := asObject(value)
 	id, ok := cloudInteger(obj["id"], 1, 1000000000)
 	if !ok || id < 10000000 {
 		return "", nil, gameError("cloud_invalid", "角色编号与所选游戏不匹配。")
 	}
-	out := map[string]any{"id": id, "_source": "share"}
+	out := map[string]any{"id": id, "_source": source}
 	for _, key := range []string{"level", "promote", "cons", "fetter", "costume", "_time", "_update", "_talent"} {
 		if raw, exists := obj[key]; exists {
 			if strings.HasPrefix(key, "_") {

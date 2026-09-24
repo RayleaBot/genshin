@@ -36,7 +36,7 @@ func TestOfficialCloudCaptureKeepsOriginalTalentAndWeaponIdentity(t *testing.T) 
 	}
 	panel := NormalizePanels(result, Catalog{})[0]
 	panel.Rank = 6
-	id, raw, err := panelCloudAvatar(t.Context(), testGame(t), panel)
+	id, raw, err := panelCloudAvatar(t.Context(), testGame(t), panel, miaoSource(panel))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestImportedCloudAvatarBecomesAPanel(t *testing.T) {
 	game := testGame(t)
 	panel := NormalizePanels(result, Catalog{})[0]
 	panel.Rank = 6
-	_, raw, err := panelCloudAvatar(t.Context(), game, panel)
+	_, raw, err := panelCloudAvatar(t.Context(), game, panel, miaoSource(panel))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestExportWritesEveryKeptPanel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, raw, err := panelCloudAvatar(t.Context(), game, imported)
+	_, raw, err := panelCloudAvatar(t.Context(), game, imported, miaoSource(imported))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,6 +185,13 @@ func TestExportWritesEveryKeptPanel(t *testing.T) {
 	avatars := a.exportAvatars(t.Context(), saved)
 	if len(avatars) != 2 || avatars["10000046"] == nil {
 		t.Fatalf("exported %d of 2 panels", len(avatars))
+	}
+	// Each keeps the _source miao saves its source under.
+	for id, want := range map[string]string{"10000046": "mysPanel", "10000030": "enka"} {
+		var avatar map[string]any
+		if err := json.Unmarshal(avatars[id], &avatar); err != nil || avatar["_source"] != want {
+			t.Errorf("%s _source = %v, want %s", id, avatar["_source"], want)
+		}
 	}
 	got = rolls(avatars["10000030"])
 	if len(got) != len(want) {

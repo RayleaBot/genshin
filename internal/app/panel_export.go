@@ -38,13 +38,14 @@ func (a *App) panelExportCommand(ctx context.Context, event *rayleabot.EventCont
 }
 
 // exportAvatars are a UID's kept panels as miao keeps the characters in its
-// player data. Upstream's 导出面板 and 导出面板数据 send the whole player
-// data file, every character whatever it was read from; a UID without kept
-// panels has no file. Characters that cannot be written out are left out.
+// player data, each under the _source miao saved it with. Upstream's 导出面板
+// sends the whole player data file and 导出面板数据 uploads it as it is, every
+// character whatever it was read from; a UID without kept panels has no file.
+// Characters that cannot be written out are left out.
 func (a *App) exportAvatars(ctx context.Context, saved SavedProfiles) map[string]json.RawMessage {
 	avatars := map[string]json.RawMessage{}
 	for _, kept := range saved.Panels {
-		if id, raw, err := panelCloudAvatar(ctx, a.Game, kept.panel()); err == nil {
+		if id, raw, err := panelCloudAvatar(ctx, a.Game, kept.panel(), miaoSource(kept.Panel)); err == nil {
 			avatars[id] = raw
 		}
 	}
