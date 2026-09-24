@@ -29,11 +29,13 @@ type PanelRankChart struct {
 }
 
 // RankCurve is a ranking distribution ark draws: the scores at the ranking
-// percentiles of cloudPercentiles, the score at the top, and the panel's
-// place (its percent from the top) and score, -100 each when ark has none.
+// percentiles of cloudPercentiles, the score at the top, the UIDs ark
+// counted, and the panel's place (its percent from the top) and score, -100
+// each when ark has none.
 type RankCurve struct {
 	Scores         []float64
 	Top            float64
+	Total          string
 	Percent, Score float64
 }
 
@@ -127,16 +129,24 @@ func readPanelRank(ark ArkSettings, answers, distributions []any, changed bool) 
 		return rank
 	}
 	chart := &PanelRankChart{Places: places}
-	if len(distributions) > 1 {
-		chart.Damage = rankCurve(distributions[1], curves[0], true)
-	}
-	if len(distributions) > 0 {
-		chart.Artis = rankCurve(distributions[0], curves[1], false)
-	}
+	chart.Damage, chart.Artis = rankCurves(distributions, curves)
 	if chart.Damage != nil || chart.Artis != nil {
 		rank.Chart = chart
 	}
 	return rank
+}
+
+// rankCurves read rank/specific's answer as ark's panel page does: the second
+// distribution is the damage one, the first the artifact one; ark-plugin
+// reads no others. own are the panel's damage and artifact places.
+func rankCurves(distributions []any, own [2]RankCurve) (damage, artis *RankCurve) {
+	if len(distributions) > 1 {
+		damage = rankCurve(distributions[1], own[0], true)
+	}
+	if len(distributions) > 0 {
+		artis = rankCurve(distributions[0], own[1], false)
+	}
+	return damage, artis
 }
 
 // rankCurve reads a distribution of rank/specific for 排名统计: the damage
@@ -153,7 +163,7 @@ func rankCurve(answer any, own RankCurve, damage bool) *RankCurve {
 	if data["top1"] != nil {
 		divisor = top
 	}
-	curve := &RankCurve{Scores: []float64{}, Top: top, Percent: own.Percent, Score: own.Score}
+	curve := &RankCurve{Scores: []float64{}, Top: top, Total: cloudNumber(data["total"]), Percent: own.Percent, Score: own.Score}
 	for _, score := range scores {
 		value := cloudFloat(score)
 		if damage {

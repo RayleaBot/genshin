@@ -1,70 +1,54 @@
 package images
 
 import (
-	"math"
-	"slices"
-	"strconv"
-	"time"
-
 	"github.com/RayleaBot/plugin-genshin/internal/app"
 )
 
-// rankStatsArtwork maps the images named in the converted stylesheets (miao's
-// common for the layout, ark-plugin's graph/stats) to their sources and
-// paths.
-var rankStatsArtwork = [][3]string{
-	{"Number", "miao-plugin", "resources/common/font/tttgbnumber.woff"},
-	{"NZBZ", "miao-plugin", "resources/common/font/NZBZ.woff"},
-	{"YS", "miao-plugin", "resources/common/font/HYWH-65W.woff"},
-	{"graph-background", "ark-plugin", "resources/graph/background.png"},
+// rankStatsArtwork maps the miao images the 排名统计 stylesheet names, those of
+// the panel's 排名统计 block, to their repository paths.
+var rankStatsArtwork = [][2]string{
+	{"common-cont-card-bg", "resources/common/cont/card-bg.png"},
+	{"Number", "resources/common/font/tttgbnumber.woff"},
+	{"NZBZ", "resources/common/font/NZBZ.woff"},
+	{"YS", "resources/common/font/HYWH-65W.woff"},
 }
 
-// rankStatsPercents are the ranking percentiles of ark's scores.
-var rankStatsPercents = []float64{1, 5, 10, 20, 30, 50, 70, 90, 95, 99}
-
-// RankStats draws 排名统计 the way ark-plugin's graph/stats does: the
-// character, the calculation and sample size, the ECharts line of the score
-// at each ranking percentile with its value above each point and a guide at
-// each percentile, and a card per percentile with the first three marked.
+// RankStats draws <角色>排名统计 as the panel's 排名统计 block, on the
+// character's element background: ark's damage and artifact distributions
+// with no panel to mark, so the area keeps one colour and nothing is written
+// on the curve, and under each the UIDs ark counted, as ark's graph/stats
+// wrote them, or 暂无数据 as under a chart ark did not send.
 func RankStats(context app.ImageContext, image app.RankStatsImage) (app.Image, bool) {
-	scores := image.Stats.Scores
-	if len(scores) != len(rankStatsPercents) {
-		return app.Image{}, false
-	}
 	resources := &app.ImageResources{Context: context}
 	for _, item := range rankStatsArtwork {
-		resources.Artwork(item[0], item[1], item[2])
+		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	// ark's chart: a 1120 x 520 box, grid 30/40/50/80, y up to 1.15 times the
-	// top score in six splits, labels in 万 from 10000.
-	chart := app.EChartsLine(rankStatsPercents, scores, 1120, 520, [4]float64{30, 40, 50, 80}, math.Ceil(slices.Max(scores)*1.15), 6, 0.4, func(value float64) string {
-		if value >= 10000 {
-			return strconv.FormatFloat(value/10000, 'f', 1, 64) + "万"
+	elem := ""
+	if context.Game.Calc != nil {
+		for _, record := range context.Game.Calc.Metadata().Characters {
+			if record.ID == image.Character.ID {
+				elem = record.Element
+				break
+			}
 		}
-		return strconv.FormatFloat(value, 'f', -1, 64)
-	})
-	cards := []any{}
-	for index, point := range chart["points"].([]any) {
-		label := strconv.FormatFloat(rankStatsPercents[index], 'f', -1, 64) + "%"
-		item := point.(map[string]any)
-		x, _ := strconv.ParseFloat(item["x"].(string), 64)
-		y, _ := strconv.ParseFloat(item["y"].(string), 64)
-		// Labels sit 12px above the 10px symbol; the first is padded 40px on
-		// its left.
-		item["mark"], item["label_x"], item["label_y"] = label, x, y-17
-		if index == 0 {
-			item["label_x"] = x + 20
-		}
-		cards = append(cards, map[string]any{"label": label, "value": item["value"], "top": index < 3})
 	}
-	bottom, _ := strconv.ParseFloat(chart["bottom"].(string), 64)
-	left, _ := strconv.ParseFloat(chart["left"].(string), 64)
-	right, _ := strconv.ParseFloat(chart["right"].(string), 64)
-	top, _ := strconv.ParseFloat(chart["top"].(string), 64)
-	chart["label_x"], chart["mark_y"] = left-8, bottom+5
-	chart["x_name_x"], chart["x_name_y"] = (left+right)/2, bottom+32
-	chart["y_name_x"], chart["y_name_y"] = left-20, top-15
-	now := time.Now().In(time.FixedZone("UTC+8", 8*3600))
-	return app.Image{Template: "rank-stats", Data: map[string]any{"character": image.Character, "title": image.Stats.Title, "total": image.Stats.Total,
-		"time": now.Format("2006-01-02 15:04"), "chart": chart, "cards": cards}, Resources: resources.List}, true
+	if elem != "" {
+		resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
+	}
+	charts, totals := []any{}, []any{}
+	for _, item := range []struct {
+		kind  string
+		curve *app.RankCurve
+	}{{"damage", image.Damage}, {"artis", image.Artis}} {
+		chart, at := rankChart(item.kind, item.curve)
+		total := "暂无数据"
+		if at != nil {
+			chart["stops"] = rankStops(rankStop{0, rankFill}, rankStop{1, rankFill})
+			if item.curve.Total != "" {
+				total = "统计样本 " + item.curve.Total + " 个UID"
+			}
+		}
+		charts, totals = append(charts, chart), append(totals, total)
+	}
+	return app.Image{Template: "rank-stats", Data: map[string]any{"elem": elem, "title": image.Character.Name + "排名统计", "charts": charts, "totals": totals}, Resources: resources.List}, true
 }

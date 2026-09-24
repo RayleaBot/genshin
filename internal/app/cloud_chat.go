@@ -16,9 +16,9 @@ var cloudRankUID = regexp.MustCompile(`[0-9]{9,10}`)
 
 // cloudChatCommand answers ark-plugin's rank words in chat: 角色排名<角色>
 // [UID] is the character's rank among ark's uploaded panels, updated first;
-// 总排名 [UID] ranks every character kept for the UID; <角色>排名统计 is the
-// character's score distribution. Each runs the matching ark query and
-// replies with its result.
+// 总排名 [UID] ranks every character kept for the UID. Each runs the matching
+// ark query and replies with its result. <角色>排名统计 draws the character's
+// distributions.
 func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	text := strings.Join(args, "")
 	q := CloudInput{Consent: true}
@@ -39,15 +39,13 @@ func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContex
 		if !ok {
 			return event.SendText("未找到该角色，请使用角色全名或别名。")
 		}
-		q.Mode, q.CharacterID = "distribution", entry.ID
+		return a.rankStatsCommand(ctx, event, entry)
 	}
-	if q.Mode != "distribution" {
-		owner, err := a.panelOwner(ctx, event, q.UID)
-		if err != nil {
-			return event.SendText("请先绑定UID")
-		}
-		q.UID = owner.UID
+	owner, err := a.panelOwner(ctx, event, q.UID)
+	if err != nil {
+		return event.SendText("请先绑定UID")
 	}
+	q.UID = owner.UID
 	if q.Mode == "self_rank" {
 		// ark ranks the characters upstream keeps for the UID.
 		saved, err := a.Profiles.Read(q.UID)
@@ -74,25 +72,41 @@ func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContex
 		}
 		return event.SendText(message)
 	}
-	view := *job.View
-	if q.Mode == "distribution" && job.Stats != nil && a.rankStatsImage != nil {
-		entry, _ := a.Catalog.Get(q.CharacterID)
-		if drawn, ok := a.rankStatsImage(a.imageContext(ctx), RankStatsImage{Character: entry.Name, Stats: *job.Stats}); ok {
-			view.Image = &drawn
+	return a.sendView(ctx, event, *job.View)
+}
+
+// rankStatsCommand is ark-plugin's <角色>排名统计. Upstream draws the one
+// damage distribution rank/specific answered with, which ark no longer
+// sends: it now answers with the artifact and damage distributions ark's
+// panel page reads for its 排名统计, so this draws those two as the panel
+// does, with no panel to mark. An answer without either, or one that cannot
+// be drawn, gets the reply other ark queries give without a result.
+func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContext, character Entry) error {
+	id, _ := strconv.Atoi(character.ID)
+	decoded, err := a.arkRequest(ctx, event, "rank/specific", map[string]any{"id": id, "percent": 0})
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	none := RankCurve{Percent: -100, Score: -100}
+	damage, artis := rankCurves(asList(decoded), [2]RankCurve{none, none})
+	if (damage != nil || artis != nil) && a.rankStatsImage != nil {
+		if drawn, ok := a.rankStatsImage(a.imageContext(ctx), RankStatsImage{Character: character, Damage: damage, Artis: artis}); ok {
+			if path := a.renderView(ctx, event, View{Title: character.Name + "排名统计", Image: &drawn}); path != "" {
+				return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image(path))
+			}
 		}
 	}
-	return a.sendView(ctx, event, view)
+	return event.SendText("ark 云服务暂未返回结果，请稍后重试。")
 }
 
-// RankStatsImage is what 排名统计 draws on, as ark-plugin's graph/stats: the
-// character and its damage distribution.
+// RankStatsImage is what <角色>排名统计 draws: the character and ark's damage
+// and artifact distributions, each nil when ark has none.
 type RankStatsImage struct {
-	Character string
-	Stats     CloudStats
+	Character     Entry
+	Damage, Artis *RankCurve
 }
 
-// RankStatsImageBuilder draws 排名统计 with the plugin's template, or
-// returns false to keep the scores in text.
+// RankStatsImageBuilder draws 排名统计 with the plugin's template.
 type RankStatsImageBuilder func(ImageContext, RankStatsImage) (Image, bool)
 
 // cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>:

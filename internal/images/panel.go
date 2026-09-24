@@ -244,12 +244,8 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 				rows = append(rows, map[string]any{"index": len(rows) + 1, "title": row.Label, "full": row.Value})
 			}
 			if chart := rank.Chart; chart != nil {
-				artisMax := 0.0
-				if chart.Artis != nil {
-					artisMax = math.Trunc(chart.Artis.Top)
-				}
 				data["rank_chart"] = map[string]any{"hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "排名统计", "places": chart.Places,
-					"charts": []any{panelRankChart("damage", chart.Damage, "伤害评分", 100, 20), panelRankChart("artis", chart.Artis, "圣遗物评分", artisMax, 50)}}
+					"charts": []any{panelRankChart("damage", chart.Damage), panelRankChart("artis", chart.Artis)}}
 			}
 		}
 		// ark's DealLongDmgTitle for a changed panel, over every row with its
@@ -369,22 +365,26 @@ func cutDamageTitle(title string) string {
 // ranking percentiles from the lowest (100 - percentile) and the top.
 var panelRankXs = []float64{0, 1, 5, 10, 30, 50, 70, 80, 90, 95, 99, 100}
 
-// panelRankChart is one of ark-plugin's 排名统计 charts, as its ECharts
-// option draws it: the distribution with the x labels reading 100 - x, the
-// axis names, the panel's score written 15 right of and 5 above its place,
-// and the area's gradient, which turns red from the panel's place for 2.5
-// points (ark's stops fall out of order, and later stops cannot go back).
-// A curve ark did not send draws 暂无数据.
-func panelRankChart(id string, curve *app.RankCurve, name string, yMax, interval float64) map[string]any {
+// rankChart lays out one of ark-plugin's 排名统计 charts, "damage" or
+// "artis", as its ECharts option draws it: the distribution with the x
+// labels reading 100 - x, and the y axis named by the kind, up to 100 by 20
+// for damage and to the top artifact score by 50 (ark's parseInt(top1) / 50 *
+// 50, which is parseInt(top1)); at places a point on it. A curve ark did not
+// send draws 暂无数据, and at is nil.
+func rankChart(kind string, curve *app.RankCurve) (chart map[string]any, at func(x, y float64) (float64, float64)) {
 	if curve == nil {
-		return map[string]any{}
+		return map[string]any{}, nil
+	}
+	name, yMax, interval := "伤害评分", 100.0, 20.0
+	if kind == "artis" {
+		name, yMax, interval = "圣遗物评分", math.Trunc(curve.Top), 50
 	}
 	values := []float64{0}
 	for index := len(curve.Scores) - 1; index >= 0; index-- {
 		values = append(values, curve.Scores[index])
 	}
 	values = append(values, curve.Top)
-	chart, at := app.EChartsDistribution(panelRankXs, values, yMax, interval)
+	chart, at = app.EChartsDistribution(panelRankXs, values, yMax, interval)
 	left, top := at(0, yMax)
 	right, bottom := at(100, 0)
 	for _, tick := range chart["x_ticks"].([]any) {
@@ -395,20 +395,43 @@ func panelRankChart(id string, curve *app.RankCurve, name string, yMax, interval
 		item := tick.(map[string]any)
 		item["label"], item["x"] = strconv.FormatFloat(item["value"].(float64), 'f', -1, 64), left-8
 	}
-	x, y := at(100-curve.Percent, curve.Score)
-	chart["mark"] = map[string]any{"x": x + 15, "y": y - 5, "text": strconv.FormatFloat(curve.Score, 'f', 2, 64)}
 	chart["x_name"] = map[string]any{"x": right + 15, "y": bottom}
 	chart["y_name"] = map[string]any{"x": left, "y": top - 15, "text": name}
-	place := (100 - curve.Percent) / 100
-	cyan, red := map[string]any{"color": "rgb(51, 204, 204)", "opacity": 0.5}, map[string]any{"color": "rgb(255, 0, 0)", "opacity": 1}
-	stops := []any{}
-	for _, stop := range []struct {
-		offset float64
-		color  map[string]any
-	}{{0, cyan}, {place, cyan}, {place - 0.025, red}, {place + 0.025, red}, {place + 0.025, cyan}, {1, cyan}} {
-		stops = append(stops, map[string]any{"offset": stop.offset, "color": stop.color["color"], "opacity": stop.color["opacity"]})
+	chart["id"] = "rank-" + kind
+	return chart, at
+}
+
+// rankFill is the colour of the area under a 排名统计 curve, and rankMark
+// the colour it turns at the panel's place.
+var rankFill, rankMark = map[string]any{"color": "rgb(51, 204, 204)", "opacity": 0.5}, map[string]any{"color": "rgb(255, 0, 0)", "opacity": 1}
+
+// rankStop is a stop of the area's gradient: its offset and colour.
+type rankStop struct {
+	offset float64
+	color  map[string]any
+}
+
+func rankStops(stops ...rankStop) []any {
+	out := []any{}
+	for _, stop := range stops {
+		out = append(out, map[string]any{"offset": stop.offset, "color": stop.color["color"], "opacity": stop.color["opacity"]})
 	}
-	chart["stops"], chart["id"] = stops, "rank-"+id
+	return out
+}
+
+// panelRankChart is a 排名统计 chart with the panel marked as ark's option
+// marks it: its score written 15 right of and 5 above its place, and the
+// area's gradient, which turns red from the panel's place for 2.5 points
+// (ark's stops fall out of order, and later stops cannot go back).
+func panelRankChart(kind string, curve *app.RankCurve) map[string]any {
+	chart, at := rankChart(kind, curve)
+	if at == nil {
+		return chart
+	}
+	x, y := at(100-curve.Percent, curve.Score)
+	chart["mark"] = map[string]any{"x": x + 15, "y": y - 5, "text": strconv.FormatFloat(curve.Score, 'f', 2, 64)}
+	place := (100 - curve.Percent) / 100
+	chart["stops"] = rankStops(rankStop{0, rankFill}, rankStop{place, rankFill}, rankStop{place - 0.025, rankMark}, rankStop{place + 0.025, rankMark}, rankStop{place + 0.025, rankFill}, rankStop{1, rankFill})
 	return chart
 }
 

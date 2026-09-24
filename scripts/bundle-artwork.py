@@ -82,7 +82,7 @@ BUNDLES = {
         # Gacha link help pictures.
         "resources/logHelp/*",
     ]),
-    "ark-plugin": ("ark-plugin", ["resources/graph/background.png", "resources/character/img/medal_*.png"]),
+    "ark-plugin": ("ark-plugin", ["resources/character/img/medal_*.png"]),
     # Atlas reads these othername files for the modules the library has none
     # for; its help is one picture.
     "atlas": ("Atlas", ["resource/Forlibrary/Genshin-Atlas/othername/*", "resource/img/help.png"]),

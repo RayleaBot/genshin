@@ -1,46 +1,43 @@
 <!doctype html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
-<body class="elem-hydro default-mode">
-<div class="container" id="container">
-<div class="stats-wrapper">
-  <div class="stats-header">
-    <div class="char-name">{{ .character }}</div>
-    <div class="dmg-title">排名趋势 · {{ .title }}</div>
-    <div class="total-badge">统计样本 <span class="num">{{ .total }}</span> 个UID <span class="sep">|</span> 生成时间 <span id="genTime">{{ .time }}</span></div>
-  </div>
-  <div class="chart-container">
-    <div id="LineChart">
-      {{ with .chart }}
-      <svg xmlns="http://www.w3.org/2000/svg" width="{{ .width }}" height="{{ .height }}" viewBox="0 0 {{ .width }} {{ .height }}">
-        <defs>
-          <linearGradient id="line-color" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#67e8f9"/><stop offset="0.5" stop-color="#4895ef"/><stop offset="1" stop-color="#9333ea"/>
-          </linearGradient>
-          <linearGradient id="area-color" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="rgb(72,149,239)" stop-opacity="0.25"/><stop offset="0.6" stop-color="rgb(72,149,239)" stop-opacity="0.06"/><stop offset="1" stop-color="rgb(72,149,239)" stop-opacity="0"/>
-          </linearGradient>
-          <filter id="line-shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="rgb(72,149,239)" flood-opacity="0.3"/></filter>
-          <filter id="symbol-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="rgb(103,232,249)" flood-opacity="0.5"/></filter>
-          <filter id="label-shadow" x="-20%" y="-50%" width="140%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/></filter>
-        </defs>
-        {{ range .ticks }}<line x1="{{ $.chart.left }}" x2="{{ $.chart.right }}" y1="{{ .y }}" y2="{{ .y }}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="5 5"/>
-        <text class="number" x="{{ $.chart.label_x }}" y="{{ .y }}" text-anchor="end" dominant-baseline="middle" font-size="13" fill="rgba(255,255,255,0.45)">{{ .label }}</text>{{ end }}
-        <line x1="{{ .left }}" x2="{{ .right }}" y1="{{ .bottom }}" y2="{{ .bottom }}" stroke="rgba(255,255,255,0.12)"/>
-        {{ range .points }}<line x1="{{ .x }}" x2="{{ .x }}" y1="{{ $.chart.bottom }}" y2="{{ $.chart.top }}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="4 4"/>
-        <text x="{{ .x }}" y="{{ $.chart.mark_y }}" text-anchor="middle" dominant-baseline="hanging" font-size="12" fill="rgba(255,255,255,0.3)">{{ .mark }}</text>{{ end }}
-        <text x="{{ .x_name_x }}" y="{{ .x_name_y }}" text-anchor="middle" dominant-baseline="hanging" font-size="13" fill="rgba(255,255,255,0.5)">排名百分比</text>
-        <text x="{{ .y_name_x }}" y="{{ .y_name_y }}" text-anchor="middle" font-size="13" fill="rgba(255,255,255,0.5)">伤害</text>
-        <path d="{{ .area }}" fill="url(#area-color)"/>
-        <path d="{{ .line }}" fill="none" stroke="url(#line-color)" stroke-width="3" filter="url(#line-shadow)"/>
-        {{ range .points }}<circle cx="{{ .x }}" cy="{{ .y }}" r="5" fill="#67e8f9" stroke="#fff" stroke-width="2" filter="url(#symbol-shadow)"/>{{ end }}
-        {{ range .points }}<text class="number" x="{{ .label_x }}" y="{{ .label_y }}" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff" filter="url(#label-shadow)">{{ .value }}</text>{{ end }}
-      </svg>
-      {{ end }}
+<body class="elem-{{ .elem }}">
+<div class="container elem-bg">
+<div class="profile-cont">
+  <div class="dmg-cont dmg-list cont">
+    <div class="cont-title">{{ .title }}</div>
+    <div class="echarts-artis " style="display: table; width: 100%; border-collapse: separate;">
+      <div style="display: table-row;">
+        {{ range .charts }}
+        <div style="display: table-cell; width: 50%; position: relative;  box-shadow: 0 0 1px 0 #fff;">
+          <div class="damage-rank">
+            {{ if .line }}
+            <div class="chart-wrapper" style="transform: scale(0.38); transform-origin: -1% -13%;">
+              <svg class="rank-chart" xmlns="http://www.w3.org/2000/svg" width="{{ .width }}" height="{{ .height }}" viewBox="0 0 {{ .width }} {{ .height }}">
+                <defs><linearGradient id="{{ .id }}" x1="0" y1="0" x2="1" y2="0">{{ range .stops }}<stop offset="{{ .offset }}" stop-color="{{ .color }}" stop-opacity="{{ .opacity }}"/>{{ end }}</linearGradient></defs>
+                <path d="{{ .area }}" fill="url(#{{ .id }})" fill-opacity="0.7"/>
+                <path d="{{ .line }}" fill="none" stroke="#33CCCC" stroke-width="2"/>
+                {{ range .x_ticks }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="middle" dominant-baseline="hanging" font-size="22" font-weight="bold" fill="#ffffff">{{ .label }}</text>{{ end }}
+                {{ range .y_ticks }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="end" dominant-baseline="middle" font-size="22" font-weight="bold" fill="#ffffff">{{ .label }}</text>{{ end }}
+                {{ with .x_name }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="start" dominant-baseline="middle" font-size="18" fill="#ffffff">%</text>{{ end }}
+                {{ with .y_name }}<text x="{{ .x }}" y="{{ .y }}" text-anchor="middle" dominant-baseline="text-after-edge" font-size="18" fill="#ffffff">{{ .text }}</text>{{ end }}
+              </svg>
+            </div>
+            {{ else }}
+            <div style="height: 145px; position: relative;"><div class="no-data">暂无数据</div></div>
+            {{ end }}
+          </div>
+        </div>
+        {{ end }}
+      </div>
+      <div style="display: table-row;">
+        <div style="display: table-cell;"><div class="damage-type-label">伤害排名</div></div>
+        <div style="display: table-cell;"><div class="damage-type-label">圣遗物排名</div></div>
+      </div>
+      <div style="display: table-row;">
+        {{ range .totals }}<div style="display: table-cell;"><div class="damage-type-label">{{ . }}</div></div>{{ end }}
+      </div>
     </div>
-  </div>
-  <div class="stats-footer">
-    {{ range .cards }}<div class="stat-card{{ if .top }} top-tier{{ end }}"><div class="percent-label">TOP {{ .label }}</div><div class="score-value">{{ .value }}</div></div>{{ end }}
   </div>
 </div>
 {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}

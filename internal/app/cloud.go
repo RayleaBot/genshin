@@ -66,39 +66,29 @@ type CloudResult struct {
 	View     *View         `json:"view,omitempty"`
 	Ranking  *CloudRanking `json:"ranking,omitempty"`
 	Panels   []CloudPanel  `json:"panels,omitempty"`
-	// Stats are a distribution's scores at ark's fixed ranking percentiles.
-	Stats   *CloudStats `json:"stats,omitempty"`
-	queryID string
+	queryID  string
 }
 
 // cloudPercentiles are the ranking percentiles of ark's rank/specific
 // scores, as ark-plugin labels them.
 var cloudPercentiles = []int{1, 5, 10, 20, 30, 50, 70, 90, 95, 99}
 
-// CloudStats is a character's damage distribution: the calculation's name,
-// the UIDs counted and the score at each of cloudPercentiles.
-type CloudStats struct {
-	Title  string    `json:"title"`
-	Total  string    `json:"total"`
-	Scores []float64 `json:"scores"`
-}
-
-// cloudStats reads a rank/specific answer that gives one score per ranking
-// percentile.
-func cloudStats(data map[string]any) *CloudStats {
+// cloudScores reads a rank/specific distribution that gives one score per
+// ranking percentile.
+func cloudScores(data map[string]any) []float64 {
 	values, ok := data["scores"].([]any)
 	if !ok || len(values) != len(cloudPercentiles) {
 		return nil
 	}
-	stats := &CloudStats{Title: plainGameText(asText(data["name"])), Total: cloudNumber(data["total"]), Scores: []float64{}}
+	scores := []float64{}
 	for _, value := range values {
 		score, err := strconv.ParseFloat(cloudNumber(value), 64)
 		if err != nil || math.IsNaN(score) || math.IsInf(score, 0) {
 			return nil
 		}
-		stats.Scores = append(stats.Scores, score)
+		scores = append(scores, score)
 	}
-	return stats
+	return scores
 }
 
 type CloudClient struct {
@@ -475,11 +465,7 @@ func projectCloud(game Game, input CloudInput, decoded any) (CloudResult, error)
 		return cloudPanelResult(game, input, result)
 	}
 	view, err := cloudView(game, input, result)
-	out := CloudResult{View: &view}
-	if input.Mode == "distribution" {
-		out.Stats = cloudStats(asObject(result["data"]))
-	}
-	return out, err
+	return CloudResult{View: &view}, err
 }
 
 // cloudRetcode turns ark's refusals into errors.
@@ -566,8 +552,8 @@ func cloudView(game Game, input CloudInput, result map[string]any) (View, error)
 		}
 		scores := data["scores"]
 		rows := []Row{}
-		if stats := cloudStats(data); stats != nil {
-			for i, score := range stats.Scores {
+		if percentiles := cloudScores(data); percentiles != nil {
+			for i, score := range percentiles {
 				rows = append(rows, Row{Label: "TOP " + strconv.Itoa(cloudPercentiles[i]) + "%", Value: strconv.FormatFloat(score, 'f', -1, 64)})
 			}
 			scores = nil

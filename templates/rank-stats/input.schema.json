@@ -1,36 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": [
-    "character",
-    "title",
-    "total",
-    "time",
-    "chart",
-    "cards"
-  ],
+  "required": ["elem", "title", "charts", "totals"],
   "properties": {
-    "character": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string"
-    },
-    "total": {
-      "type": "string"
-    },
-    "time": {
-      "type": "string"
-    },
-    "chart": {
-      "type": "object"
-    },
-    "cards": {
-      "type": "array"
-    },
-    "render_footer": {
-      "type": "string"
-    }
+    "elem": { "type": "string" },
+    "title": { "type": "string" },
+    "charts": { "type": "array" },
+    "totals": { "type": "array" },
+    "render_footer": { "type": "string" }
   },
   "additionalProperties": false
 }

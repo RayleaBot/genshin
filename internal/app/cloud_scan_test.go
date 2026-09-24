@@ -46,13 +46,16 @@ func TestReforgeMatchesKeptPieceBySubstats(t *testing.T) {
 	}
 }
 
-func TestDistributionKeepsArkPercentileScores(t *testing.T) {
-	data := cloudObject(t, `{"retcode":100,"data":{"name":"重击伤害","total":1234,"scores":[98000,90000,85000.5,80000,76000,70000,62000,50000,40000,30000]}}`)
+// The management page lists each distribution ark answers with by ark's
+// ranking percentiles.
+func TestDistributionListsArkPercentileScores(t *testing.T) {
+	data := cloudList(t, `[{"retcode":100,"data":{"scores":["268.70","255.60","248.70","240.40","233.90","223.00","210.80","187.10","170.00","104.90"],"total":60184,"top1":"294.00"}},
+		{"retcode":100,"data":{"scores":["68249.76","56693.54","52188.35","48193.57","45706.58","41279.80","35789.10","23696.87","15476.92","4425.55"],"total":60391,"top1":"86620.75"}}]`)
 	result, err := projectCloud(testGame(t), CloudInput{Mode: "distribution", CharacterID: "10000046"}, data)
-	if err != nil || result.Stats == nil || result.Stats.Title != "重击伤害" || result.Stats.Total != "1234" || len(result.Stats.Scores) != 10 || result.Stats.Scores[2] != 85000.5 {
-		t.Fatal(result.Stats, err)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：98000") || !strings.Contains(text, "TOP 99%：30000") {
+	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：268.7") || !strings.Contains(text, "TOP 99%：4425.55") || !strings.Contains(text, "收录总量：60391") {
 		t.Fatal(text)
 	}
 }
