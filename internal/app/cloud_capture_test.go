@@ -2,7 +2,9 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -10,21 +12,64 @@ import (
 	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
-func TestOfficialCloudRollRestorationAndPercentAliases(t *testing.T) {
-	genshin := testGame(t)
-	rolls, err := cloudRolls(genshin, 5, PanelStat{Key: "cpct", Value: "7.8%", Times: 1})
-	if err != nil || len(rolls) != 2 {
-		t.Fatal(rolls, err)
+// miao's getArtifactAttrIdCombination takes, of every sequence of times+1
+// rolls in table order, the first closest to the value; it never gives up.
+func TestCloudRollsFollowMiao(t *testing.T) {
+	d := *testGame(t).Data.CloudGear
+	for _, c := range []struct {
+		rarity string
+		times  int
+		stat   PanelStat
+		want   []string
+	}{
+		{"5", 1, PanelStat{Key: "cpct", Value: "7.8%"}, []string{"501204", "501204"}},
+		{"5", 0, PanelStat{Key: "atkPlus", Value: "16"}, []string{"501052"}},
+		{"4", 2, PanelStat{Key: "hp", Value: "11.2%"}, []string{"401032", "401032", "401032"}},
+		// The first of the sequences summing alike wins.
+		{"5", 1, PanelStat{Key: "mastery", Value: "37"}, []string{"501241", "501243"}},
+		{"5", 1, PanelStat{Key: "cdmg", Value: "13.2%"}, []string{"501221", "501224"}},
+		// Values the old fixed tolerance could not place: a shown value
+		// below the rolls, and one above what the count allows.
+		{"5", 0, PanelStat{Key: "cpct", Value: "3.8%"}, []string{"501204"}},
+		{"5", 1, PanelStat{Key: "cpct", Value: "10.5%"}, []string{"501204", "501204"}},
+		// parseFloat reads the number a value starts with; a value it cannot
+		// read, or a substat the table lacks, restores no rolls.
+		{"5", 0, PanelStat{Key: "hpPlus", Value: "1,016"}, []string{"501021"}},
+		{"5", 0, PanelStat{Key: "cpct", Value: ""}, []string{}},
+		{"5", 0, PanelStat{Key: "heal", Value: "5.4%"}, []string{}},
+		// Without a count, as for a panel read back from player data, the
+		// count whose rolls come closest wins.
+		{"5", -1, PanelStat{Key: "hpPlus", Value: "478.010009765625"}, []string{"501021", "501023"}},
+	} {
+		if got := cloudRolls(d, c.rarity, c.times, c.stat); !slices.Equal(got, c.want) {
+			t.Errorf("cloudRolls(%s, %d, %+v) = %v, want %v", c.rarity, c.times, c.stat, got, c.want)
+		}
 	}
-	total := 0.0
-	for _, v := range rolls {
-		total += genshin.Data.CloudGear.AttrIDMap[asText(v)].Value * 100
+}
+
+// A substat the old fixed tolerance could not place rejected the whole
+// character, so the rank request was never sent; miao writes the closest
+// rolls.
+func TestOfficialPanelWritesSubstatsTheOldToleranceRejected(t *testing.T) {
+	result, err := AccountsClient{Game: "genshin", Caller: &ocrCaller{}}.Execute(t.Context(), Selection{"account", "role"}, "genshin.character", map[string]any{"character_ids": []any{"10000046"}})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if math.Abs(total-7.78) > 0.001 {
-		t.Fatal(total)
+	panel := NormalizePanels(result, Catalog{})[0]
+	panel.Equipment = []PanelEquipment{{Name: "魔女的炎之花", SetName: "炽烈的炎之魔女", Slot: 1, Level: 20, Rarity: "5", Complete: true,
+		Main: []PanelStat{{ID: "2", Key: "hpPlus", Value: "4780"}},
+		Sub:  []PanelStat{{ID: "20", Key: "cpct", Value: "3.8%"}, {ID: "22", Key: "cdmg", Value: "10.5%", Times: 0}, {ID: "5", Key: "atkPlus", Value: "16", Times: 1}}}}
+	_, raw, err := panelCloudAvatar(t.Context(), testGame(t), panel, miaoSource(panel))
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err = cloudRolls(genshin, 5, PanelStat{Key: "cpct", Value: "1000%", Times: 1}); err == nil {
-		t.Fatal("unrepresentable stat exported")
+	var avatar map[string]any
+	if err = json.Unmarshal(raw, &avatar); err != nil {
+		t.Fatal(err)
+	}
+	flower := asObject(asObject(avatar["artis"])["1"])
+	if got, want := fmt.Sprint(flower["attrIds"]), "[501204 501224 501051 501051]"; got != want || avatar["_source"] != "mysPanel" {
+		t.Fatalf("flower = %v under %v, want attrIds %s under mysPanel", flower, avatar["_source"], want)
 	}
 }
 func TestOfficialCloudCaptureKeepsOriginalTalentAndWeaponIdentity(t *testing.T) {

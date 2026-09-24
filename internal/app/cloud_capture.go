@@ -5,85 +5,91 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/RayleaBot/plugin-genshin/internal/reference"
 )
 
+// miaoFlatAttrs are MysPanelMappings' fixedAttrNames, the substats miao
+// reads as flat values; it reads the others as percents.
+var miaoFlatAttrs = []string{"hpPlus", "defPlus", "mastery", "atkPlus"}
+
 // A panel keeps its substats' shown or summed values and, when its source
-// gives it, how often each was upgraded, not the rolls themselves. Restore
-// the closest rolls in the pinned tables, as miao's MysPanelData does for the
-// official panel.
-func cloudRolls(g Game, star int, stat PanelStat) ([]any, error) {
-	d := *g.Data.CloudGear
-	key := stat.Key
-	value, ok := buildStatNumber(stat.Value)
-	if !ok {
-		return nil, gameError("cloud_invalid", "官方装备词条数值不可还原。")
+// gives it, how often each was upgraded, not the rolls themselves.
+// cloudRolls restores them as miao's MysPanelData does for the official
+// panel (getArtifactAttrIdCombination): times is the upgrade count, so the
+// substat rolled times+1 times, and of every sequence of that many rolls from
+// the rarity's table values of the substat, in table order, the first whose
+// sum lies closest to the value wins. The value is read with JavaScript's
+// parseFloat, a percent without its last character and times 0.01, as the
+// table keeps percents as fractions. Like miao it never gives up on a
+// character: only a substat the table lacks, or a value parseFloat cannot
+// read, restores no rolls. A times below 0 marks a count the panel does not
+// keep, as a panel read back from player data keeps only the sums: every
+// count an artifact allows is tried then, the closest sum winning and the
+// fewer rolls on a tie.
+func cloudRolls(d cloudGearData, rarity string, times int, stat PanelStat) []string {
+	var target float64
+	if slices.Contains(miaoFlatAttrs, stat.Key) {
+		target = jsParseFloat(stat.Value)
+	} else {
+		value := []rune(stat.Value)
+		target = jsParseFloat(string(value[:max(0, len(value)-1)])) * 0.01
 	}
-	tolerance := 0.051
-	if !strings.HasSuffix(strings.TrimSpace(stat.Value), "%") {
-		tolerance = 0.51
-	}
-	if key == "speed" && !strings.Contains(stat.Value, ".") {
-		tolerance = 0.999
-	}
-	// Times is the official panel's upgrade count, or the showcase's rolls
-	// after the first. A panel read back from player data keeps no count and
-	// reads 0 as well; the values of one roll lie apart from those of more,
-	// so every count is tried then.
-	counts := []int{1, 2, 3, 4, 5, 6}
-	if stat.Times > 0 && stat.Times < 6 {
-		counts = []int{stat.Times + 1}
-	}
-	best := math.Inf(1)
-	var found []any
-	type roll struct {
-		id    string
-		value float64
-	}
-	options := []roll{}
+	ids := []string{}
 	for id, attr := range d.AttrIDMap {
-		if strings.HasPrefix(id, strconv.Itoa(star)) && attr.Key == key {
-			v := attr.Value
-			if d.AttrMap[key].Format == "pct" {
-				v *= 100
-			}
-			options = append(options, roll{id, v})
+		if rarity != "" && strings.HasPrefix(id, rarity) && attr.Key == stat.Key {
+			ids = append(ids, id)
 		}
 	}
-	slices.SortFunc(options, func(a, b roll) int { return strings.Compare(a.id, b.id) })
-	if len(options) > 8 {
-		return nil, gameError("cloud_invalid", "固定词条档位数量异常。")
+	// The table's keys are integers, which JavaScript lists in ascending
+	// order.
+	slices.SortFunc(ids, func(a, b string) int { return cmp.Or(len(a)-len(b), strings.Compare(a, b)) })
+	// An artifact rolls a substat at most six times: once when it drops and
+	// at most five upgrades.
+	counts := []int{min(times, 5) + 1}
+	if times < 0 {
+		counts = []int{1, 2, 3, 4, 5, 6}
 	}
+	best, found := 1e6, []string{}
 	for _, n := range counts {
-		chosen := make([]any, 0, n)
-		var search func(int, int, float64)
-		search = func(left, start int, total float64) {
-			if left == 0 {
-				diff := math.Abs(total - value)
-				if diff < best {
-					best = diff
-					found = append([]any(nil), chosen...)
+		chosen := make([]string, n)
+		var search func(int, float64)
+		search = func(index int, total float64) {
+			if index == n {
+				// A value parseFloat cannot read is NaN, closer to nothing.
+				if diff := math.Abs(target - total); diff < best {
+					best, found = diff, slices.Clone(chosen)
 				}
 				return
 			}
-			for i := start; i < len(options); i++ {
-				chosen = append(chosen, options[i].id)
-				search(left-1, i, total+options[i].value)
-				chosen = chosen[:len(chosen)-1]
+			for _, id := range ids {
+				chosen[index] = id
+				search(index+1, total+d.AttrIDMap[id].Value)
 			}
 		}
-		search(n, 0, 0)
+		search(0, 0)
 	}
+	return found
+}
 
-	if len(found) == 0 || best > tolerance {
-		return nil, gameError("cloud_invalid", "官方显示值与固定词条表无法合理对应，未导出此角色。")
+// jsFloatPrefix is the longest start of a text JavaScript's parseFloat reads.
+var jsFloatPrefix = regexp.MustCompile(`^[+-]?(Infinity|(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?)`)
+
+// jsParseFloat is JavaScript's parseFloat: the number the text starts with
+// after leading white space, NaN when it starts with none.
+func jsParseFloat(text string) float64 {
+	match := jsFloatPrefix.FindString(strings.TrimLeftFunc(text, func(r rune) bool { return unicode.IsSpace(r) || r == 0xFEFF }))
+	if match == "" {
+		return math.NaN()
 	}
-	return found, nil
+	value, _ := strconv.ParseFloat(strings.Replace(match, "Infinity", "Inf", 1), 64)
+	return value
 }
 func mapCloudStat(key string) string {
 	if value := map[string]string{"physical": "phy", "lightning": "elec"}[key]; value != "" {
@@ -94,7 +100,10 @@ func mapCloudStat(key string) string {
 
 var gsCloudMain = map[int]map[string]int{1: {"hpPlus": 14001}, 2: {"atkPlus": 12001}, 3: {"hp": 10002, "atk": 10004, "def": 10006, "recharge": 10007, "mastery": 10008}, 4: {"hp": 15002, "atk": 15004, "def": 15006, "mastery": 15007, "phy": 15015, "pyro": 15008, "electro": 15009, "hydro": 15011, "dendro": 15014, "anemo": 15012, "geo": 15013, "cryo": 15010}, 5: {"hp": 13002, "atk": 13004, "def": 13006, "cpct": 13007, "cdmg": 13008, "heal": 13009, "mastery": 13010}}
 
-func panelCloudGear(g Game, gear PanelEquipment) (map[string]any, error) {
+// panelCloudGear writes an artifact as miao keeps it in player data. The
+// official panel and the showcase count each substat's upgrades, 0 for one
+// roll; the other sources keep a count only above 0.
+func panelCloudGear(g Game, gear PanelEquipment, source string) (map[string]any, error) {
 	if !gear.Complete || len(gear.Main) != 1 {
 		return nil, gameError("cloud_invalid", "官方装备资料不完整，无法导出。")
 	}
@@ -102,6 +111,7 @@ func panelCloudGear(g Game, gear PanelEquipment) (map[string]any, error) {
 	if err != nil || star < 1 || star > 5 {
 		return nil, gameError("cloud_invalid", "官方装备品质无效。")
 	}
+	counted := source == "mihoyo" || source == "enka"
 	d := *g.Data.CloudGear
 	itemKey := gear.Name
 	if _, ok := d.Items[itemKey]; !ok {
@@ -127,11 +137,13 @@ func panelCloudGear(g Game, gear PanelEquipment) (map[string]any, error) {
 
 	attrs := []any{}
 	for _, stat := range gear.Sub {
-		rolls, err := cloudRolls(g, star, stat)
-		if err != nil {
-			return nil, err
+		times := stat.Times
+		if times == 0 && !counted {
+			times = -1
 		}
-		attrs = append(attrs, rolls...)
+		for _, id := range cloudRolls(d, gear.Rarity, times, stat) {
+			attrs = append(attrs, id)
+		}
 	}
 	out["attrIds"] = attrs
 	return out, nil
@@ -232,7 +244,7 @@ func panelCloudAvatar(ctx context.Context, g Game, panel CharacterPanel, source 
 		avatar["weapon"] = weapon
 	}
 	for _, gear := range panel.Equipment {
-		converted, err := panelCloudGear(g, gear)
+		converted, err := panelCloudGear(g, gear, panel.Source)
 		if err != nil {
 			return "", nil, err
 		}
