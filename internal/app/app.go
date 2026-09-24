@@ -803,18 +803,13 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 	uid := ""
 	switch operation.Input {
 	case "period":
-		// Without a period, as in "深渊12层100000001", the UID comes first.
-		if len(args) > 0 && !uidPattern.MatchString(args[0]) {
-			// Upstream names the period in words, as in "上期深渊".
-			if word, ok := map[string]string{"本期": "1", "上期": "2", "往期": "2"}[args[0]]; ok {
-				args = append([]string{word}, args[1:]...)
+		// Upstream names the period only in words, as in "上期深渊", which
+		// the trigger's period group leads the arguments with.
+		if len(args) > 0 {
+			if period, ok := map[string]int{"本期": 1, "上期": 2, "往期": 2}[args[0]]; ok {
+				input["schedule_type"] = period
+				args = args[1:]
 			}
-			period, err := strconv.Atoi(args[0])
-			if err != nil || period < 1 || period > 2 {
-				return nil, "", gameError("input_invalid", "期数使用 1 或 2。")
-			}
-			input["schedule_type"] = period
-			args = args[1:]
 		}
 	case "month":
 		if len(args) > 0 && !uidPattern.MatchString(args[0]) {
@@ -841,6 +836,11 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 	}
 	if len(args) > 0 {
 		uid = args[0]
+	}
+	// Miao's and Yunzai's abyss rules end in [ |0-9]*, and only a UID among
+	// those digits names whose record to read; others leave the current UID.
+	if (operation.Input == "period" || operation.Name == a.Game.ID+".abyss_summary") && !uidPattern.MatchString(uid) {
+		uid = ""
 	}
 	return input, uid, nil
 }

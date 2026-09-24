@@ -43,23 +43,37 @@ func TestExtendedCommandInputs(t *testing.T) {
 	app := &App{}
 	// A month outside the last three is refused, as upstream.
 	now := int(time.Now().In(time.FixedZone("UTC+8", 28800)).Month())
-	for _, tc := range []struct{ mode, valid, invalid, key string }{{"month", strconv.Itoa(now), strconv.Itoa((now+5)%12 + 1), "month"}, {"period", "上期", "3", "schedule_type"}} {
+	for _, tc := range []struct{ mode, valid, key string }{{"month", strconv.Itoa(now), "month"}, {"period", "上期", "schedule_type"}} {
 		input, uid, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.valid, "100000001"}, nil)
 		if err != nil || uid != "100000001" || input[tc.key] == nil {
 			t.Fatal("valid selector failed")
-		}
-		if _, _, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.invalid}, nil); err == nil {
-			t.Fatal("invalid selector accepted")
 		}
 		// A UID alone, as in 原石100000001 or 深渊12层100000001, is the UID.
 		if input, uid, err := app.commandInput(Operation{Input: tc.mode}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input[tc.key] != nil {
 			t.Errorf("%s with a UID alone = %v %q %v", tc.mode, input, uid, err)
 		}
 	}
+	if _, _, err := app.commandInput(Operation{Input: "month"}, []string{strconv.Itoa((now+5)%12 + 1)}, nil); err == nil {
+		t.Fatal("invalid month accepted")
+	}
 	// 往期 is the last period, and 本期 as in 深渊本期 the current one.
 	for word, period := range map[string]int{"往期": 2, "本期": 1} {
 		if input, _, err := app.commandInput(Operation{Input: "period"}, []string{word}, nil); err != nil || input["schedule_type"] != period {
 			t.Errorf("%s = %v, %v", word, input["schedule_type"], err)
+		}
+	}
+	// A number after an abyss command names no period; as upstream, one that
+	// is no UID leaves the current UID.
+	if input, uid, err := app.commandInput(Operation{Input: "period"}, []string{"2"}, nil); err != nil || uid != "" || input["schedule_type"] != nil {
+		t.Errorf("深渊12层 2 = %v %q %v", input, uid, err)
+	}
+	if input, uid, err := app.commandInput(Operation{Input: "period"}, []string{"上期", "2"}, nil); err != nil || uid != "" || input["schedule_type"] != 2 {
+		t.Errorf("上期深渊 2 = %v %q %v", input, uid, err)
+	}
+	summary := Operation{Name: ".abyss_summary", Input: "none"}
+	for arg, want := range map[string]string{"2": "", "100000001": "100000001"} {
+		if _, uid, err := app.commandInput(summary, []string{arg}, nil); err != nil || uid != want {
+			t.Errorf("深渊 %s = %q %v", arg, uid, err)
 		}
 	}
 }
