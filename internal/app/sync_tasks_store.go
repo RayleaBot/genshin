@@ -78,12 +78,12 @@ func (s *SyncTaskStore) due(task *SyncTask, now int64) (bool, error) {
 	return true, nil
 }
 
-// finish writes how a task's round, begun at now, ended: run is the round
-// as the page listed it, err its failure. A completed round waits for the
-// next day and marks its notification before it is sent, so a restart does
-// not send it again; notify is whether to send it.
+// finish writes at now how a task's round ended: run is the round as the
+// page listed it, err its failure. A completed round waits for the day after
+// the one it began on and marks its notification before it is sent, so a
+// restart does not send it again; notify is whether to send it.
 func (s *SyncTaskStore) finish(task *SyncTask, run BackgroundSync, err error, now int64) (notify bool, _ error) {
-	_, _, nextDay := syncTaskTime(now, task.Hour)
+	_, _, nextDay := syncTaskTime(run.StartedMS, task.Hour)
 	switch {
 	case run.State == "canceled":
 		task.State, task.LastCode, task.NextCheckMS = "waiting", run.LastCode, nextDay
