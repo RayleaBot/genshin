@@ -35,10 +35,6 @@ const (
 // errChatTaskTimeout is the failure of a task that ran out of time.
 var errChatTaskTimeout = gameError("task_timeout", "后台读取超时，未能完成。")
 
-// errStepUnfinished is a trigger's step whose request its event's end cut
-// off; the next trigger does the step again.
-var errStepUnfinished = gameError("task_unfinished", "本次触发未能在时限内完成，下次触发时重试。")
-
 // taskHost is what a chat task asks of the host: an event's actions.
 type taskHost interface {
 	ServiceCaller

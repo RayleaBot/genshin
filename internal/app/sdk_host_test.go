@@ -37,6 +37,11 @@ type sdkHost struct {
 	// busy refuses event.detach as the host does while the plugin holds its
 	// limit of background events.
 	busy bool
+	// deadline and background are how long an event, and an event moved to
+	// the background, may take: the host's defaults when zero. due is when
+	// the last event sent is due.
+	deadline, background time.Duration
+	due                  time.Time
 }
 
 // hostAction is an action the plugin asked for during one event.
@@ -179,7 +184,11 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 			return nil, "platform.rate_limited"
 		}
 		// The host's default background deadline is 900 seconds.
-		return map[string]any{"deadline_at_ms": time.Now().Add(15 * time.Minute).UnixMilli()}, ""
+		background := h.background
+		if background == 0 {
+			background = 15 * time.Minute
+		}
+		return map[string]any{"deadline_at_ms": time.Now().Add(background).UnixMilli()}, ""
 	case "render.image":
 		return nil, "platform.render_unavailable"
 	case "logger.write":
@@ -203,7 +212,7 @@ func (h *sdkHost) chat(target map[string]any, role, text, command string, args .
 	if command != "" {
 		event["payload"] = map[string]any{"command": command, "args": args}
 	}
-	return h.exchange(id, eventFrame(id, event))
+	return h.exchange(id, h.frame(id, event))
 }
 
 // message sends a private chat message of user "u".
@@ -223,7 +232,7 @@ func (h *sdkHost) manage(action string, input map[string]any) (map[string]any, [
 	h.t.Helper()
 	h.next++
 	id := fmt.Sprintf("manage-%d", h.next)
-	return h.exchange(id, eventFrame(id, map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}))
+	return h.exchange(id, h.frame(id, map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}))
 }
 
 // trigger runs a job the plugin created as the host's scheduler does: the
@@ -245,13 +254,17 @@ func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	if action, ok := job.Payload["action"].(string); ok && action != "" {
 		payload["action"] = action
 	}
-	return h.exchange(id, eventFrame(id, map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}))
+	return h.exchange(id, h.frame(id, map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}))
 }
 
-// eventFrame is the host's frame of event id, due by the host's default
-// event deadline of 60 seconds.
-func eventFrame(id string, event map[string]any) map[string]any {
-	return map[string]any{"type": "event", "request_id": id, "deadline_at_ms": time.Now().Add(time.Minute).UnixMilli(), "event": event}
+// frame is the host's frame of event id, due by the event deadline.
+func (h *sdkHost) frame(id string, event map[string]any) map[string]any {
+	deadline := h.deadline
+	if deadline == 0 {
+		deadline = time.Minute
+	}
+	h.due = time.Now().Add(deadline)
+	return map[string]any{"type": "event", "request_id": id, "deadline_at_ms": h.due.UnixMilli(), "event": event}
 }
 
 // triggerUntilDone runs the job each minute after start, as the host's

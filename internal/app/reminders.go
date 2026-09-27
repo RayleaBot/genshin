@@ -287,8 +287,6 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
 	start := a.now()
-	ctx, cancel := a.eventWork(ctx, start)
-	defer cancel()
 	ref := event.Event.TaskID()
 	query := func(task Reminder) (QueryResult, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
@@ -337,8 +335,8 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 	err := a.Reminders.Tick(ref, start.UnixMilli(), func(task Reminder) (QueryResult, error) {
 		result, err := query(task)
 		if err != nil && ctx.Err() != nil {
-			// The event ended during the request; the next trigger asks
-			// again.
+			// The event reached its deadline during the request; the next
+			// trigger asks again.
 			return result, errStepUnfinished
 		}
 		return result, err

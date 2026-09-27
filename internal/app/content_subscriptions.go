@@ -188,6 +188,12 @@ func (a *App) pushGroup(ctx context.Context, event *rayleabot.EventContext, sub 
 		}
 	}
 	if post, ok := postToPush(posts, *sub, now); ok {
+		// Drawing and sending the post may outlive the event, which moves to
+		// the background first; a post the host will not move there is left
+		// to the next trigger.
+		if err := detach(ctx, event, nil); err != nil {
+			return errStepUnfinished
+		}
 		if sub.Sent == nil {
 			sub.Sent = map[string]int64{}
 		}
@@ -198,8 +204,8 @@ func (a *App) pushGroup(ctx context.Context, event *rayleabot.EventContext, sub 
 		}
 		if err := a.pushPost(ctx, event, post.id, newsGameName+name+"推送："+post.subject, send); err != nil {
 			if ctx.Err() != nil {
-				// The event ended before the post was sent; the next
-				// trigger pushes it.
+				// The event reached its deadline before the post was sent;
+				// the next trigger pushes it.
 				delete(sub.Sent, post.id)
 			}
 			return err
@@ -212,8 +218,8 @@ func (a *App) pushGroup(ctx context.Context, event *rayleabot.EventContext, sub 
 		raw, err := a.pushLists.get("announcements", func() (any, error) { return a.Content.announcements(ctx) })
 		if err != nil {
 			if ctx.Err() != nil {
-				// The event ended before the activities were read; the
-				// next trigger warns.
+				// The event reached its deadline before the activities were
+				// read; the next trigger warns.
 				sub.WarnedOn = warned
 			}
 			return err
@@ -407,8 +413,6 @@ func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.Event
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	ctx, cancel := a.eventWork(ctx, a.now())
-	defer cancel()
 	ref := event.Event.TaskID()
 	items, err := a.Subscriptions.List()
 	if err != nil {

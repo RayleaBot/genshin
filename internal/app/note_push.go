@@ -198,8 +198,6 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 // of the sender's groups whose threshold it reached.
 func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) error {
 	now := a.now()
-	ctx, cancel := a.eventWork(ctx, now)
-	defer cancel()
 	ref := event.Event.TaskID()
 	task, ok, err := a.Reminders.claim(ref)
 	if errors.Is(err, errTaskMissing) {
@@ -228,7 +226,8 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	task.LastCheckedMS = now.UnixMilli()
 	if err = client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}, &result); err != nil {
 		if ctx.Err() != nil {
-			// The event ended during the read; the next trigger reads again.
+			// The event reached its deadline during the read; the next
+			// trigger reads again.
 			return event.Result(map[string]any{"checked": false})
 		}
 		task.LastCode = PublicError(err).Code
@@ -248,9 +247,10 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	if !ok {
 		return a.saveNotePush(event, task)
 	}
-	// Drawing and sending the push has the rest of the event: a read that
-	// ended past the budget is left to the next trigger, which reads again.
-	if !a.now().Before(now.Add(chatTaskBudget)) {
+	// Drawing and sending the push may outlive the event, which moves to the
+	// background first; a push the host will not move there is left to the
+	// next trigger, which reads again.
+	if detach(ctx, event, nil) != nil {
 		return event.Result(map[string]any{"checked": false})
 	}
 	// The push is marked before it is sent, so a restart does not send it
