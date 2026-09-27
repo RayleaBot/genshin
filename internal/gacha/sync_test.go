@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"os"
+	"sync"
 	"testing"
+	"time"
 )
 
 func syncRecord() Record {
@@ -112,5 +114,45 @@ func TestSyncFailureCancelAndDeletionPreserveArchives(t *testing.T) {
 				t.Fatal("canceled/deleted archive resurrected")
 			}
 		})
+	}
+}
+
+// A sync reading a page holds only itself: another sync starts, and one
+// finished with is forgotten, without waiting for the page.
+func TestSyncsDoNotWaitForASyncReadingAPage(t *testing.T) {
+	store, jobs, info := testSync(t)
+	reading, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	unblock := func() { once.Do(func() { close(release) }) }
+	defer unblock()
+	stepped := make(chan error, 1)
+	go func() {
+		_, err := jobs.Step(context.Background(), store, info.Ref, 0, func(ctx context.Context, pool, end string, page int) (RemotePage, error) {
+			close(reading)
+			<-release
+			return pageOnce(ctx, pool, end, page)
+		})
+		stepped <- err
+	}()
+	<-reading
+	done := make(chan error, 1)
+	go func() {
+		other, err := jobs.Start(store, SyncChoice{AccountRef: "account", RoleRef: "other"}, "100000002", "cn_gf01", false)
+		if err == nil {
+			jobs.Forget(other.Ref)
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("a sync waited for another reading a page")
+	}
+	unblock()
+	if err := <-stepped; err != nil {
+		t.Fatal(err)
 	}
 }

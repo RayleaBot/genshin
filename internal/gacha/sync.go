@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -46,24 +47,41 @@ type syncJob struct {
 	pool    int
 	page    int
 	endID   string
-	expires time.Time
+	// expires is when the sync lapses, in Unix nanoseconds. It is read
+	// without mu, which a sync holds while it reads a page.
+	expires atomic.Int64
 }
+
+// expired is whether the sync lapsed by now.
+func (j *syncJob) expired(now time.Time) bool { return now.UnixNano() > j.expires.Load() }
+
+// extend keeps the sync for fifteen minutes from now.
+func (j *syncJob) extend(now time.Time) { j.expires.Store(now.Add(15 * time.Minute).UnixNano()) }
+
 type Syncs struct {
 	mu   sync.Mutex
 	jobs map[string]*syncJob
 }
 
+// Reset cancels every sync. The syncs leave the list first, so a sync still
+// reading a page holds up no other.
 func (s *Syncs) Reset() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, j := range s.jobs {
-		j.mu.Lock()
-		j.view.State = "canceled"
-		j.archive.Records = nil
-		j.known = nil
-		j.mu.Unlock()
-	}
+	jobs := s.jobs
 	s.jobs = nil
+	s.mu.Unlock()
+	for _, j := range jobs {
+		j.cancel()
+	}
+}
+
+// cancel drops a sync's buffer once any page it reads is merged.
+func (j *syncJob) cancel() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.view.State = "canceled"
+	j.archive.Records = nil
+	j.known = nil
 }
 
 var syncPools = []string{"100", "200", "301", "302", "400", "500"}
@@ -90,10 +108,7 @@ func (s *Syncs) Start(store *Store, choice SyncChoice, uid, region string, full 
 		s.jobs = map[string]*syncJob{}
 	}
 	for ref, job := range s.jobs {
-		job.mu.Lock()
-		expired := time.Now().After(job.expires)
-		job.mu.Unlock()
-		if expired {
+		if job.expired(time.Now()) {
 			delete(s.jobs, ref)
 		}
 	}
@@ -102,7 +117,9 @@ func (s *Syncs) Start(store *Store, choice SyncChoice, uid, region string, full 
 	}
 	ref := rand.Text()
 	view := SyncInfo{Ref: ref, State: "running", Pool: syncPools[0]}
-	s.jobs[ref] = &syncJob{view: view, choice: choice, archive: incoming, version: version, full: full, known: known, pools: syncPools, page: 1, endID: "0", expires: time.Now().Add(15 * time.Minute)}
+	job := &syncJob{view: view, choice: choice, archive: incoming, version: version, full: full, known: known, pools: syncPools, page: 1, endID: "0"}
+	job.extend(time.Now())
+	s.jobs[ref] = job
 	return view, nil
 }
 func (s *Syncs) job(ref string) (*syncJob, error) {
@@ -121,7 +138,7 @@ func (s *Syncs) Choice(ref string) (SyncChoice, error) {
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
-	if time.Now().After(job.expires) {
+	if job.expired(time.Now()) {
 		return SyncChoice{}, ErrSync
 	}
 	return job.choice, nil
@@ -134,23 +151,22 @@ func (s *Syncs) Info(ref string) (SyncInfo, error) {
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
-	if time.Now().After(job.expires) || job.view.State == "canceled" {
+	if job.expired(time.Now()) || job.view.State == "canceled" {
 		return SyncInfo{}, ErrSync
 	}
 	return job.view, nil
 }
 
-// Forget releases a task-owned buffer; interactive syncs keep their replay API.
+// Forget releases the buffer of a sync its reader has finished with;
+// syncs the management page steps keep their replay API. The sync leaves the
+// list first, so one still reading a page holds up no other.
 func (s *Syncs) Forget(ref string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if job := s.jobs[ref]; job != nil {
-		job.mu.Lock()
-		job.view.State = "canceled"
-		job.archive.Records = nil
-		job.known = nil
-		job.mu.Unlock()
-		delete(s.jobs, ref)
+	job := s.jobs[ref]
+	delete(s.jobs, ref)
+	s.mu.Unlock()
+	if job != nil {
+		job.cancel()
 	}
 }
 func (s *Syncs) Cancel(ref string) error {
@@ -174,7 +190,7 @@ func (s *Syncs) Step(ctx context.Context, store *Store, ref string, sequence int
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
-	if time.Now().After(job.expires) || job.view.State == "canceled" {
+	if job.expired(time.Now()) || job.view.State == "canceled" {
 		return SyncInfo{}, ErrSync
 	}
 	if sequence == job.view.Sequence-1 {
@@ -265,6 +281,6 @@ func (s *Syncs) Step(ctx context.Context, store *Store, ref string, sequence int
 	job.view.Sequence++
 	job.view.Pages++
 	job.view.Fetched += len(page.Records)
-	job.expires = time.Now().Add(15 * time.Minute)
+	job.extend(time.Now())
 	return job.view, nil
 }
