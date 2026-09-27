@@ -30,8 +30,11 @@ type sdkHost struct {
 	// are the task IDs scheduler.delete removed.
 	jobs    map[string]rayleabot.SchedulerCreateRequest
 	deleted []string
-	// sent are the message.send actions, not counting terminal replies.
-	sent []rayleabot.MessageSendRequest
+	// sent are the message.send actions, not counting terminal replies;
+	// sending, when set, sees each before it is answered, as a user who
+	// answers a reply at once.
+	sent    []rayleabot.MessageSendRequest
+	sending func(rayleabot.MessageSendRequest)
 	// triggers are the request IDs of scheduler triggers.
 	triggers map[string]bool
 	// busy refuses event.detach as the host does while the plugin holds its
@@ -177,7 +180,11 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 			h.t.Fatal("invalid message.send")
 		}
 		h.sent = append(h.sent, request)
-		return map[string]any{"message_id": fmt.Sprintf("sent-%d", len(h.sent)), "delivery_kind": "send"}, ""
+		id := fmt.Sprintf("sent-%d", len(h.sent))
+		if h.sending != nil {
+			h.sending(request)
+		}
+		return map[string]any{"message_id": id, "delivery_kind": "send"}, ""
 	case "event.detach":
 		if h.busy {
 			return nil, "platform.rate_limited"

@@ -409,32 +409,48 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 	if err != nil || !ok {
 		return event.Result(map[string]any{"checked": false})
 	}
-	defer a.SyncTasks.release(ref)
-	start := a.now()
-	if due, err := a.SyncTasks.due(&task, start.UnixMilli()); err != nil || !due {
-		return event.Result(map[string]any{"checked": false})
-	}
-	work, _, err := a.BackgroundSyncs.begin(ctx, BackgroundSync{Ref: ref, Role: task.Role, Owner: task.Owner, Full: task.Full, Notify: task.Notify, Daily: true}, start)
-	if err != nil {
-		return event.Result(map[string]any{"checked": false})
-	}
-	if err := detach(ctx, event, nil); err != nil {
-		a.BackgroundSyncs.drop(ref)
-		return event.Result(map[string]any{"checked": false})
-	}
-	client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
-	err = a.readAccountGacha(work, client, task.Selection, task.Role, task.Full, task.DelegationRef, ref)
-	round := a.BackgroundSyncs.finish(ref, err, a.now())
-	notify, saveErr := a.SyncTasks.finish(&task, round, err, a.now().UnixMilli())
+	round, notify, err := a.readDailyRound(ctx, event, &task)
+	// The task is released before its user is told and the event ends: the
+	// host delivers the next trigger as soon as it does.
+	a.SyncTasks.release(ref)
 	if notify && a.notifySync(ctx, event, round) != nil {
-		task.LastCode = "sync_completed.notification_failed"
-		saveErr = a.SyncTasks.save(task)
+		// The notification was marked before it was sent and is not sent
+		// again.
+		_ = a.SyncTasks.edit(ref, func(items *[]SyncTask, i int) error {
+			if i >= 0 && (*items)[i].LastNotificationMS == task.LastNotificationMS {
+				(*items)[i].LastCode = "sync_completed.notification_failed"
+			}
+			return nil
+		})
 	}
-	if saveErr != nil && !errors.Is(saveErr, errTaskChanged) {
-		failure := PublicError(saveErr)
+	if err != nil && !errors.Is(err, errTaskChanged) {
+		failure := PublicError(err)
 		return event.Fail(failure.Code, failure.Message)
 	}
-	return event.Result(map[string]any{"checked": true})
+	return event.Result(map[string]any{"checked": round.Ref != ""})
+}
+
+// readDailyRound reads a claimed daily task's round once it is due and
+// writes how it ended; round is empty when no round was read, and notify
+// tells whether its user is to be told.
+func (a *App) readDailyRound(ctx context.Context, event *rayleabot.EventContext, task *SyncTask) (round BackgroundSync, notify bool, _ error) {
+	start := a.now()
+	if due, err := a.SyncTasks.due(task, start.UnixMilli()); err != nil || !due {
+		return BackgroundSync{}, false, err
+	}
+	work, _, err := a.BackgroundSyncs.begin(ctx, BackgroundSync{Ref: task.Ref, Role: task.Role, Owner: task.Owner, Full: task.Full, Notify: task.Notify, Daily: true}, start)
+	if err != nil {
+		return BackgroundSync{}, false, nil
+	}
+	if err := detach(ctx, event, nil); err != nil {
+		a.BackgroundSyncs.drop(task.Ref)
+		return BackgroundSync{}, false, nil
+	}
+	client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
+	err = a.readAccountGacha(work, client, task.Selection, task.Role, task.Full, task.DelegationRef, task.Ref)
+	round = a.BackgroundSyncs.finish(task.Ref, err, a.now())
+	notify, err = a.SyncTasks.finish(task, round, err, a.now().UnixMilli())
+	return round, notify, err
 }
 
 // syncTaskCommand is xiaoyao's 更新抽卡记录, which hands Yunzai the account's

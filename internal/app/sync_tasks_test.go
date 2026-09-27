@@ -236,3 +236,61 @@ func TestDailyGachaSyncRefusedTheBackgroundReadsOnTheNextTrigger(t *testing.T) {
 		t.Fatalf("read %d pages, tasks %+v", len(pages.asked), tasks)
 	}
 }
+
+// A second 更新抽卡记录 sent as soon as the first answers finds the role free:
+// the round is over before its report goes out.
+func TestGachaSyncCommandFreesTheRoleBeforeItAnswers(t *testing.T) {
+	_, host, pages := syncHost(t)
+	again := false
+	host.sending = func(request rayleabot.MessageSendRequest) {
+		if !again && strings.HasPrefix(sentText(request.Message), "[角色]记录获取成功") {
+			again = true
+			if end, _ := host.message("#更新抽卡记录", "更新抽卡记录"); terminalText(end) != "" {
+				t.Errorf("the second command answered %q", terminalText(end))
+			}
+		}
+	}
+	host.message("#更新抽卡记录", "更新抽卡记录")
+	reports := 0
+	for _, sent := range host.sent {
+		if strings.Contains(sentText(sent.Message), "抽卡记录更新完成") {
+			reports++
+		}
+	}
+	// The second round reads one page of each pool: every record is known.
+	if reports != 2 || len(pages.asked) != 14 {
+		t.Fatalf("%d reports after %d pages", reports, len(pages.asked))
+	}
+}
+
+// A daily trigger right after a round tells its user finds the task free:
+// the task is released before the notification goes out.
+func TestDailyGachaSyncFreesItsTaskBeforeItTellsItsUser(t *testing.T) {
+	a := pluginApp(t)
+	start := time.Date(2026, 9, 20, 9, 0, 0, 0, time.FixedZone("UTC+8", 8*3600))
+	clock := &fakeClock{at: start}
+	a.clock = clock
+	pages := &gachaPages{t: t, clock: clock, characters: 45}
+	host := newSDKHost(t, a, nil, pages.service(&fakeAccounts{t: t}))
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 8, "notify": true, "confirm": true})
+	ref := host.job("game.sync.")
+	pages.delegation = "grant:" + ref
+	told := 0
+	host.sending = func(request rayleabot.MessageSendRequest) {
+		if told++; told == 1 {
+			// Run again at once, as 重新运行此同步 asks.
+			if err := a.SyncTasks.edit(ref, func(items *[]SyncTask, i int) error {
+				(*items)[i].State, (*items)[i].NextCheckMS = "running", 0
+				return nil
+			}); err != nil {
+				t.Error(err)
+			}
+			host.trigger(ref)
+		}
+	}
+	host.trigger(ref)
+	// The second round reads one page of each pool: every record is known.
+	if told != 2 || len(pages.asked) != 14 {
+		t.Fatalf("told %d times after %d pages", told, len(pages.asked))
+	}
+}

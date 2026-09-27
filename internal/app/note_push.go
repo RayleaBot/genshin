@@ -209,73 +209,86 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	if err != nil || !ok {
 		return event.Result(map[string]any{"checked": false})
 	}
-	defer a.Reminders.release(ref)
+	push, checked := a.checkNotePush(ctx, event, task, now)
+	// The task is released before the push goes out and the event ends: the
+	// host delivers the next trigger as soon as it does.
+	a.Reminders.release(ref)
+	if push != nil {
+		push()
+	}
+	return event.Result(map[string]any{"checked": checked})
+}
+
+// checkNotePush reads the resin of a claimed push task at now and saves what
+// it found; push, when set, draws and sends the push the task was marked
+// for.
+func (a *App) checkNotePush(ctx context.Context, event *rayleabot.EventContext, task Reminder, now time.Time) (push func(), checked bool) {
 	if !settings(event).Xiaoyao.NoteTask || !task.Enabled || now.Sub(time.UnixMilli(task.LastAttemptMS)) < notePushCooldown {
-		return event.Result(map[string]any{"checked": false})
+		return nil, false
 	}
 	if task.ExpiresAtMS <= now.UnixMilli() {
 		task.Enabled = false
 		task.LastCode = "expired"
-		return a.saveNotePush(event, task)
+		_ = a.Reminders.save(task)
+		return nil, true
 	}
 	if !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
 		return bot.ID == task.Owner.BotID && bot.SourceProtocol == task.Owner.SourceProtocol && bot.SourceAdapter == task.Owner.SourceAdapter
 	}) {
-		return event.Result(map[string]any{"checked": false})
+		return nil, false
 	}
 	client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 	var result QueryResult
 	task.LastCheckedMS = now.UnixMilli()
-	if err = client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}, &result); err != nil {
+	if err := client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}, &result); err != nil {
 		if ctx.Err() != nil {
 			// The event reached its deadline during the read; the next
 			// trigger reads again.
-			return event.Result(map[string]any{"checked": false})
+			return nil, false
 		}
 		task.LastCode = PublicError(err).Code
 		switch task.LastCode {
 		case "plugin.account_delegation_denied", "plugin.account_caller_denied", "plugin.account_not_found", "plugin.account_role_denied", "plugin.upstream_auth_invalid":
 			task.Enabled = false
 		}
-		return a.saveNotePush(event, task)
+		_ = a.Reminders.save(task)
+		return nil, true
 	}
 	current, _, ok := stamina(result.Data)
 	if !ok {
 		task.LastCode = "plugin.game_note_invalid"
-		return a.saveNotePush(event, task)
+		_ = a.Reminders.save(task)
+		return nil, true
 	}
 	task.LastCode = "checked"
 	scope, ok := a.Groups.pushGroup(task.Groups, current)
 	if !ok {
-		return a.saveNotePush(event, task)
+		_ = a.Reminders.save(task)
+		return nil, true
 	}
 	// Drawing and sending the push needs the rest of the event: a read that
 	// left too little of it is pushed by the next trigger, which reads again.
 	if time.Until(event.Deadline()) < notePushDraw {
-		return event.Result(map[string]any{"checked": false})
+		return nil, false
 	}
 	// The push is marked before it is sent, so a restart does not send it
 	// again.
 	task.LastAttemptMS = now.UnixMilli()
 	task.LastCode = "notified"
-	if err = a.Reminders.save(task); err != nil {
-		return event.Result(map[string]any{"checked": false})
+	if a.Reminders.save(task) != nil {
+		return nil, false
 	}
-	view := View{Title: a.Game.Name + "体力", Rows: []Row{}}
-	if operation, ok := a.operation(a.Game.ID + ".note"); ok {
-		view = BusinessView(a.Game, operation, result, a.Catalog)
-	}
-	view.Image = a.featureImage(ctx, client, task.Selection, a.Game.ID+".note", "体力", map[string]any{}, result)
-	page := rayleabot.Text("\n" + view.Text())
-	if image := a.renderView(ctx, event, view); image != "" {
-		page = rayleabot.Image(image)
-	}
-	_, _ = event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: scope.Protocol, SourceAdapter: scope.Adapter, TargetType: "group", TargetID: scope.GroupID,
-		Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.At(task.Owner.ActorID), rayleabot.Text("哥哥（姐姐）你的体力快满了哦~"), page}}})
-	return event.Result(map[string]any{"checked": true})
-}
-
-func (a *App) saveNotePush(event *rayleabot.EventContext, task Reminder) error {
-	_ = a.Reminders.save(task)
-	return event.Result(map[string]any{"checked": true})
+	return func() {
+		view := View{Title: a.Game.Name + "体力", Rows: []Row{}}
+		if operation, ok := a.operation(a.Game.ID + ".note"); ok {
+			view = BusinessView(a.Game, operation, result, a.Catalog)
+		}
+		view.Image = a.featureImage(ctx, client, task.Selection, a.Game.ID+".note", "体力", map[string]any{}, result)
+		page := rayleabot.Text("\n" + view.Text())
+		if image := a.renderView(ctx, event, view); image != "" {
+			page = rayleabot.Image(image)
+		}
+		_, _ = event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: scope.Protocol, SourceAdapter: scope.Adapter, TargetType: "group", TargetID: scope.GroupID,
+			Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.At(task.Owner.ActorID), rayleabot.Text("哥哥（姐姐）你的体力快满了哦~"), page}}})
+	}, true
 }
