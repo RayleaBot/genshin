@@ -184,6 +184,12 @@ func (s *Store) status(source Source) Status {
 		})
 		return status
 	}
+	// A download moves its directory in and writes its record before its job
+	// ends under the lock, and Start and Delete change them under it too, so
+	// reading them under the lock never sees a finished download without its
+	// record.
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if raw, err := os.ReadFile(s.recordPath(source.ID)); err == nil {
 		var saved record
 		if json.Unmarshal(raw, &saved) == nil {
@@ -202,8 +208,6 @@ func (s *Store) status(source Source) Status {
 			}
 		}
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	if current := s.jobs[source.ID]; current != nil {
 		status.State, status.Received = "downloading", current.received.Load()
 	}
