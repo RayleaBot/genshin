@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,8 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
 )
 
 func TestGachaLinkParsesYunzaiLinksOnly(t *testing.T) {
@@ -38,8 +35,9 @@ func TestGachaLinkParsesYunzaiLinksOnly(t *testing.T) {
 }
 
 // wishHistory serves the official wish history: 21 character event and 1
-// weapon event records for UID 100000001, found on the mainland server.
-type wishHistory struct{ retcode int }
+// weapon event records for UID 100000001, found on the mainland server, or
+// characters character event records when set.
+type wishHistory struct{ retcode, characters int }
 
 func (h wishHistory) RoundTrip(request *http.Request) (*http.Response, error) {
 	query := request.URL.Query()
@@ -53,13 +51,17 @@ func (h wishHistory) RoundTrip(request *http.Request) (*http.Response, error) {
 			records := []any{}
 			pool := query.Get("gacha_type")
 			count, base := map[string]int{"301": 21, "302": 1}[pool], map[string]int{"301": 5000, "302": 4000}[pool]
+			if pool == "301" && h.characters > 0 {
+				count = h.characters
+			}
 			first := 1
 			if end, _ := strconv.Atoi(query.Get("end_id")); end != 0 {
 				first = base - end + 1
 			}
 			size, _ := strconv.Atoi(query.Get("size"))
 			for n := first; n <= count && len(records) < size; n++ {
-				records = append(records, map[string]any{"uid": "100000001", "gacha_type": pool, "item_id": "10000046", "count": "1", "time": fmt.Sprintf("2024-01-01 00:00:%02d", 59-n), "name": "胡桃", "item_type": "角色", "rank_type": "5", "id": strconv.Itoa(base - n)})
+				at := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(1000-n) * time.Second).Format(time.DateTime)
+				records = append(records, map[string]any{"uid": "100000001", "gacha_type": pool, "item_id": "10000046", "count": "1", "time": at, "name": "胡桃", "item_type": "角色", "rank_type": "5", "id": strconv.Itoa(base - n)})
 			}
 			body["data"] = map[string]any{"list": records, "region": "cn_gf01"}
 		}
@@ -71,34 +73,13 @@ func (h wishHistory) RoundTrip(request *http.Request) (*http.Response, error) {
 	return recorder.Result(), nil
 }
 
-func TestGachaLinkFetchesTheWholeHistoryWithoutAnAccount(t *testing.T) {
+func TestGachaLinkFindsTheUIDWithoutAnAccount(t *testing.T) {
 	a := pluginApp(t)
 	a.LinkHTTP = &http.Client{Transport: wishHistory{}}
 	link, _, _ := parseGachaLink("https://webstatic.mihoyo.com/hk4e/event/e20190909gacha-v3/index.html?authkey=" + url.QueryEscape("abcdefghij") + "#/log")
 	uid, err := a.checkGachaLink(context.Background(), &link, 80)
 	if err != nil || uid != "100000001" || link.region != "cn_gf01" {
 		t.Fatal(uid, link.region, err)
-	}
-	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	job := &gachaLinkJob{link: link, uid: uid, sync: info.Ref, before: map[string]int{}}
-	result, err := a.stepGachaLink(context.Background(), job, time.Now().Add(time.Minute))
-	if err != nil || result == nil || result.Added != 22 {
-		t.Fatal(result, err)
-	}
-	archive, err := a.Gacha.Read(uid, link.region)
-	if err != nil {
-		t.Fatal(err)
-	}
-	summary := gachaLinkSummary("#", job.before, gachaPoolCounts(archive))
-	if !strings.HasPrefix(summary, "[角色]记录获取成功，更新21条\n[武器]记录获取成功，更新1条\n\n抽卡记录更新完成") {
-		t.Fatal(summary)
-	}
-	// Management steps cannot drive a link's sync.
-	if choice, err := a.Syncs.Choice(info.Ref); err == nil && !choice.Link {
-		t.Fatal("link sync lost its kind")
 	}
 }
 
@@ -126,48 +107,76 @@ func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { retu
 // wishLink is a wish history link of the mainland server.
 const wishLink = "https://webstatic.mihoyo.com/hk4e/event/e20190909gacha-v3/index.html?authkey_ver=1&region=cn_gf01&authkey=abcdefghij#/log"
 
-// A link whose history takes longer than its event, run through the SDK as
-// the host runs it: the triggers of its job fetch the rest and answer in the
-// private chat the link came from, each pool's count and then the record.
-func TestGachaLinkFinishesOnTheHostsTriggers(t *testing.T) {
+// A link whose history takes minutes to read, run through the SDK as the
+// host runs it: the event moves to the background at once and reads every
+// page in turn, then answers in the private chat the link came from as
+// Yunzai does, each pool's count and then the record, without any scheduled
+// job.
+func TestGachaLinkReadsEveryPageInItsBackgroundEvent(t *testing.T) {
 	a := pluginApp(t)
-	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
+	start := time.Unix(1_800_000_000, 0)
+	clock := &fakeClock{at: start}
 	a.clock = clock
-	// Each request takes ten seconds, so the event reads three pages after
-	// finding the UID.
+	requests := 0
+	// 205 character event records take eleven pages, 17 requests with the
+	// link's check and the other pools; each takes ten seconds.
 	a.LinkHTTP = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		requests++
 		clock.set(clock.Now().Add(10 * time.Second))
-		return wishHistory{}.RoundTrip(r)
+		return wishHistory{characters: 205}.RoundTrip(r)
 	})}
 	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
-	end, _ := host.message(wishLink, "")
-	if terminalText(end) != "记录较多，将在后台继续获取，完成后在此回复。" || len(host.sent) != 1 {
-		t.Fatalf("the link event ended with %v after %d messages", end, len(host.sent))
+	end, actions := host.message(wishLink, "")
+	if action, ok := detached(actions); !ok || actions[0].Name != "event.detach" || len(action.Data) != 0 {
+		t.Fatalf("the link did not move to the background first: %+v", actions)
 	}
-	ref := host.job(gachaLinkTask)
-	triggerUntilDone(t, clock, host, ref, time.Unix(1_800_000_000, 0), 5)
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 3 {
-		t.Fatalf("deleted %v, answered %v", host.deleted, host.sent)
+	if end["type"] != "result" || len(host.jobs) != 0 || requests != 17 || clock.Now().Sub(start) < 2*time.Minute {
+		t.Fatalf("the link ended with %v after %v, jobs %v", end, clock.Now().Sub(start), host.jobs)
 	}
-	if sent := host.sent[1]; sent.TargetType != "private" || sent.TargetID != "u" || !strings.HasPrefix(sentText(sent.Message), "[角色]记录获取成功，更新21条\n[武器]记录获取成功，更新1条") {
-		t.Fatalf("answered %+v", sent)
+	texts := []string{}
+	for _, sent := range host.sent {
+		if sent.TargetType != "private" || sent.TargetID != "u" {
+			t.Fatalf("answered in %+v", sent)
+		}
+		texts = append(texts, sentText(sent.Message))
 	}
-	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 22 {
+	if len(texts) != 3 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新205条\n[武器]记录获取成功，更新1条\n\n抽卡记录更新完成") || !strings.Contains(texts[2], "胡桃") {
+		t.Fatalf("answered %q", texts)
+	}
+	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 206 {
 		t.Fatalf("kept %d records, %v", len(archive.Records), err)
 	}
 }
 
-// A link read within its event in a group answers every message of the
-// reply, then asks the sender to recall the link.
+// A link in a group answers every message of the reply, then asks the
+// sender to recall the link.
 func TestGachaLinkInAGroupAnswersEachMessage(t *testing.T) {
 	a := pluginApp(t)
+	a.clock = &fakeClock{at: time.Now()}
 	a.LinkHTTP = &http.Client{Transport: wishHistory{}}
 	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
 	end, _ := host.groupMessage(wishLink, "")
-	if terminalText(end) != "已收到链接，请撤回" || len(host.jobs) != 0 {
+	if end["type"] != "result" || len(host.jobs) != 0 {
 		t.Fatalf("the link event ended with %v, jobs %v", end, host.jobs)
 	}
-	if len(host.sent) != 3 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功") || host.sent[2].TargetType != "group" {
+	if len(host.sent) != 4 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功") || sentText(host.sent[3].Message) != "已收到链接，请撤回" || host.sent[3].TargetType != "group" || host.sent[3].TargetID != "g" {
 		t.Fatalf("answered %+v", host.sent)
+	}
+}
+
+// A link the host will not move to the background, while the plugin holds its
+// limit of background events, is answered at once and not read.
+func TestGachaLinkRefusedTheBackgroundRepliesClearly(t *testing.T) {
+	a := pluginApp(t)
+	requests := 0
+	a.LinkHTTP = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		requests++
+		return wishHistory{}.RoundTrip(r)
+	})}
+	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
+	host.busy = true
+	end, _ := host.message(wishLink, "")
+	if terminalText(end) != "正在后台处理的任务较多，请稍后再试。" || requests != 0 || len(host.sent) != 0 {
+		t.Fatalf("the refused link ended with %v after %d requests, %+v", end, requests, host.sent)
 	}
 }

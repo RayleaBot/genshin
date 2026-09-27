@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"github.com/RayleaBot/plugin-genshin/internal/gacha"
@@ -65,5 +66,27 @@ func (a *App) syncAction(ctx context.Context, client AccountsClient, action stri
 		return map[string]any{"canceled": err == nil}, err
 	default:
 		return nil, gameError("operation_denied", "操作不存在。")
+	}
+}
+
+// readSync reads a sync Syncs.Start began page after page until every pool
+// is read and merged, waiting gap after each page; progress, when set, sees
+// each page's state. The sync is forgotten once it ends either way.
+func (a *App) readSync(ctx context.Context, info gacha.SyncInfo, gap time.Duration, fetch gacha.FetchPage, progress func(gacha.SyncInfo)) (*gacha.ImportResult, error) {
+	defer a.Syncs.Forget(info.Ref)
+	for {
+		var err error
+		if info, err = a.Syncs.Step(ctx, a.Gacha, info.Ref, info.Sequence, fetch); err != nil {
+			return nil, err
+		}
+		if progress != nil {
+			progress(info)
+		}
+		if info.State == "completed" {
+			return info.Result, nil
+		}
+		if err = a.sleep(ctx, gap); err != nil {
+			return nil, err
+		}
 	}
 }

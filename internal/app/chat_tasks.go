@@ -11,8 +11,8 @@ import (
 // Work a chat command starts may take longer than its event: the host gives
 // an event 60 seconds by default, refuses actions once the event starts
 // finishing, and ignores what the plugin asks after it ends the event. Such
-// work is a chat task, as a gacha link or customer service link whose records
-// take long to read. It works within the event until chatTaskBudget, then
+// work is a chat task, as a customer service link whose records take long to
+// read. It works within the event until chatTaskBudget, then
 // continues on a temporary task the scheduler triggers each minute, each
 // trigger working for the same budget, and answers in the chat the command
 // came from. An event's work on a task, its actions included, ends by

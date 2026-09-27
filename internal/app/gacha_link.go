@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io"
@@ -21,16 +20,13 @@ import (
 // A gacha link pasted in chat is read as Yunzai's gcLog reads it: its
 // authkey fetches the records from the official wish history page, the UID
 // comes from the records and becomes the sender's current UID, and in a group
-// the sender is asked to recall the link. No account is needed. The authkey
-// is held in memory only while the records are fetched; a history too long
-// for one event is finished as a chat task, which is dropped if the plugin
-// restarts.
+// the sender is asked to recall the link. No account is needed. The event
+// moves to the background and reads every page in turn; the authkey is held
+// in memory only while it does.
 
 const (
 	gachaLinkCN = "https://public-operation-hk4e.mihoyo.com/gacha_info/api/getGachaLog"
 	gachaLinkOS = "https://public-operation-hk4e-sg.hoyoverse.com/gacha_info/api/getGachaLog"
-	// gachaLinkTask prefixes the scheduled tasks that finish long histories.
-	gachaLinkTask = "game.link."
 )
 
 // gachaLinkPools are the pools Yunzai reports after a link, in its order;
@@ -39,23 +35,6 @@ var gachaLinkPools = [][2]string{{"301", "角色"}, {"302", "武器"}, {"500", "
 
 type gachaLink struct {
 	key, region string
-}
-
-// gachaLinkJob is a link whose records are still being fetched, as a chat
-// task: full reads the whole history, before counts the records each pool
-// held, owner is the sender and images whether the reply draws the record.
-type gachaLinkJob struct {
-	link     gachaLink
-	full     bool
-	uid      string
-	sync     string
-	sequence int
-	before   map[string]int
-	owner    Subject
-	images   bool
-	// result is the finished sync, kept while its reply waits for the next
-	// trigger.
-	result *gacha.ImportResult
 }
 
 // parseGachaLink reads a wish history link as Yunzai's dealUrl does: 〈= is a
@@ -173,7 +152,10 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 }
 
 // gachaLinkMessage answers a message holding a gacha link; handled is false
-// for any other message.
+// for any other message. As Yunzai's logUrl, the link is checked, every pool
+// read, and the answer is each pool's new records, the full read turned off
+// when it was on, the character event wish record and, in a group, the ask
+// to recall the link.
 func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
 	text := event.Event.Message.PlainText
 	link, ok, err := parseGachaLink(text)
@@ -190,9 +172,9 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
-	start := a.now()
-	ctx, cancel := a.eventWork(ctx, start)
-	defer cancel()
+	if err := detach(ctx, event, nil); err != nil {
+		return true, event.SendText(friendlyError(err))
+	}
 	uid, err := a.checkGachaLink(ctx, &link, len([]rune(text)))
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
@@ -200,103 +182,52 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	notice(ctx, event, "链接发送成功，数据获取中……")
 	a.useLinkUID(ctx, event, uid)
 	owner := chatOwner(event)
-	job := &gachaLinkJob{link: link, full: a.fullLinks.active(owner), uid: uid, before: gachaPoolCounts(a.archiveOrEmpty(uid, link.region)), owner: owner, images: settings(event).ImageReplies}
-	if job.full {
+	full := a.fullLinks.active(owner)
+	before := gachaPoolCounts(a.archiveOrEmpty(uid, link.region))
+	if full {
 		notice(ctx, event, "开始获取角色记录，全量更新获取数据较多，请耐心等待...")
 	}
-	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, job.full)
+	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, full)
 	if err != nil {
 		return true, event.SendText(friendlyError(syncError(err)))
 	}
-	job.sync = info.Ref
-	task := a.beginChatTask(event, gachaLinkTask+rand.Text(), a.Game.Name+"抽卡链接记录", 15*time.Minute, job)
-	reply, done, err := a.stepChatTask(ctx, event.Actions(), task, start.Add(chatTaskBudget))
-	switch {
-	case err != nil:
-		reply = textReply("记录较多，本次未能全部获取，请稍后重新发送链接。")
-	case !done:
-		reply = textReply("记录较多，将在后台继续获取，完成后在此回复。")
+	result, err := a.readSync(ctx, info, 300*time.Millisecond, func(ctx context.Context, pool, endID string, page int) (gacha.RemotePage, error) {
+		data, err := a.gachaLinkPage(ctx, link, pool, endID, page, 20)
+		if err != nil {
+			return gacha.RemotePage{}, err
+		}
+		return gacha.ParsePage(uid, link.region, pool, endID, data)
+	}, nil)
+	if err != nil {
+		return true, event.SendText(friendlyError(syncError(err)))
 	}
+	reply := a.gachaLinkReply(ctx, event, owner, result, before, full)
 	if group {
 		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已收到链接，请撤回")})
 	}
 	return true, answerChat(ctx, event, reply)
 }
 
-// step fetches the link's pages until stop and answers, once all are read,
-// as Yunzai does, or with the failure. Drawing the reply has the rest of an
-// event: when the reads end at stop, the next trigger draws it.
-func (job *gachaLinkJob) step(ctx context.Context, a *App, host taskHost, stop time.Time) ([][]rayleabot.Segment, bool) {
-	if job.result == nil {
-		result, err := a.stepGachaLink(ctx, job, stop)
-		switch {
-		case err != nil:
-			return job.fail(a, err), true
-		case result == nil:
-			return nil, false
-		}
-		job.result = result
-	}
-	if !a.now().Before(stop) {
-		return nil, false
-	}
-	return a.gachaLinkReply(ctx, host, job), true
-}
-
-// fail cancels the link's sync and replies with the failure.
-func (job *gachaLinkJob) fail(a *App, err error) [][]rayleabot.Segment {
-	_ = a.Syncs.Cancel(job.sync)
-	return textReply(friendlyError(syncError(err)))
-}
-
-// stepGachaLink fetches pages until the sync completes or stop passes; the
-// result is nil while pages remain. A page open when ctx ends is fetched
-// again by the next trigger.
-func (a *App) stepGachaLink(ctx context.Context, job *gachaLinkJob, stop time.Time) (*gacha.ImportResult, error) {
-	for {
-		info, err := a.Syncs.Step(ctx, a.Gacha, job.sync, job.sequence, func(ctx context.Context, pool, endID string, page int) (gacha.RemotePage, error) {
-			data, err := a.gachaLinkPage(ctx, job.link, pool, endID, page, 20)
-			if err != nil {
-				return gacha.RemotePage{}, err
-			}
-			return gacha.ParsePage(job.uid, job.link.region, pool, endID, data)
-		})
-		switch {
-		case err != nil && ctx.Err() != nil:
-			return nil, nil
-		case err != nil:
-			return nil, err
-		}
-		job.sequence = info.Sequence
-		if info.State == "completed" {
-			return info.Result, nil
-		}
-		if !a.now().Before(stop) || a.sleep(ctx, 300*time.Millisecond) != nil {
-			return nil, nil
-		}
-	}
-}
-
 // gachaLinkReply reports each pool as Yunzai does, then draws the character
 // event wish record.
-func (a *App) gachaLinkReply(ctx context.Context, host imageRenderer, job *gachaLinkJob) [][]rayleabot.Segment {
-	archive, err := a.Gacha.Read(job.result.UID, job.result.Region)
+func (a *App) gachaLinkReply(ctx context.Context, event *rayleabot.EventContext, owner Subject, result *gacha.ImportResult, before map[string]int, full bool) [][]rayleabot.Segment {
+	archive, err := a.Gacha.Read(result.UID, result.Region)
 	if err != nil {
 		return textReply(friendlyError(err))
 	}
-	reply := textReply(gachaLinkSummary(a.Game.Prefix, job.before, gachaPoolCounts(archive)))
+	reply := textReply(gachaLinkSummary(a.Game.Prefix, before, gachaPoolCounts(archive)))
 	// As upstream, a whole read turns the setting off and says so.
-	if job.full {
-		a.fullLinks.set(job.owner, false)
+	if full {
+		a.fullLinks.set(owner, false)
 		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已关闭全量更新抽卡记录")})
 	}
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
-		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: job.result.UID, Role: Role{Game: a.Game.ID, UID: job.result.UID, Region: job.result.Region}, Word: "角色记录", Archive: archive}); ok {
+		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: result.UID, Role: Role{Game: a.Game.ID, UID: result.UID, Region: result.Region}, Word: "角色记录", Archive: archive}); ok {
 			view.Image = &drawn
 		}
 	}
-	return append(reply, viewMessage(ctx, host, job.images, view))
+	return append(reply, viewMessage(ctx, event.Actions(), settings(event).ImageReplies, view))
 }
 
 // fullLinks are Yunzai's 设置全量更新抽卡记录: for ten minutes the sender's

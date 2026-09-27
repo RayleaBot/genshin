@@ -34,12 +34,25 @@ type sdkHost struct {
 	sent []rayleabot.MessageSendRequest
 	// triggers are the request IDs of scheduler triggers.
 	triggers map[string]bool
+	// busy refuses event.detach as the host does while the plugin holds its
+	// limit of background events.
+	busy bool
 }
 
 // hostAction is an action the plugin asked for during one event.
 type hostAction struct {
 	Name string
 	Data map[string]any
+}
+
+// detached is the event.detach an event asked for, if any.
+func detached(actions []hostAction) (hostAction, bool) {
+	for _, action := range actions {
+		if action.Name == "event.detach" {
+			return action, true
+		}
+	}
+	return hostAction{}, false
 }
 
 // newSDKHost starts the plugin with the host's init: bot "bot" on adapter
@@ -90,7 +103,8 @@ func (h *sdkHost) write(frame map[string]any) {
 }
 
 // exchange sends a frame and answers the plugin's actions until it ends the
-// request; it returns the ending frame and the actions asked for.
+// request, which an event moved to the background with event.detach ends
+// later; it returns the ending frame and the actions asked for.
 func (h *sdkHost) exchange(id string, frame map[string]any) (map[string]any, []hostAction) {
 	h.t.Helper()
 	h.write(frame)
@@ -160,6 +174,12 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		}
 		h.sent = append(h.sent, request)
 		return map[string]any{"message_id": fmt.Sprintf("sent-%d", len(h.sent)), "delivery_kind": "send"}, ""
+	case "event.detach":
+		if h.busy {
+			return nil, "platform.rate_limited"
+		}
+		// The host's default background deadline is 900 seconds.
+		return map[string]any{"deadline_at_ms": time.Now().Add(15 * time.Minute).UnixMilli()}, ""
 	case "render.image":
 		return nil, "platform.render_unavailable"
 	case "logger.write":
