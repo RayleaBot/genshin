@@ -27,12 +27,10 @@ const mediaMaxBytes = 4 * 1024 * 1024
 
 var mediaRefPattern = regexp.MustCompile(`^[A-Z2-7]{26}$`)
 
-// mediaKinds are the categories of the images a chat command reads: the
-// photos uploaded for a character, which 照片 and the character card draw
-// from as miao's getCardImg reads its upload folder. Images an earlier
-// version filed under other categories stay where they are but are no longer
-// read.
-var mediaKinds = []string{"photo"}
+// mediaPhoto is the library's one category, the photos uploaded for a
+// character, which 照片 and the character card draw from as miao's
+// getCardImg reads its upload folder.
+const mediaPhoto = "photo"
 
 type MediaEntry struct {
 	Ref       string `json:"ref"`
@@ -120,9 +118,6 @@ func (s *MediaStore) entries() ([]MediaEntry, error) {
 		entry, err := s.metadata(strings.TrimSuffix(f.Name(), ".json"))
 		if err != nil {
 			return nil, err
-		}
-		if !slices.Contains(mediaKinds, entry.Category) {
-			continue
 		}
 		out = append(out, entry)
 	}
@@ -224,7 +219,7 @@ func webpDimensions(raw []byte) (int, int, error) {
 	return w, h, nil
 }
 func validateMediaEntry(entry MediaEntry, catalog Catalog) error {
-	if len([]rune(strings.TrimSpace(entry.Title))) < 1 || len([]rune(entry.Title)) > 120 || !slices.Contains(mediaKinds, entry.Category) || len([]rune(entry.Source)) > 512 || len([]rune(strings.TrimSpace(entry.License))) < 1 || len([]rune(entry.License)) > 256 {
+	if len([]rune(strings.TrimSpace(entry.Title))) < 1 || len([]rune(entry.Title)) > 120 || entry.Category != mediaPhoto || len([]rune(entry.Source)) > 512 || len([]rune(strings.TrimSpace(entry.License))) < 1 || len([]rune(entry.License)) > 256 {
 		return gameError("input_invalid", "请填写有效素材名称、分类、来源及使用许可。")
 	}
 	if entry.CatalogID != "" {

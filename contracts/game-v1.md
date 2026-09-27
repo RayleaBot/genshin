@@ -274,7 +274,7 @@ calendar 合并官方公告列表与正文，区别公告展示时间与实际�
 
 ### 本地图库与角色互动
 
-`media.upload.start/append/finish/cancel` 分批上传使用者有权使用的 PNG/JPEG/GIF/WebP 原图；每张最多4 MiB、2400万像素。start 声明标题、分类（只有角色照片 `photo`，其余分类已不再读取，旧文件保留在数据目录）、可选关联角色、来源与使用许可，append 采用连续偏移并支持一致内容重放，finish 验证格式/尺寸和版本后原子保存。会话最多八项、十分钟到期；临时数据只在游戏进程内，关闭即取消。图库最多2000项、原图总计512 MiB。
+`media.upload.start/append/finish/cancel` 分批上传使用者有权使用的 PNG/JPEG/GIF/WebP 原图；每张最多4 MiB、2400万像素。start 声明标题、分类（只有角色照片 `photo`）、可选关联角色、来源与使用许可，append 采用连续偏移并支持一致内容重放，finish 验证格式/尺寸和版本后原子保存。会话最多八项、十分钟到期；临时数据只在游戏进程内，关闭即取消。图库最多2000项、原图总计512 MiB。
 
 `media.list/read/update/remove` 提供50条分页、角色/关键词筛选、原图分块读取、按 revision 编辑元数据和明确删除。原图字节保持上传内容，原始路径不作为存储地址。
 
