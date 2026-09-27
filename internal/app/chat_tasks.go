@@ -66,8 +66,8 @@ type chatHandover interface {
 	handover(ctx context.Context, a *App, host taskHost, ref string) error
 }
 
-// chatTask is a chat task: its scheduled task's ID, log label and payload
-// kind, its work and the chat to answer in.
+// chatTask is a chat task: its scheduled task's ID and log label, its work
+// and the chat to answer in.
 type chatTask struct {
 	ref     string
 	work    chatWork
@@ -75,7 +75,6 @@ type chatTask struct {
 	target  rayleabot.Target
 	expires time.Time
 	label   string
-	kind    string
 	// held is when the lease of the event working on the task runs out,
 	// zero while the task waits for its next trigger.
 	held time.Time
@@ -161,9 +160,9 @@ func (t *chatTasks) endLocked(task *chatTask) {
 // beginChatTask holds work under its scheduled task's ID for the chat event
 // that starts it, to answer in that chat within lifetime. It is nil when a
 // task with the ID is still running.
-func (a *App) beginChatTask(event *rayleabot.EventContext, ref, label, kind string, lifetime time.Duration, work chatWork) *chatTask {
+func (a *App) beginChatTask(event *rayleabot.EventContext, ref, label string, lifetime time.Duration, work chatWork) *chatTask {
 	now := a.now()
-	task := &chatTask{ref: ref, work: work, owner: chatOwner(event), target: event.Event.Target, expires: now.Add(lifetime), label: label, kind: kind}
+	task := &chatTask{ref: ref, work: work, owner: chatOwner(event), target: event.Event.Target, expires: now.Add(lifetime), label: label}
 	if !a.ChatTasks.begin(task, now) {
 		return nil
 	}
@@ -183,7 +182,7 @@ func (a *App) stepChatTask(ctx context.Context, host taskHost, task *chatTask, s
 		err = prepare.handover(ctx, a, host, task.ref)
 	}
 	if err == nil {
-		_, err = host.SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.ref, Cron: "* * * * *", LogLabel: task.label, Payload: taskPayload(task.kind, task.ref)})
+		_, err = host.SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.ref, Cron: "* * * * *", LogLabel: task.label})
 	}
 	if err != nil {
 		a.ChatTasks.end(task)
@@ -255,7 +254,7 @@ func (a *App) runChatTask(ctx context.Context, event *rayleabot.EventContext) er
 	}
 	ctx, cancel := a.eventWork(ctx, a.now())
 	defer cancel()
-	a.continueChatTask(ctx, event.Actions(), triggerTask(event))
+	a.continueChatTask(ctx, event.Actions(), event.Event.TaskID())
 	return event.Result(map[string]any{"handled": true})
 }
 

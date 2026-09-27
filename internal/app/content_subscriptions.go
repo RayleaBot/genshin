@@ -398,7 +398,7 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 
 // contentJob is the scheduler job of a group's push ref.
 func (a *App) contentJob(ref string) rayleabot.SchedulerCreateRequest {
-	return rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "*/5 * * * *", LogLabel: a.Game.Name + "米游社推送", Payload: taskPayload("public_content", ref)}
+	return rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "*/5 * * * *", LogLabel: a.Game.Name + "米游社推送"}
 }
 
 // runContentSubscription checks a group on its scheduled task; a task whose
@@ -409,7 +409,7 @@ func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.Event
 	}
 	ctx, cancel := a.eventWork(ctx, a.now())
 	defer cancel()
-	ref := triggerTask(event)
+	ref := event.Event.TaskID()
 	items, err := a.Subscriptions.List()
 	if err != nil {
 		return event.Fail(PublicError(err).Code, PublicError(err).Message)

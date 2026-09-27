@@ -200,7 +200,7 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	now := a.now()
 	ctx, cancel := a.eventWork(ctx, now)
 	defer cancel()
-	ref := triggerTask(event)
+	ref := event.Event.TaskID()
 	task, ok, err := a.Reminders.claim(ref)
 	if errors.Is(err, errTaskMissing) {
 		// Every group was left; the job goes with the task.

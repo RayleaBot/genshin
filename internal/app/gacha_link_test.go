@@ -127,9 +127,8 @@ func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { retu
 const wishLink = "https://webstatic.mihoyo.com/hk4e/event/e20190909gacha-v3/index.html?authkey_ver=1&region=cn_gf01&authkey=abcdefghij#/log"
 
 // A link whose history takes longer than its event, run through the SDK as
-// the host runs it: the triggers of its job carry the job's payload but not
-// its task ID, fetch the rest and answer in the private chat the link came
-// from, each pool's count and then the record.
+// the host runs it: the triggers of its job fetch the rest and answer in the
+// private chat the link came from, each pool's count and then the record.
 func TestGachaLinkFinishesOnTheHostsTriggers(t *testing.T) {
 	a := pluginApp(t)
 	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
@@ -146,9 +145,6 @@ func TestGachaLinkFinishesOnTheHostsTriggers(t *testing.T) {
 		t.Fatalf("the link event ended with %v after %d messages", end, len(host.sent))
 	}
 	ref := host.job(gachaLinkTask)
-	if payload := host.jobs[ref].Payload; payload["task_id"] != ref || payload["kind"] != "gacha_link" {
-		t.Fatalf("job payload %v", payload)
-	}
 	triggerUntilDone(t, clock, host, ref, time.Unix(1_800_000_000, 0), 5)
 	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 3 {
 		t.Fatalf("deleted %v, answered %v", host.deleted, host.sent)

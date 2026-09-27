@@ -373,7 +373,7 @@ func (a *App) startPayLog(ctx context.Context, event *rayleabot.EventContext, jo
 		a.useLinkUID(ctx, event, job.uid)
 	}
 	job.api, job.owner, job.images = "GetCrystalLog", chatOwner(event), settings(event).ImageReplies
-	task := a.beginChatTask(event, payLogTask+rand.Text(), a.Game.Name+"充值记录", "pay_log", 15*time.Minute, job)
+	task := a.beginChatTask(event, payLogTask+rand.Text(), a.Game.Name+"充值记录", 15*time.Minute, job)
 	reply, done, err := a.stepChatTask(ctx, event.Actions(), task, start.Add(chatTaskBudget))
 	switch {
 	case err != nil && job.key != "":

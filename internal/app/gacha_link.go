@@ -209,7 +209,7 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 		return true, event.SendText(friendlyError(syncError(err)))
 	}
 	job.sync = info.Ref
-	task := a.beginChatTask(event, gachaLinkTask+rand.Text(), a.Game.Name+"抽卡链接记录", "gacha_link", 15*time.Minute, job)
+	task := a.beginChatTask(event, gachaLinkTask+rand.Text(), a.Game.Name+"抽卡链接记录", 15*time.Minute, job)
 	reply, done, err := a.stepChatTask(ctx, event.Actions(), task, start.Add(chatTaskBudget))
 	switch {
 	case err != nil:

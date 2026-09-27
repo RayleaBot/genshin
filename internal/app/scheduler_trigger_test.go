@@ -3,9 +3,7 @@ package app
 import (
 	"bytes"
 	"io"
-	"maps"
 	"net/http"
-	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -82,37 +80,36 @@ func dueNow(t *testing.T, a *App, ref string) {
 }
 
 // Every account task, created as a user or the management page creates it,
-// has a job whose payload carries its task ID. The host's trigger of the job,
-// which carries the payload but not the task ID, reaches that task: it reads
-// with the delegation granted for it.
+// has a job without a payload. The host's trigger of the job, which names its
+// task ID, reaches that task: it reads with the delegation granted for it.
 func TestSchedulerTriggersReachTheirAccountTasks(t *testing.T) {
 	for _, c := range []struct {
-		name, prefix, kind, operation string
-		create                        func(h *sdkHost)
-		due                           bool
+		name, prefix, operation string
+		create                  func(h *sdkHost)
+		due                     bool
 	}{
-		{"体力提醒", "game.reminder.genshin.", "stamina_reminder", "genshin.note", func(h *sdkHost) {
+		{"体力提醒", "game.reminder.genshin.", "genshin.note", func(h *sdkHost) {
 			h.manage("reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "threshold": 50, "days": 30})
 		}, false},
-		{"体力推送", notePushTask, notePushKind, "genshin.note", func(h *sdkHost) {
+		{"体力推送", notePushTask, "genshin.note", func(h *sdkHost) {
 			h.groupMessage("#开启体力推送", "开启体力推送")
 		}, false},
-		{"每日签到", "game.sign.", "signin", "genshin.sign", func(h *sdkHost) {
+		{"每日签到", "game.sign.", "genshin.sign", func(h *sdkHost) {
 			h.manage("signin.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 0, "confirm": true})
 		}, false},
-		{"每日月报收集", "game.monthly.", "monthly", "genshin.monthly", func(h *sdkHost) {
+		{"每日月报收集", "game.monthly.", "genshin.monthly", func(h *sdkHost) {
 			h.manage("monthly.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 20, "confirm": true})
 		}, true},
-		{"米游社任务", "game.community.", "community", "genshin.community_run", func(h *sdkHost) {
+		{"米游社任务", "game.community.", "genshin.community_run", func(h *sdkHost) {
 			h.manage("community.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "read": true, "confirm": true})
 		}, false},
-		{"云游戏签到", "game.cloudgame.", "cloudgame", "genshin.cloud_sign", func(h *sdkHost) {
+		{"云游戏签到", "game.cloudgame.", "genshin.cloud_sign", func(h *sdkHost) {
 			h.manage("cloudgame.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "confirm": true})
 		}, false},
-		{"挑战提醒", "game.challenge.", "challenge_reminder", "genshin.abyss", func(h *sdkHost) {
+		{"挑战提醒", "game.challenge.", "genshin.abyss", func(h *sdkHost) {
 			h.manage("challenge.reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "abyss", "metric": "star", "threshold": 36, "hour": 20, "days": 30, "confirm": true})
 		}, true},
-		{"抽卡后台同步", "game.sync.", "gacha_sync", "genshin.gacha", func(h *sdkHost) {
+		{"抽卡后台同步", "game.sync.", "genshin.gacha", func(h *sdkHost) {
 			h.message("#更新抽卡记录", "更新抽卡记录")
 		}, false},
 	} {
@@ -124,7 +121,7 @@ func TestSchedulerTriggersReachTheirAccountTasks(t *testing.T) {
 			host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, accounts.answer)
 			c.create(host)
 			ref := host.job(c.prefix)
-			if payload := host.jobs[ref].Payload; payload["task_id"] != ref || payload["kind"] != c.kind {
+			if payload := host.jobs[ref].Payload; payload != nil {
 				t.Fatalf("job payload %v", payload)
 			}
 			if c.due {
@@ -154,9 +151,6 @@ func TestContentPushTriggerChecksItsGroup(t *testing.T) {
 	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
 	host.groupMessage("#开启公告推送", "开启公告推送")
 	ref := host.job("game.content.")
-	if payload := host.jobs[ref].Payload; payload["task_id"] != ref {
-		t.Fatalf("job payload %v", payload)
-	}
 	if end, _ := host.trigger(ref); end["type"] != "result" {
 		t.Fatalf("the trigger ended with %v", end)
 	}
@@ -166,51 +160,19 @@ func TestContentPushTriggerChecksItsGroup(t *testing.T) {
 	}
 }
 
-// Jobs created before their payloads carried their task IDs: the first
-// trigger without one registers the job of every saved task again, with the
-// same schedule and label and a payload carrying its ID, and the tasks reach
-// their triggers again. A job without a saved task is left as it is, and
-// later triggers without an ID register nothing more.
-func TestJobsFromBeforeTaskIDsAreRegisteredAgain(t *testing.T) {
-	a := pluginApp(t)
-	a.Content = PublicContentClient{HTTP: emptyNews{}}
-	accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}}}
-	host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, accounts.answer)
-	host.manage("reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "threshold": 50, "days": 30})
-	host.manage("signin.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 0, "confirm": true})
-	host.manage("challenge.reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "abyss", "metric": "star", "threshold": 36, "hour": 20, "days": 30, "confirm": true})
-	host.groupMessage("#开启体力推送", "开启体力推送")
-	host.groupMessage("#开启公告推送", "开启公告推送")
-	host.message("#更新抽卡记录", "更新抽卡记录")
-	created := maps.Clone(host.jobs)
-	if len(created) != 6 {
-		t.Fatalf("jobs %v", created)
-	}
-	// Before, a job's payload held only its kind.
-	for id, job := range host.jobs {
-		job.Payload = map[string]any{"kind": job.Payload["kind"]}
-		host.jobs[id] = job
-	}
-	host.jobs["game.link.OLD"] = rayleabot.SchedulerCreateRequest{TaskID: "game.link.OLD", Cron: "* * * * *", Payload: map[string]any{"kind": "gacha_link"}}
-	end, actions := host.trigger("game.link.OLD")
-	if end["type"] != "result" || len(actions) != len(created) || len(host.deleted) != 0 || len(host.sent) != 0 {
-		t.Fatalf("the trigger ended with %v after %v", end, actions)
-	}
-	for id, job := range created {
-		if !reflect.DeepEqual(host.jobs[id], job) {
-			t.Fatalf("job %s registered as %+v, created as %+v", id, host.jobs[id], job)
-		}
-	}
-	if job := host.jobs["game.link.OLD"]; job.Payload["task_id"] != nil {
-		t.Fatalf("the link job became %+v", job)
-	}
-	ref := host.job("game.reminder.genshin.")
-	host.trigger(ref)
-	if !accounts.read("genshin.note", ref) {
-		t.Fatalf("the reminder did not read with its delegation: %+v", accounts.executes)
-	}
-	if _, actions := host.trigger("game.link.OLD"); len(actions) != 0 {
-		t.Fatalf("a later trigger asked for %v", actions)
+// A trigger of a task this plugin does not keep, as the jobs earlier
+// versions left behind, deletes its own job and does nothing else.
+func TestATriggerOfAnUnknownTaskDeletesItsJob(t *testing.T) {
+	for _, id := range []string{"game.link.OLD", "game.pay.OLD", "game.sync.genshin.OLD", "game.reminder.genshin.OLD", "game.content.genshin.OLD", notePushTask + "OLD", "game.other"} {
+		t.Run(id, func(t *testing.T) {
+			a := pluginApp(t)
+			host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, (&fakeAccounts{t: t}).answer)
+			host.jobs[id] = rayleabot.SchedulerCreateRequest{TaskID: id, Cron: "* * * * *", Payload: map[string]any{"kind": "old"}}
+			end, actions := host.trigger(id)
+			if end["type"] != "result" || len(host.deleted) != 1 || host.deleted[0] != id || len(actions) != 1 {
+				t.Fatalf("the trigger ended with %v after %v, deleted %v", end, actions, host.deleted)
+			}
+		})
 	}
 }
 

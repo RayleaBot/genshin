@@ -176,7 +176,7 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 
 // syncJob is the scheduler job of the background sync task ref.
 func (a *App) syncJob(ref string) rayleabot.SchedulerCreateRequest {
-	return rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡后台同步", Payload: taskPayload("gacha_sync", ref)}
+	return rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡后台同步"}
 }
 
 func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) error {
@@ -186,7 +186,7 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 	start := a.now()
 	ctx, cancel := a.eventWork(ctx, start)
 	defer cancel()
-	ref := triggerTask(event)
+	ref := event.Event.TaskID()
 	// Pages follow each other, each starting at least a second after the
 	// previous one to keep under 米游社's rate limits, until the event's
 	// budget is spent.

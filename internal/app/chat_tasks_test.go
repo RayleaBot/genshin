@@ -132,14 +132,14 @@ func TestChatTaskContinuesOnItsScheduledTask(t *testing.T) {
 	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
 	a := &App{clock: clock}
 	host := &fakeHost{}
-	task := a.beginChatTask(chatEvent(), "game.link.x", "记录", "gacha_link", time.Hour, &countdown{left: 3})
-	if task == nil || a.beginChatTask(chatEvent(), "game.link.x", "记录", "gacha_link", time.Hour, &countdown{}) != nil {
+	task := a.beginChatTask(chatEvent(), "game.link.x", "记录", time.Hour, &countdown{left: 3})
+	if task == nil || a.beginChatTask(chatEvent(), "game.link.x", "记录", time.Hour, &countdown{}) != nil {
 		t.Fatal("a running task was started twice")
 	}
 	if _, done, err := a.stepChatTask(t.Context(), host, task, a.now()); done || err != nil {
 		t.Fatal("the event finished work that remains", done, err)
 	}
-	if len(host.scheduled) != 1 || host.scheduled[0].TaskID != "game.link.x" || host.scheduled[0].Cron != "* * * * *" || host.scheduled[0].Payload["kind"] != "gacha_link" || host.scheduled[0].Payload["task_id"] != "game.link.x" {
+	if len(host.scheduled) != 1 || host.scheduled[0].TaskID != "game.link.x" || host.scheduled[0].Cron != "* * * * *" {
 		t.Fatalf("scheduled = %+v", host.scheduled)
 	}
 	// A trigger while another event works on the task keeps its scheduled
@@ -161,7 +161,7 @@ func TestChatTaskContinuesOnItsScheduledTask(t *testing.T) {
 	// A task from before a restart is removed without an answer; one past
 	// its lifetime answers with its failure.
 	a.continueChatTask(t.Context(), host, "game.link.gone")
-	old := a.beginChatTask(chatEvent(), "game.link.old", "记录", "gacha_link", time.Minute, &countdown{left: 2})
+	old := a.beginChatTask(chatEvent(), "game.link.old", "记录", time.Minute, &countdown{left: 2})
 	a.ChatTasks.release(old, nil)
 	clock.set(a.now().Add(2 * time.Minute))
 	a.continueChatTask(t.Context(), host, "game.link.old")
@@ -178,7 +178,7 @@ func TestChatTaskTakenFromAnEventThatOverranAnswersItsFailure(t *testing.T) {
 	a := &App{clock: clock}
 	host := &fakeHost{}
 	work := &countdown{left: 1}
-	task := a.beginChatTask(chatEvent(), "game.pay.x", "充值记录", "pay_log", time.Hour, work)
+	task := a.beginChatTask(chatEvent(), "game.pay.x", "充值记录", time.Hour, work)
 	clock.set(clock.Now().Add(time.Minute))
 	a.continueChatTask(t.Context(), host, "game.pay.x")
 	if len(host.deleted) != 0 || len(host.sent) != 0 {
@@ -192,7 +192,7 @@ func TestChatTaskTakenFromAnEventThatOverranAnswersItsFailure(t *testing.T) {
 	if reply, done, err := a.stepChatTask(t.Context(), host, task, clock.Now()); done || err != nil || len(host.sent) != 1 {
 		t.Fatal("the overrunning event answered as well", reply, done, err)
 	}
-	if a.beginChatTask(chatEvent(), "game.pay.x", "充值记录", "pay_log", time.Hour, &countdown{left: 1}) == nil {
+	if a.beginChatTask(chatEvent(), "game.pay.x", "充值记录", time.Hour, &countdown{left: 1}) == nil {
 		t.Fatal("the overrun task still blocks its ID")
 	}
 }
@@ -203,7 +203,7 @@ func TestChatTaskReplyTheEventCouldNotSendWaitsForTheNextTrigger(t *testing.T) {
 	a := &App{clock: &fakeClock{at: time.Unix(1_800_000_000, 0)}}
 	host := &fakeHost{}
 	work := &countdown{left: 2}
-	task := a.beginChatTask(chatEvent(), "game.link.x", "记录", "gacha_link", time.Hour, work)
+	task := a.beginChatTask(chatEvent(), "game.link.x", "记录", time.Hour, work)
 	if _, done, err := a.stepChatTask(t.Context(), host, task, a.now()); done || err != nil {
 		t.Fatal(done, err)
 	}

@@ -216,8 +216,8 @@ func payLogOnHost(t *testing.T, fail func(clock *fakeClock, read billingRead, co
 
 // 更新充值记录 of an account whose logs take longer than the event, run
 // through the SDK as the host runs it: the event grants the job a delegation,
-// and the job's trigger, which carries no task ID, reads the rest with it and
-// answers in the chat, keeping the result for the sender.
+// and the job's trigger reads the rest with it and answers in the chat,
+// keeping the result for the sender.
 func TestPayLogFinishesOnTheHostsTriggers(t *testing.T) {
 	a, clock, host, reads, ref := payLogOnHost(t, nil)
 	triggerUntilDone(t, clock, host, ref, time.Unix(1_800_000_000, 0), 5)

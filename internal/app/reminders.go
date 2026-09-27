@@ -155,19 +155,17 @@ func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext,
 var reminderLabels = map[string]string{"": "体力提醒", notePushKind: "体力推送", "signin": "每日签到", "monthly": "每日月报收集", "community": "米游社任务", "cloudgame": "云游戏签到"}
 
 // reminderJob is the scheduler job of a saved reminder or account task: the
-// schedule of its kind, its log label, and a payload carrying its ID.
+// schedule of its kind and its log label.
 func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
-	cron, label, kind := "*/10 * * * *", reminderLabels[task.Kind], task.Kind
+	cron, label := "*/10 * * * *", reminderLabels[task.Kind]
 	switch task.Kind {
-	case "":
-		kind = "stamina_reminder"
 	case "community", "cloudgame":
 		cron = "* * * * *"
 	case "challenge":
 		challenge, _ := challengeKind(task.ChallengeKind)
-		cron, label, kind = "*/5 * * * *", challenge.Label+"挑战提醒", "challenge_reminder"
+		cron, label = "*/5 * * * *", challenge.Label+"挑战提醒"
 	}
-	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label, Payload: taskPayload(kind, task.Ref)}
+	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label}
 }
 
 func (a *App) removeDelegatedTask(ctx context.Context, event *rayleabot.EventContext, ref string, kind string) (map[string]any, error) {
@@ -291,7 +289,7 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 	start := a.now()
 	ctx, cancel := a.eventWork(ctx, start)
 	defer cancel()
-	ref := triggerTask(event)
+	ref := event.Event.TaskID()
 	query := func(task Reminder) (QueryResult, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var result QueryResult
