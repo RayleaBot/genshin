@@ -215,12 +215,7 @@ func (a *App) gachaLinkReply(ctx context.Context, event *rayleabot.EventContext,
 	if err != nil {
 		return textReply(friendlyError(err))
 	}
-	reply := textReply(gachaLinkSummary(a.Game.Prefix, before, gachaPoolCounts(archive)))
-	// As upstream, a whole read turns the setting off and says so.
-	if full {
-		a.fullLinks.set(owner, false)
-		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已关闭全量更新抽卡记录")})
-	}
+	reply := a.gachaReport(owner, archive, before, full)
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
 		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: result.UID, Role: Role{Game: a.Game.ID, UID: result.UID, Region: result.Region}, Word: "角色记录", Archive: archive}); ok {
@@ -228,6 +223,18 @@ func (a *App) gachaLinkReply(ctx context.Context, event *rayleabot.EventContext,
 		}
 	}
 	return append(reply, viewMessage(ctx, event.Actions(), settings(event).ImageReplies, view))
+}
+
+// gachaReport is Yunzai's report after reading a history into archive: the
+// records each pool gained since before, then, after a full read, the
+// setting turned off, as upstream says.
+func (a *App) gachaReport(owner Subject, archive gacha.Archive, before map[string]int, full bool) [][]rayleabot.Segment {
+	reply := textReply(gachaLinkSummary(a.Game.Prefix, before, gachaPoolCounts(archive)))
+	if full {
+		a.fullLinks.set(owner, false)
+		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已关闭全量更新抽卡记录")})
+	}
+	return reply
 }
 
 // fullLinks are Yunzai's 设置全量更新抽卡记录: for ten minutes the sender's

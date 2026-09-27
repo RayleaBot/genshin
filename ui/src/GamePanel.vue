@@ -321,7 +321,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
             <div class="actions wide"><button v-if="syncInfo?.state !== 'running'" class="primary" type="submit" :disabled="busy">同步记录</button><button v-else-if="!busy" class="primary" type="button" @click="synchronize(true)">继续同步</button><button v-if="syncInfo?.state === 'running'" type="button" @click="cancelSync">取消同步</button><button v-if="nextAccountPage !== null" type="button" :disabled="busy" @click="run(() => loadAccounts(nextAccountPage!))">更多账号</button></div>
           </form>
           <p v-if="syncInfo" class="hint" role="status">{{ syncInfo.state === 'running' ? (busy ? '正在同步' : '同步已暂停，可继续或取消') : (syncInfo.state === 'completed' ? '已完成' : '已取消') }} · 已读取 {{ syncInfo.pages }} 页，{{ syncInfo.fetched }} 条记录</p>
-          <p class="hint">上方即时同步需要保持页面打开；需要离开页面时，可使用下方后台任务。</p>
+          <p class="hint">上方即时同步需要保持页面打开；需要离开页面时，可使用下方后台同步。</p>
         </section>
         <GachaTasks :choices="roleOptions" :invoke="invoke" />
         <details class="import-panel"><summary>导入记录</summary><p class="hint">支持 <a href="https://uigf.org/en/standards/uigf.html" target="_blank" rel="noreferrer">UIGF</a> v4、旧版 UIGF v2/v3 和本插件导出的完整档案。不接收抽卡链接。</p><div class="import-fields"><label>旧版文件缺省时区<select v-model="legacyTimezone" :disabled="busy"><option :value="8">UTC+8（国服/亚服）</option><option :value="1">UTC+1（欧服）</option><option :value="-5">UTC−5（美服）</option></select></label><label>选择 JSON 文件<input ref="importFile" type="file" accept=".json,application/json" :disabled="busy" @change="readImport"></label></div>

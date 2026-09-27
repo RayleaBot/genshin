@@ -1,13 +1,9 @@
 package app
 
 import (
-	"context"
-	"errors"
-	"os"
-	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -15,301 +11,157 @@ import (
 	"github.com/RayleaBot/plugin-genshin/internal/gacha"
 )
 
-func syncTaskFixture(t *testing.T, kind string) (*SyncTaskStore, *gacha.Syncs, *gacha.Store, SyncTask, int64) {
-	t.Helper()
-	dir := t.TempDir()
-	now := time.Date(2026, 9, 20, 8, 0, 0, 0, time.FixedZone("CN", 28800)).UnixMilli()
-	s := syncTaskStore(dir, "#")
-	jobs := &gacha.Syncs{}
-	archive := &gacha.Store{Directory: filepath.Join(dir, "gacha"), Game: "genshin"}
-	task := SyncTask{Ref: "game.sync.fixture", Selection: Selection{"account", "role"}, Provider: "provider", Role: Role{Ref: "role", Game: "genshin", UID: "100000001", Region: "cn_gf01"}, Kind: kind, Hour: 8, State: "waiting", ExpiresAtMS: now + 30*86400000, DelegationRef: "grant", Owner: Subject{ActorID: "owner"}}
-	if err := seedSyncTasks(s, task); err != nil {
-		t.Fatal(err)
-	}
-	return s, jobs, archive, task, now
-}
-func syncPage(_ context.Context, _ SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
-	p := gacha.RemotePage{Records: []gacha.Record{}, Timezone: 8, Language: "zh-cn", NextID: end}
-	if pool == "100" {
-		p.Records = []gacha.Record{{ID: "100", ItemID: "1001", GachaType: "100", UIGFType: "100", Time: "2026-09-01 08:00:00", Rank: "5"}}
-		p.NextID = "100"
-	}
-	return p, nil
+// gachaPages answers the accounts plugin's wish history pages for user u's
+// role: characters character event records, IDs 5000-n newest first, and
+// none in the other pools. asked is when each page was asked for, and
+// before, when set, runs before page n is answered.
+type gachaPages struct {
+	t          *testing.T
+	clock      *fakeClock
+	characters int
+	asked      []time.Time
+	before     func(n int)
 }
 
-// onePage lets a tick read a single page.
-func onePage(context.Context) bool { return false }
-
-func tickOne(t *testing.T, s *SyncTaskStore, j *gacha.Syncs, a *gacha.Store, task SyncTask, now int64, fetch SyncTaskFetch, send SyncTaskSend) SyncTask {
-	t.Helper()
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
-	defer cancel()
-	if err := s.Tick(ctx, task.Ref, now, j, a, fetch, onePage, send); err != nil {
-		t.Fatal(err)
-	}
-	items, err := s.List()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return items[0]
-}
-func TestBackgroundSyncContinuesWithoutUIAndRestartsSafely(t *testing.T) {
-	s, j, a, task, now := syncTaskFixture(t, "once")
-	task = tickOne(t, s, j, a, task, now, syncPage, nil)
-	if task.Progress.Pages != 1 || task.State != "running" {
-		t.Fatal(task)
-	}
-	if _, err := a.Read(task.Role.UID, task.Role.Region); !errors.Is(err, os.ErrNotExist) {
-		t.Fatal("partial page written")
-	}
-	// Fresh process has only persisted task metadata. It reads again from the
-	// current archive; no in-memory version or authorization is reconstructed.
-	s = &SyncTaskStore{taskFiles: taskFiles[SyncTask]{Directory: s.Directory}}
-	j = &gacha.Syncs{}
-	a = &gacha.Store{Directory: a.Directory, Game: a.Game}
-	for i := 1; i <= 6; i++ {
-		task = tickOne(t, s, j, a, task, now+int64(i)*60000, syncPage, nil)
-	}
-	if task.State != "completed" || task.Progress.Result.Added != 1 || task.Restarts != 1 {
-		t.Fatal(task)
-	}
-	actual, err := a.Read(task.Role.UID, task.Role.Region)
-	if err != nil || len(actual.Records) != 1 {
-		t.Fatal(actual, err)
-	}
-	tickOne(t, s, j, a, task, now+86400000, func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error) {
-		t.Fatal("completed single task repeated")
-		return gacha.RemotePage{}, nil
-	}, nil)
-}
-func TestBackgroundSyncDeletionAndConcurrentAdmission(t *testing.T) {
-	s, j, a, task, now := syncTaskFixture(t, "once")
-	var wg sync.WaitGroup
-	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
-			defer cancel()
-			if err := s.Tick(ctx, task.Ref, now, j, a, syncPage, onePage, nil); err != nil {
-				t.Error(err)
+func (p *gachaPages) service(accounts *fakeAccounts) func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
+	return func(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
+		if request.Method != "execute" || request.Params["operation"] != "genshin.gacha" {
+			return accounts.answer(request, scheduled)
+		}
+		// The event keeps its origin in the background: no delegation.
+		if scheduled || request.Params["delegation_ref"] != nil {
+			p.t.Errorf("read %+v", request.Params)
+		}
+		p.asked = append(p.asked, p.clock.Now())
+		if p.before != nil {
+			p.before(len(p.asked))
+		}
+		input := asObject(request.Params["input"])
+		records := []any{}
+		if input["gacha_type"] == "301" {
+			first := 1
+			if end, _ := strconv.Atoi(asText(input["end_id"])); end != 0 {
+				first = 5000 - end + 1
 			}
-		}()
-	}
-	wg.Wait()
-	items, _ := s.List()
-	if items[0].Progress.Pages != 1 {
-		t.Fatal("duplicate tick advanced pages", items)
-	}
-	if err := s.RemoveArchive(j, a, task.Role.UID, task.Role.Region); err != nil {
-		t.Fatal(err)
-	}
-	s = &SyncTaskStore{taskFiles: taskFiles[SyncTask]{Directory: s.Directory}}
-	j = &gacha.Syncs{}
-	task = tickOne(t, s, j, a, task, now+60000, func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error) {
-		t.Fatal("deleted archive fetched again")
-		return gacha.RemotePage{}, nil
-	}, nil)
-	if task.State != "paused" || task.LastCode != "archive_removed" {
-		t.Fatal(task)
-	}
-	if _, err := a.Read(task.Role.UID, task.Role.Region); !errors.Is(err, os.ErrNotExist) {
-		t.Fatal("deleted archive revived")
-	}
-}
-func TestBackgroundSyncDailyHourCompletionAndNotifyOnce(t *testing.T) {
-	s, j, a, task, now := syncTaskFixture(t, "daily")
-	task.Notify = true
-	_ = s.edit(task.Ref, func(items *[]SyncTask, i int) error { (*items)[i] = task; return nil })
-	sent := 0
-	send := func(context.Context, SyncTask, string) error { sent++; return nil }
-	task = tickOne(t, s, j, a, task, now-60000, func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error) {
-		t.Fatal("ran before hour")
-		return gacha.RemotePage{}, nil
-	}, send)
-	for i := 0; i < 6; i++ {
-		task = tickOne(t, s, j, a, task, now+int64(i)*60000, syncPage, send)
-	}
-	if task.State != "waiting" || sent != 1 || task.LastNotificationMS == 0 {
-		t.Fatal(task, sent)
-	}
-	s = &SyncTaskStore{taskFiles: taskFiles[SyncTask]{Directory: s.Directory}}
-	task = tickOne(t, s, j, a, task, now+12*3600000, func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error) {
-		t.Fatal("same day restarted")
-		return gacha.RemotePage{}, nil
-	}, send)
-	task = tickOne(t, s, j, a, task, now+86400000, syncPage, send)
-	if task.State != "running" || task.Progress.Pages != 1 || sent != 1 {
-		t.Fatal(task, sent)
-	}
-}
-func TestBackgroundSyncFailuresExpiryAndMergeConflict(t *testing.T) {
-	for _, mode := range []string{"auth", "transient", "daily", "conflict", "expiry"} {
-		t.Run(mode, func(t *testing.T) {
-			kind := "once"
-			if mode == "daily" {
-				kind = "daily"
+			for n := first; n <= p.characters && len(records) < 20; n++ {
+				at := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(1000-n) * time.Second).Format(time.DateTime)
+				records = append(records, map[string]any{"uid": "100000001", "gacha_type": "301", "item_id": "10000046", "count": "1", "time": at, "name": "胡桃", "item_type": "角色", "rank_type": "5", "id": strconv.Itoa(5000 - n)})
 			}
-			s, j, a, task, now := syncTaskFixture(t, kind)
-			if mode == "expiry" {
-				task.ExpiresAtMS = now
-				_ = s.edit(task.Ref, func(items *[]SyncTask, i int) error { (*items)[i] = task; return nil })
-				task = tickOne(t, s, j, a, task, now, syncPage, nil)
-				if task.State != "expired" {
-					t.Fatal(task)
-				}
-				return
-			}
-			if mode == "conflict" {
-				task = tickOne(t, s, j, a, task, now, syncPage, nil)
-				_, _, err := a.Import(gacha.Archive{UID: task.Role.UID, Region: task.Role.Region, Timezone: 8, Language: "zh-cn", Records: []gacha.Record{{ID: "99", ItemID: "1002", GachaType: "100", UIGFType: "100", Time: "2026-09-01 07:00:00", Rank: "3"}}})
-				if err != nil {
-					t.Fatal(err)
-				}
-				for i := 1; i <= 5; i++ {
-					task = tickOne(t, s, j, a, task, now+int64(i)*60000, syncPage, nil)
-				}
-				if task.State != "paused" || task.LastCode != "plugin.game_sync_conflict" {
-					t.Fatal(task)
-				}
-				saved, _ := a.Read(task.Role.UID, task.Role.Region)
-				if len(saved.Records) != 1 || saved.Records[0].ID != "99" {
-					t.Fatal("conflict modified archive")
-				}
-				return
-			}
-			code := "plugin.upstream_unavailable"
-			if mode == "auth" {
-				code = "plugin.account_delegation_denied"
-			}
-			fail := func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error) {
-				return gacha.RemotePage{}, &rayleabot.ActionError{Code: code}
-			}
-			for i := 0; i < 3; i++ {
-				task = tickOne(t, s, j, a, task, now+int64(i)*5*60000, fail, nil)
-			}
-			want := "paused"
-			if mode == "daily" {
-				want = "waiting"
-			}
-			if task.State != want {
-				t.Fatal(task)
-			}
-		})
+		}
+		return map[string]any{"operation": "genshin.gacha", "role": testRole, "data": map[string]any{"list": records, "region": "cn_gf01"}}, ""
 	}
 }
 
-func seedSyncTasks(s *SyncTaskStore, tasks ...SyncTask) error {
-	return s.edit("", func(items *[]SyncTask, _ int) error {
-		*items = append(*items, tasks...)
-		return nil
-	})
-}
-
-func TestChatSyncAnswersInItsChatOnce(t *testing.T) {
-	s, j, a, task, now := syncTaskFixture(t, "once")
-	task.ReplyType, task.ReplyID, task.Before, task.FullRound = "group", "group-1", map[string]int{}, true
-	_ = s.edit(task.Ref, func(items *[]SyncTask, i int) error { (*items)[i] = task; return nil })
-	type sent struct{ target, text string }
-	answers := []sent{}
-	send := func(_ context.Context, task SyncTask, text string) error {
-		answers = append(answers, sent{task.ReplyType + ":" + task.ReplyID, text})
-		return nil
-	}
-	for i := 0; i < 6; i++ {
-		task = tickOne(t, s, j, a, task, now+int64(i)*60000, syncPage, send)
-	}
-	// Yunzai's report goes to the chat that asked, and only once.
-	if len(answers) != 1 || answers[0].target != "group:group-1" || answers[0].text != gachaLinkSummary("#", map[string]int{}, map[string]int{"100": 1}) {
-		t.Fatal(answers)
-	}
-	if task.ReplyType != "" || task.Before != nil || task.FullRound {
-		t.Fatal("reply target kept", task)
-	}
-}
-
-// syncOnHost sends 更新抽卡记录 for user u's account through the SDK, with the
-// plugin on a test clock from start and page answering each page the
-// account plugin is asked for. It returns the task's job.
-func syncOnHost(t *testing.T, start time.Time, page func(clock *fakeClock)) (*App, *fakeClock, *sdkHost, string) {
+// syncHost runs the plugin through the SDK with user u's account, whose 45
+// character event records take three pages, on a test clock.
+func syncHost(t *testing.T) (*App, *sdkHost, *gachaPages) {
 	t.Helper()
 	a := pluginApp(t)
-	clock := &fakeClock{at: start}
+	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
 	a.clock = clock
-	accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.gacha": {"list": []any{}, "region": "cn_gf01"}}}
-	host := newSDKHost(t, a, nil, func(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
-		if request.Method == "execute" && request.Params["operation"] == "genshin.gacha" {
-			page(clock)
-		}
-		return accounts.answer(request, scheduled)
-	})
-	host.message("#更新抽卡记录", "更新抽卡记录")
-	return a, clock, host, host.job("game.sync.")
+	pages := &gachaPages{t: t, clock: clock, characters: 45}
+	return a, newSDKHost(t, a, nil, pages.service(&fakeAccounts{t: t})), pages
 }
 
-// triggerUntilAnswered runs the job each minute after start, as the host's
-// scheduler does, until the round is answered in the chat, and returns how
-// many triggers it took.
-func triggerUntilAnswered(t *testing.T, clock *fakeClock, host *sdkHost, ref string, start time.Time) int {
+// A second at least between two pages, as 米游社's rate limits want.
+func pagedASecondApart(t *testing.T, asked []time.Time) {
 	t.Helper()
-	triggers := 0
-	for len(host.sent) == 0 {
-		if triggers++; triggers > 5 {
-			t.Fatalf("%d triggers did not finish the round", triggers-1)
-		}
-		clock.set(start.Add(time.Duration(triggers) * time.Minute))
-		if end, _ := host.trigger(ref); end["type"] != "result" {
-			t.Fatalf("trigger %d ended with %v", triggers, end)
+	for i := 1; i < len(asked); i++ {
+		if asked[i].Sub(asked[i-1]) < time.Second {
+			t.Fatalf("pages asked at %v", asked)
 		}
 	}
-	if !strings.Contains(sentText(host.sent[0].Message), "抽卡记录更新完成") {
+}
+
+// 更新抽卡记录, run through the SDK as the host runs it: after the role is
+// chosen the event moves to the background, says it is reading, reads every
+// page of every pool a second apart as the user and answers with Yunzai's
+// report; a full read is announced turned off.
+func TestGachaSyncCommandReadsEveryPageInItsBackgroundEvent(t *testing.T) {
+	a, host, pages := syncHost(t)
+	host.message("#设置全量更新抽卡记录", "设置全量更新抽卡记录")
+	end, actions := host.message("#更新抽卡记录", "更新抽卡记录")
+	moved := slices.IndexFunc(actions, func(action hostAction) bool { return action.Name == "event.detach" })
+	read := slices.IndexFunc(actions, func(action hostAction) bool { return asObject(action.Data["params"])["operation"] == "genshin.gacha" })
+	if end["type"] != "result" || moved < 0 || read < moved || len(host.jobs) != 0 {
+		t.Fatalf("the command ended with %v after %+v, jobs %v", end, actions, host.jobs)
+	}
+	if len(pages.asked) != 8 {
+		t.Fatalf("read %d pages", len(pages.asked))
+	}
+	pagedASecondApart(t, pages.asked)
+	if len(host.sent) != 3 || sentText(host.sent[0].Message) != "抽卡记录获取中请稍等..." || !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功，更新45条") || sentText(host.sent[2].Message) != "已关闭全量更新抽卡记录" {
 		t.Fatalf("answered %+v", host.sent)
 	}
-	return triggers
-}
-
-// A round of 更新抽卡记录 longer than a trigger's budget, run through the SDK
-// as the host runs it: each trigger reads pages until its budget is spent,
-// the next continues, and the round is answered in the chat once every pool
-// is read.
-func TestGachaSyncTriggersReadWithinTheirBudget(t *testing.T) {
-	start := time.Unix(1_800_000_000, 0)
-	pages := 0
-	// Each page takes twenty seconds, so a trigger's budget of forty seconds
-	// leaves room for two.
-	a, clock, host, ref := syncOnHost(t, start, func(clock *fakeClock) {
-		pages++
-		clock.set(clock.Now().Add(20 * time.Second))
-	})
-	if triggers := triggerUntilAnswered(t, clock, host, ref, start); triggers != 3 || pages != 6 {
-		t.Fatalf("%d triggers asked for %d pages", triggers, pages)
+	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 45 {
+		t.Fatalf("kept %d records, %v", len(archive.Records), err)
 	}
-	if tasks, err := a.SyncTasks.List(); err != nil || len(tasks) != 1 || tasks[0].State != "completed" || tasks[0].Failures != 0 {
-		t.Fatalf("tasks %+v, %v", tasks, err)
+	if items := a.BackgroundSyncs.list(); len(items) != 1 || items[0].State != "completed" || !items[0].Full || items[0].Progress.Result == nil || items[0].Progress.Result.Added != 45 {
+		t.Fatalf("syncs %+v", items)
 	}
 }
 
-// Pages follow each other a second apart, to keep under 米游社's rate
-// limits; a page still unanswered when its trigger's event ends is read
-// again by the next trigger without counting as a failure.
-func TestGachaSyncPagesASecondApartAndRereadsACutPage(t *testing.T) {
-	start := time.Unix(1_800_000_000, 0)
-	asked := []time.Duration{}
-	a, clock, host, ref := syncOnHost(t, start, func(clock *fakeClock) {
-		asked = append(asked, clock.Now().Sub(start))
-		// The third page is answered only after its event has ended.
-		if len(asked) == 3 {
-			clock.set(clock.Now().Add(54 * time.Second))
+// The management page's background sync: the page is answered with the
+// running sync as the action moves to the background, and the same event
+// reads the role's records; the page then lists the completed sync.
+func TestGachaSyncFromTheManagementPage(t *testing.T) {
+	a, host, pages := syncHost(t)
+	end, actions := host.manage("gacha.task.start", map[string]any{"account_ref": "account", "role_ref": "role", "full": false, "confirm": true})
+	moved, ok := detached(actions)
+	if task := asObject(asObject(moved.Data["result"])["task"]); !ok || task["state"] != "running" || asObject(task["role"])["uid"] != "100000001" {
+		t.Fatalf("the page was answered with %+v", moved)
+	}
+	if task := asObject(asObject(end["data"])["task"]); end["type"] != "result" || task["state"] != "completed" || len(pages.asked) != 8 {
+		t.Fatalf("the action ended with %v after %d pages", end, len(pages.asked))
+	}
+	pagedASecondApart(t, pages.asked)
+	listed, _ := host.manage("gacha.task.list", nil)
+	items := asList(asObject(listed["data"])["items"])
+	if len(items) != 1 || asObject(items[0])["state"] != "completed" || asObject(asObject(asObject(items[0])["progress"])["result"])["added"] != float64(45) {
+		t.Fatalf("listed %+v", listed)
+	}
+	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 45 || len(host.sent) != 0 {
+		t.Fatalf("kept %d records, %v; sent %+v", len(archive.Records), err, host.sent)
+	}
+}
+
+// A background sync the host will not move to the background, while the
+// plugin holds its limit of background events, answers the page clearly and
+// reads nothing.
+func TestGachaSyncRefusedTheBackgroundAnswersThePage(t *testing.T) {
+	a, host, pages := syncHost(t)
+	host.busy = true
+	end, _ := host.manage("gacha.task.start", map[string]any{"account_ref": "account", "role_ref": "role", "confirm": true})
+	if end["type"] != "error" || end["code"] != "plugin.game_background_busy" || end["message"] != "正在后台处理的任务较多，请稍后再试。" {
+		t.Fatalf("the action ended with %v", end)
+	}
+	if len(pages.asked) != 0 || len(a.BackgroundSyncs.list()) != 0 {
+		t.Fatalf("read %d pages, syncs %+v", len(pages.asked), a.BackgroundSyncs.list())
+	}
+}
+
+// Removing an archive stops its background sync: the pages read are not
+// merged, the removed archive is not revived, and the chat is told.
+func TestRemovingAnArchiveStopsItsBackgroundSync(t *testing.T) {
+	a, host, pages := syncHost(t)
+	if _, _, err := a.Gacha.Import(gacha.Archive{UID: "100000001", Region: "cn_gf01", Timezone: 8, Language: "zh-cn", Records: []gacha.Record{{ID: "1", ItemID: "10000046", GachaType: "301", UIGFType: "301", Time: "2023-01-01 00:00:00", Rank: "5"}}}); err != nil {
+		t.Fatal(err)
+	}
+	pages.before = func(n int) {
+		if n == 3 {
+			if _, err := a.manageGacha("gacha.remove", map[string]any{"uid": "100000001", "region": "cn_gf01"}); err != nil {
+				t.Error(err)
+			}
 		}
-	})
-	if triggers := triggerUntilAnswered(t, clock, host, ref, start); triggers != 2 {
-		t.Fatalf("%d triggers", triggers)
 	}
-	want := []time.Duration{60 * time.Second, 61 * time.Second, 62 * time.Second, 120 * time.Second, 121 * time.Second, 122 * time.Second, 123 * time.Second}
-	if !slices.Equal(asked, want) {
-		t.Fatalf("pages asked at %v", asked)
+	host.message("#更新抽卡记录", "更新抽卡记录")
+	if len(host.sent) != 2 || sentText(host.sent[1].Message) != "抽卡记录读取已取消。" || len(pages.asked) != 3 {
+		t.Fatalf("answered %+v after %d pages", host.sent, len(pages.asked))
 	}
-	if tasks, err := a.SyncTasks.List(); err != nil || len(tasks) != 1 || tasks[0].State != "completed" || tasks[0].Failures != 0 || tasks[0].Restarts != 0 {
-		t.Fatalf("tasks %+v, %v", tasks, err)
+	if items := a.BackgroundSyncs.list(); len(items) != 1 || items[0].State != "canceled" || items[0].LastCode != "archive_removed" {
+		t.Fatalf("syncs %+v", items)
+	}
+	if _, err := a.Gacha.Read("100000001", "cn_gf01"); err == nil {
+		t.Fatal("the removed archive was revived")
 	}
 }

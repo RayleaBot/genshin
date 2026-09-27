@@ -214,17 +214,19 @@ type App struct {
 	LinkHTTP  *http.Client
 	// PayLogs keep each sender's 充值记录; PayKeys hold the customer service
 	// links' authkeys in memory.
-	PayLogs      *PayLogStore
-	PayKeys      payKeys
-	SyncTasks    *SyncTaskStore
-	Showcase     ShowcaseClient
-	Profiles     *PanelStore
-	Reminders    *ReminderStore
-	PanelHistory *PanelHistoryStore
-	Groups       *GroupStore
-	Simulation   *SimulationStore
-	Cloud        CloudClient
-	BuildPresets *BuildPresetStore
+	PayLogs *PayLogStore
+	PayKeys payKeys
+	// BackgroundSyncs are the background syncs of 更新抽卡记录 and the
+	// management page.
+	BackgroundSyncs backgroundSyncs
+	Showcase        ShowcaseClient
+	Profiles        *PanelStore
+	Reminders       *ReminderStore
+	PanelHistory    *PanelHistoryStore
+	Groups          *GroupStore
+	Simulation      *SimulationStore
+	Cloud           CloudClient
+	BuildPresets    *BuildPresetStore
 
 	commands           commandSet
 	images             map[string]ImageBuilder
@@ -294,7 +296,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, stygianRankImage: assets.StygianRank, showcase: assets.Showcase, panelList: assets.PanelList, charactersImage: assets.Characters, trainingImage: assets.Training, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, payLogImage: assets.PayLog, roleCardsImage: assets.RoleCards, atlasIndexImage: assets.AtlasIndex, PayLogs: &PayLogStore{Path: filepath.Join(directory, "pay-log.json")}, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory, game.Prefix), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, stygianRankImage: assets.StygianRank, showcase: assets.Showcase, panelList: assets.PanelList, charactersImage: assets.Characters, trainingImage: assets.Training, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, poolImage: assets.Pools, statisticsImage: assets.Statistics, characterCardImage: assets.CharacterCard, payLogImage: assets.PayLog, roleCardsImage: assets.RoleCards, atlasIndexImage: assets.AtlasIndex, PayLogs: &PayLogStore{Path: filepath.Join(directory, "pay-log.json")}, stats: &statisticsCache{entries: map[string]statisticsEntry{}}, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, PokeCard: true, CustomAliases: map[string]string{},
@@ -354,8 +356,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 		case strings.HasPrefix(task, "game.content."):
 			return a.runContentSubscription(ctx, event)
-		case strings.HasPrefix(task, "game.sync."):
-			return a.runSyncTask(ctx, event)
 		case strings.HasPrefix(task, payLogTask):
 			return a.runChatTask(ctx, event)
 		case strings.HasPrefix(task, notePushTask):
@@ -1043,12 +1043,10 @@ func (a *App) manageGacha(action string, input map[string]any) (map[string]any, 
 		}
 		return versionDraws(a.Game, archive), nil
 	case "gacha.remove":
-		var err error
-		if a.SyncTasks != nil {
-			err = a.SyncTasks.RemoveArchive(&a.Syncs, a.Gacha, uid, region)
-		} else {
-			err = a.Gacha.Remove(uid, region)
-		}
+		// The archive's background syncs stop; one merging its last page
+		// cannot revive the removed archive.
+		a.BackgroundSyncs.stop("archive_removed", func(s BackgroundSync) bool { return s.Role.UID == uid && s.Role.Region == region })
+		err := a.Gacha.Remove(uid, region)
 		return map[string]any{"removed": err == nil}, err
 	case "gacha.import.start":
 		var archive gacha.Archive
