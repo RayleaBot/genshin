@@ -181,9 +181,8 @@ func TestImportedCloudAvatarBecomesAPanel(t *testing.T) {
 }
 
 // ark's 导出面板 and 导出面板数据 send miao's whole player data, whatever each
-// character was read from. A showcase panel kept before its roll IDs were
-// saved has rounded substats with how often each rolled; a panel read back
-// from player data keeps their sums.
+// character was read from. A showcase panel keeps the showcase's roll IDs; a
+// panel read back from player data keeps only the substats' sums.
 func TestExportWritesEveryKeptPanel(t *testing.T) {
 	game := testGame(t)
 	a := App{Game: game}
@@ -239,16 +238,21 @@ func TestExportWritesEveryKeptPanel(t *testing.T) {
 		t.Fatal(err)
 	}
 	showcase.Source = "enka"
-	for _, gear := range showcase.Equipment {
-		for i, stat := range gear.Sub {
-			value, _ := buildStatNumber(stat.Value)
-			if strings.HasSuffix(stat.Value, "%") {
-				stat.Value = strconv.FormatFloat(value, 'f', 1, 64) + "%"
-			} else {
-				stat.Value = strconv.FormatFloat(math.Round(value), 'f', 0, 64)
-			}
-			stat.Times = len(want[strconv.Itoa(gear.Slot)][stat.Key]) - 1
-			gear.Sub[i] = stat
+	var ids struct {
+		Artis map[string]struct {
+			MainID  int      `json:"mainId"`
+			AttrIDs []string `json:"attrIds"`
+		} `json:"artis"`
+	}
+	if err := json.Unmarshal([]byte(source), &ids); err != nil {
+		t.Fatal(err)
+	}
+	for i, gear := range showcase.Equipment {
+		kept := ids.Artis[strconv.Itoa(gear.Slot)]
+		showcase.Equipment[i].MainID, showcase.Equipment[i].AttrIDs = kept.MainID, nil
+		for _, id := range kept.AttrIDs {
+			number, _ := strconv.Atoi(id)
+			showcase.Equipment[i].AttrIDs = append(showcase.Equipment[i].AttrIDs, number)
 		}
 	}
 	result, err := AccountsClient{Game: "genshin", Caller: &ocrCaller{}}.Execute(t.Context(), Selection{"account", "role"}, "genshin.character", map[string]any{"character_ids": []any{"10000046"}})

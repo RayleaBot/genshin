@@ -2,7 +2,6 @@ package app_test
 
 import (
 	"encoding/json"
-	"maps"
 	"os"
 	"slices"
 	"strconv"
@@ -15,8 +14,7 @@ import (
 
 // miao's EnkaData saves a showcase artifact's mainPropId and appendPropIdList
 // as they are, and the player data written for exports and the local panel
-// rank does the same; a showcase panel kept before the IDs were saved
-// restores as many rolls of each substat from its values.
+// rank does the same.
 func TestShowcasePanelWritesTheShowcaseRollIDs(t *testing.T) {
 	raw, err := os.ReadFile("../showcase/testdata/enka-sample.json")
 	if err != nil {
@@ -95,31 +93,6 @@ func TestShowcasePanelWritesTheShowcaseRollIDs(t *testing.T) {
 			}
 			if !slices.Equal(ids, equip.Reliquary.AppendPropIDList) || arti.MainID != equip.Reliquary.MainPropID || arti.Level != min(20, equip.Reliquary.Level-1) || arti.Star != equip.Flat.RankLevel {
 				t.Errorf("%s %s = %+v, want %v main %d", panel.ID, equip.Flat.EquipType, arti, equip.Reliquary.AppendPropIDList, equip.Reliquary.MainPropID)
-			}
-		}
-		// Without the IDs each substat restores as many rolls as it had.
-		for piece := range panel.Equipment {
-			panel.Equipment[piece].MainID, panel.Equipment[piece].AttrIDs = 0, nil
-		}
-		restored := write(panel)
-		for _, equip := range avatar.EquipList {
-			if equip.Reliquary == nil {
-				continue
-			}
-			counts := func(ids []any) map[int]int {
-				out := map[int]int{}
-				for _, id := range ids {
-					value, _ := strconv.Atoi(app.Text(id))
-					out[value/10%1000]++
-				}
-				return out
-			}
-			want := []any{}
-			for _, id := range equip.Reliquary.AppendPropIDList {
-				want = append(want, float64(id))
-			}
-			if got, want := counts(restored.Artis[slots[equip.Flat.EquipType]].AttrIDs), counts(want); !maps.Equal(got, want) {
-				t.Errorf("%s %s restored rolls %v, want %v", panel.ID, equip.Flat.EquipType, got, want)
 			}
 		}
 	}
