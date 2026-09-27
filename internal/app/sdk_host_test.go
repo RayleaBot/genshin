@@ -183,7 +183,7 @@ func (h *sdkHost) chat(target map[string]any, role, text, command string, args .
 	if command != "" {
 		event["payload"] = map[string]any{"command": command, "args": args}
 	}
-	return h.exchange(id, map[string]any{"type": "event", "request_id": id, "event": event})
+	return h.exchange(id, eventFrame(id, event))
 }
 
 // message sends a private chat message of user "u".
@@ -203,12 +203,12 @@ func (h *sdkHost) manage(action string, input map[string]any) (map[string]any, [
 	h.t.Helper()
 	h.next++
 	id := fmt.Sprintf("manage-%d", h.next)
-	return h.exchange(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}})
+	return h.exchange(id, eventFrame(id, map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}))
 }
 
 // trigger runs a job the plugin created as the host's scheduler does: the
-// event has no target, and its payload holds the job's payload (and its
-// action) but not the task ID.
+// event has no target, and its payload holds the task ID, and the job's
+// payload and its action when the job has one.
 func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	h.t.Helper()
 	job, exists := h.jobs[taskID]
@@ -218,11 +218,20 @@ func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	h.next++
 	id := fmt.Sprintf("scheduler-%d", h.next)
 	h.triggers[id] = true
-	payload := map[string]any{"payload": maps.Clone(job.Payload)}
+	payload := map[string]any{"task_id": taskID}
+	if len(job.Payload) > 0 {
+		payload["payload"] = maps.Clone(job.Payload)
+	}
 	if action, ok := job.Payload["action"].(string); ok && action != "" {
 		payload["action"] = action
 	}
-	return h.exchange(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}})
+	return h.exchange(id, eventFrame(id, map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}))
+}
+
+// eventFrame is the host's frame of event id, due by the host's default
+// event deadline of 60 seconds.
+func eventFrame(id string, event map[string]any) map[string]any {
+	return map[string]any{"type": "event", "request_id": id, "deadline_at_ms": time.Now().Add(time.Minute).UnixMilli(), "event": event}
 }
 
 // triggerUntilDone runs the job each minute after start, as the host's
