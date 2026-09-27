@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
@@ -198,6 +199,10 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) error {
 	ref := triggerTask(event)
 	task, ok, err := a.Reminders.claim(ref)
+	if errors.Is(err, errTaskMissing) {
+		// Every group was left; the job goes with the task.
+		_, _ = event.Actions().SchedulerDelete(ctx, ref)
+	}
 	if err != nil || !ok {
 		return event.Result(map[string]any{"checked": false})
 	}

@@ -891,7 +891,7 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 	case "blueprint.read", "blueprint.compute":
 		return a.blueprintAction(ctx, a.accountClient(event), action, input)
 	case "content.subscription.list", "content.subscription.remove":
-		return a.subscriptionManage(action, input)
+		return a.subscriptionManage(ctx, event, action, input)
 	case "codes.query":
 		return a.Content.codes(ctx)
 	case "billing.schema":

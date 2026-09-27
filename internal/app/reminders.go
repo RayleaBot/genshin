@@ -187,6 +187,7 @@ func (a *App) removeDelegatedTask(ctx context.Context, event *rayleabot.EventCon
 	if err != nil {
 		return map[string]any{"removed": false, "delegation_revoked": false}, err
 	}
+	_, _ = event.Actions().SchedulerDelete(ctx, ref)
 	client.Provider = task.Provider
 	revoked := client.call(ctx, "delegation.revoke", map[string]any{"account_ref": task.AccountRef, "delegation_ref": task.DelegationRef}, nil) == nil
 	return map[string]any{"removed": true, "delegation_revoked": revoked}, nil
@@ -204,7 +205,8 @@ func stamina(data map[string]any) (float64, float64, bool) {
 }
 
 // Tick runs one trigger of a task. The task's own kind decides what it
-// requests; the store's lock is not held while it does.
+// requests; the store's lock is not held while it does. errTaskMissing
+// reports a task that is no longer saved.
 func (s *ReminderStore) Tick(id string, now int64, query func(Reminder) (QueryResult, error), send func(Reminder, string) error, game Game) error {
 	claimed, ok, err := s.claim(id)
 	if err != nil || !ok {
@@ -283,7 +285,8 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	err := a.Reminders.Tick(triggerTask(event), time.Now().UnixMilli(), func(task Reminder) (QueryResult, error) {
+	ref := triggerTask(event)
+	err := a.Reminders.Tick(ref, time.Now().UnixMilli(), func(task Reminder) (QueryResult, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var result QueryResult
 		params := map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}
@@ -340,6 +343,11 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 		_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: task.Owner.SourceProtocol, SourceAdapter: task.Owner.SourceAdapter, TargetType: "private", TargetID: task.Owner.ActorID, Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
 		return err
 	}, a.Game)
+	if errors.Is(err, errTaskMissing) {
+		// The task was removed; its job goes with it.
+		_, _ = event.Actions().SchedulerDelete(ctx, ref)
+		return event.Result(map[string]any{"checked": false})
+	}
 	if err != nil {
 		failure := PublicError(err)
 		return event.Fail(failure.Code, failure.Message)

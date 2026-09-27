@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"slices"
 	"time"
 
@@ -43,6 +44,7 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 			return map[string]any{"removed": false, "delegation_revoked": false}, err
 		}
 		a.Syncs.Forget(t.Progress.Ref)
+		_, _ = event.Actions().SchedulerDelete(ctx, t.Ref)
 		client := AccountsClient{Caller: event.Actions(), Provider: t.Provider, Game: a.Game.ID}
 		revoked := client.call(ctx, "delegation.revoke", map[string]any{"account_ref": t.AccountRef, "delegation_ref": t.DelegationRef}, nil) == nil
 		return map[string]any{"removed": true, "delegation_revoked": revoked}, nil
@@ -184,7 +186,8 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 	start := a.now()
 	ctx, cancel := a.eventWork(ctx, start)
 	defer cancel()
-	err := a.SyncTasks.Tick(ctx, triggerTask(event), start.UnixMilli(), &a.Syncs, a.Gacha, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
+	ref := triggerTask(event)
+	err := a.SyncTasks.Tick(ctx, ref, start.UnixMilli(), &a.Syncs, a.Gacha, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var response QueryResult
 		err := client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".gacha", "delegation_ref": task.DelegationRef, "input": map[string]any{"gacha_type": pool, "end_id": end, "page": page}}, &response)
@@ -208,6 +211,11 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 		_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: task.Owner.SourceProtocol, SourceAdapter: task.Owner.SourceAdapter, TargetType: targetType, TargetID: targetID, Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
 		return err
 	})
+	if errors.Is(err, errTaskMissing) {
+		// The task was removed; its job goes with it.
+		_, _ = event.Actions().SchedulerDelete(ctx, ref)
+		return event.Result(map[string]any{"checked": false})
+	}
 	if err != nil {
 		e := PublicError(err)
 		return event.Fail(e.Code, e.Message)

@@ -226,3 +226,112 @@ func TestJobsFromBeforeTaskIDsAreRegisteredAgain(t *testing.T) {
 		t.Fatalf("a later trigger asked for %v", actions)
 	}
 }
+
+// Removing a task, as its user in chat or on the management page, deletes its
+// job in the same event.
+func TestRemovingATaskDeletesItsJob(t *testing.T) {
+	ref := func(h *sdkHost, prefix string) map[string]any { return map[string]any{"ref": h.job(prefix)} }
+	for _, c := range []struct {
+		name, prefix   string
+		create, remove func(h *sdkHost)
+	}{
+		{"体力提醒", "game.reminder.genshin.", func(h *sdkHost) {
+			h.manage("reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "threshold": 50, "days": 30})
+		}, func(h *sdkHost) { h.manage("reminder.remove", ref(h, "game.reminder.genshin.")) }},
+		{"体力推送", notePushTask, func(h *sdkHost) {
+			h.groupMessage("#开启体力推送", "开启体力推送")
+		}, func(h *sdkHost) { h.groupMessage("#关闭体力推送", "关闭体力推送") }},
+		{"每日签到", "game.sign.", func(h *sdkHost) {
+			h.message("#自动签到 开启", "自动签到", "开启")
+		}, func(h *sdkHost) { h.message("#自动签到 关闭", "自动签到", "关闭") }},
+		{"每日月报收集", "game.monthly.", func(h *sdkHost) {
+			h.manage("monthly.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 20, "confirm": true})
+		}, func(h *sdkHost) { h.manage("monthly.task.remove", ref(h, "game.monthly.")) }},
+		{"米游社任务", "game.community.", func(h *sdkHost) {
+			h.manage("community.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "read": true, "confirm": true})
+		}, func(h *sdkHost) { h.manage("community.task.remove", ref(h, "game.community.")) }},
+		{"云游戏签到", "game.cloudgame.", func(h *sdkHost) {
+			h.manage("cloudgame.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "confirm": true})
+		}, func(h *sdkHost) { h.manage("cloudgame.task.remove", ref(h, "game.cloudgame.")) }},
+		{"挑战提醒", "game.challenge.", func(h *sdkHost) {
+			h.manage("challenge.reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "abyss", "metric": "star", "threshold": 36, "hour": 20, "days": 30, "confirm": true})
+		}, func(h *sdkHost) { h.manage("challenge.reminder.remove", ref(h, "game.challenge.")) }},
+		{"抽卡后台同步", "game.sync.", func(h *sdkHost) {
+			h.message("#更新抽卡记录", "更新抽卡记录")
+		}, func(h *sdkHost) { h.manage("gacha.task.remove", ref(h, "game.sync.")) }},
+		{"群推送", "game.content.", func(h *sdkHost) {
+			h.groupMessage("#开启公告推送", "开启公告推送")
+		}, func(h *sdkHost) {
+			input := ref(h, "game.content.")
+			input["confirm"] = true
+			h.manage("content.subscription.remove", input)
+		}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			a := pluginApp(t)
+			host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
+			c.create(host)
+			id := host.job(c.prefix)
+			c.remove(host)
+			if len(host.deleted) != 1 || host.deleted[0] != id || len(host.jobs) != 0 {
+				t.Fatalf("deleted %v, jobs left %v", host.deleted, host.jobs)
+			}
+		})
+	}
+}
+
+// A trigger whose task is no longer saved deletes its own job.
+func TestATriggerWhoseTaskIsGoneDeletesItsJob(t *testing.T) {
+	for _, c := range []struct {
+		name, prefix string
+		create       func(h *sdkHost)
+		forget       func(a *App, ref string) error
+	}{
+		{"体力提醒", "game.reminder.genshin.", func(h *sdkHost) {
+			h.manage("reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "threshold": 50, "days": 30})
+		}, forgetReminder},
+		{"体力推送", notePushTask, func(h *sdkHost) {
+			h.groupMessage("#开启体力推送", "开启体力推送")
+		}, forgetReminder},
+		{"抽卡后台同步", "game.sync.", func(h *sdkHost) {
+			h.message("#更新抽卡记录", "更新抽卡记录")
+		}, func(a *App, ref string) error {
+			return a.SyncTasks.edit(ref, func(items *[]SyncTask, i int) error {
+				*items = slices.Delete(*items, i, i+1)
+				return nil
+			})
+		}},
+		{"群推送", "game.content.", func(h *sdkHost) {
+			h.groupMessage("#开启公告推送", "开启公告推送")
+		}, func(a *App, ref string) error {
+			return a.Subscriptions.edit(ref, func(items *[]ContentSubscription, i int) error {
+				*items = slices.Delete(*items, i, i+1)
+				return nil
+			})
+		}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			a := pluginApp(t)
+			host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, (&fakeAccounts{t: t}).answer)
+			c.create(host)
+			ref := host.job(c.prefix)
+			if err := c.forget(a, ref); err != nil {
+				t.Fatal(err)
+			}
+			if end, _ := host.trigger(ref); end["type"] != "result" {
+				t.Fatalf("the trigger ended with %v", end)
+			}
+			if len(host.deleted) != 1 || host.deleted[0] != ref {
+				t.Fatalf("deleted %v", host.deleted)
+			}
+		})
+	}
+}
+
+// forgetReminder removes a saved reminder or account task, leaving its job.
+func forgetReminder(a *App, ref string) error {
+	return a.Reminders.edit(ref, func(items *[]Reminder, i int) error {
+		*items = slices.Delete(*items, i, i+1)
+		return nil
+	})
+}
