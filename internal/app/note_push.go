@@ -25,6 +25,8 @@ import (
 const (
 	notePushKind     = "note_push"
 	notePushCooldown = 12 * time.Hour
+	// notePushDraw is what a trigger keeps of its event to draw and send.
+	notePushDraw = 20 * time.Second
 	// notePushTask prefixes the senders' push tasks.
 	notePushTask = "game.reminder.push."
 )
@@ -247,10 +249,9 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	if !ok {
 		return a.saveNotePush(event, task)
 	}
-	// Drawing and sending the push may outlive the event, which moves to the
-	// background first; a push the host will not move there is left to the
-	// next trigger, which reads again.
-	if detach(ctx, event, nil) != nil {
+	// Drawing and sending the push needs the rest of the event: a read that
+	// left too little of it is pushed by the next trigger, which reads again.
+	if time.Until(event.Deadline()) < notePushDraw {
 		return event.Result(map[string]any{"checked": false})
 	}
 	// The push is marked before it is sent, so a restart does not send it

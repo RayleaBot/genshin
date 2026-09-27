@@ -188,12 +188,6 @@ func (a *App) pushGroup(ctx context.Context, event *rayleabot.EventContext, sub 
 		}
 	}
 	if post, ok := postToPush(posts, *sub, now); ok {
-		// Drawing and sending the post may outlive the event, which moves to
-		// the background first; a post the host will not move there is left
-		// to the next trigger.
-		if err := detach(ctx, event, nil); err != nil {
-			return errStepUnfinished
-		}
 		if sub.Sent == nil {
 			sub.Sent = map[string]int64{}
 		}

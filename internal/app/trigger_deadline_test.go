@@ -99,11 +99,11 @@ func TestAccountTaskCutByItsEventIsReadAgain(t *testing.T) {
 	}
 }
 
-// A 体力推送 whose read its trigger's deadline cut, or which the host would
-// not move to the background to draw and send, pushes nothing and marks
-// nothing: the next trigger reads again and pushes from the background.
+// A 体力推送 whose read its trigger's deadline cut, or which read too late
+// in its event to draw and send, pushes nothing and marks nothing: the next
+// trigger reads again and pushes.
 func TestNotePushLeftByItsEventIsPushedByTheNextTrigger(t *testing.T) {
-	for _, name := range []string{"cut", "refused"} {
+	for _, name := range []string{"cut", "late"} {
 		t.Run(name, func(t *testing.T) {
 			a := pluginApp(t)
 			start := time.Unix(1_800_000_000, 0)
@@ -120,19 +120,19 @@ func TestNotePushLeftByItsEventIsPushedByTheNextTrigger(t *testing.T) {
 			ref := host.job(notePushTask)
 			sent := len(host.sent)
 			clock.set(start.Add(time.Minute))
-			if name == "cut" {
-				host.deadline = cutEvent
-			} else {
-				host.busy = true
+			host.deadline = cutEvent
+			if name == "late" {
+				// Less than the 20 seconds a push needs to draw and send.
+				host.deadline = 15 * time.Second
 			}
 			host.trigger(ref)
 			if tasks, _ := a.Reminders.List(); len(host.sent) != sent || len(tasks) != 1 || tasks[0].LastAttemptMS != 0 || tasks[0].LastCheckedMS != 0 {
 				t.Fatalf("after the first trigger: %d messages, %+v", len(host.sent)-sent, tasks)
 			}
 			clock.set(start.Add(10 * time.Minute))
-			host.deadline, host.busy = 0, false
+			host.deadline = 0
 			_, actions := host.trigger(ref)
-			if _, ok := detached(actions); !ok || len(host.sent) != sent+1 || host.sent[sent].TargetType != "group" || !strings.Contains(sentText(host.sent[sent].Message), "体力快满了") {
+			if _, ok := detached(actions); ok || len(host.sent) != sent+1 || host.sent[sent].TargetType != "group" || !strings.Contains(sentText(host.sent[sent].Message), "体力快满了") {
 				t.Fatalf("pushed %+v after %+v", host.sent[sent:], actions)
 			}
 		})
@@ -141,7 +141,7 @@ func TestNotePushLeftByItsEventIsPushedByTheNextTrigger(t *testing.T) {
 
 // recentNews serves a group push one recent announcement, 1001. With cut
 // set, its details the first time are answered only once the request's
-// event has ended.
+// event is past its deadline.
 type recentNews struct{ cut bool }
 
 func (n *recentNews) Do(request *http.Request) (*http.Response, error) {
@@ -161,36 +161,26 @@ func (n *recentNews) Do(request *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader(raw))}, nil
 }
 
-// A group push whose post its background deadline cut before it was sent,
-// or which the host would not move to the background, keeps the post
-// unsent, and the next trigger pushes it.
+// A group push whose post its trigger's deadline cut before it was sent
+// keeps the post unsent, and the next trigger pushes it.
 func TestContentPushLeftByItsEventIsPushedByTheNextTrigger(t *testing.T) {
-	for _, name := range []string{"cut", "refused"} {
-		t.Run(name, func(t *testing.T) {
-			a := pluginApp(t)
-			news := &recentNews{cut: name == "cut"}
-			a.Content = PublicContentClient{HTTP: news}
-			host := newSDKHost(t, a, map[string]any{"image_replies": false}, (&fakeAccounts{t: t}).answer)
-			host.groupMessage("#开启公告推送", "开启公告推送")
-			ref := host.job("game.content.")
-			sent := len(host.sent)
-			if name == "cut" {
-				host.background = cutEvent
-			} else {
-				host.busy = true
-			}
-			host.trigger(ref)
-			if items, _ := a.Subscriptions.List(); len(host.sent) != sent || len(items) != 1 || len(items[0].Sent) != 0 || items[0].LastCode != "plugin.game_task_unfinished" {
-				t.Fatalf("after the first trigger: %d messages, %+v", len(host.sent)-sent, items)
-			}
-			host.background, host.busy = 0, false
-			host.trigger(ref)
-			if len(host.sent) != sent+1 || host.sent[sent].TargetID != "g" || !strings.Contains(sentText(host.sent[sent].Message), "版本更新说明") {
-				t.Fatalf("pushed %+v", host.sent[sent:])
-			}
-			if items, _ := a.Subscriptions.List(); len(items[0].Sent) != 1 || items[0].LastCode != "checked" {
-				t.Fatalf("after the push: %+v", items)
-			}
-		})
+	a := pluginApp(t)
+	a.Content = PublicContentClient{HTTP: &recentNews{cut: true}}
+	host := newSDKHost(t, a, map[string]any{"image_replies": false}, (&fakeAccounts{t: t}).answer)
+	host.groupMessage("#开启公告推送", "开启公告推送")
+	ref := host.job("game.content.")
+	sent := len(host.sent)
+	host.deadline = cutEvent
+	host.trigger(ref)
+	if items, _ := a.Subscriptions.List(); len(host.sent) != sent || len(items) != 1 || len(items[0].Sent) != 0 || items[0].LastCode != "plugin.game_task_unfinished" {
+		t.Fatalf("after the cut trigger: %d messages, %+v", len(host.sent)-sent, items)
+	}
+	host.deadline = 0
+	_, actions := host.trigger(ref)
+	if _, ok := detached(actions); ok || len(host.sent) != sent+1 || host.sent[sent].TargetID != "g" || !strings.Contains(sentText(host.sent[sent].Message), "版本更新说明") {
+		t.Fatalf("pushed %+v after %+v", host.sent[sent:], actions)
+	}
+	if items, _ := a.Subscriptions.List(); len(items[0].Sent) != 1 || items[0].LastCode != "checked" {
+		t.Fatalf("after the push: %+v", items)
 	}
 }
