@@ -144,7 +144,7 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 	if err == nil {
 		task.DelegationRef = grant.Delegation.Ref
 		task.ExpiresAtMS = grant.Delegation.ExpiresAtMS
-		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡后台同步", Payload: taskPayload("gacha_sync", task.Ref)})
+		_, err = event.Actions().SchedulerCreate(ctx, a.syncJob(task.Ref))
 	}
 	if err == nil {
 		task.State = "waiting"
@@ -171,6 +171,12 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 	}
 	return map[string]any{"task": task}, nil
 }
+
+// syncJob is the scheduler job of the background sync task ref.
+func (a *App) syncJob(ref string) rayleabot.SchedulerCreateRequest {
+	return rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡后台同步", Payload: taskPayload("gacha_sync", ref)}
+}
+
 func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) error {
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")

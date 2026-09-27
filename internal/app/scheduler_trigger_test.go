@@ -3,7 +3,9 @@ package app
 import (
 	"bytes"
 	"io"
+	"maps"
 	"net/http"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -171,5 +173,53 @@ func TestContentPushTriggerChecksItsGroup(t *testing.T) {
 	items, _ := a.Subscriptions.List()
 	if len(items) != 1 || items[0].LastCode != "checked" || len(host.deleted) != 0 {
 		t.Fatalf("subscriptions %+v, deleted %v", items, host.deleted)
+	}
+}
+
+// Jobs created before their payloads carried their task IDs: the first
+// trigger without one registers the job of every saved task again, with the
+// same schedule and label and a payload carrying its ID, and the tasks reach
+// their triggers again. A job without a saved task is left as it is, and
+// later triggers without an ID register nothing more.
+func TestJobsFromBeforeTaskIDsAreRegisteredAgain(t *testing.T) {
+	a := pluginApp(t)
+	a.Content = PublicContentClient{HTTP: emptyNews{}}
+	accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}}}
+	host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, accounts.answer)
+	host.manage("reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "threshold": 50, "days": 30})
+	host.manage("signin.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 0, "confirm": true})
+	host.manage("challenge.reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "abyss", "metric": "star", "threshold": 36, "hour": 20, "days": 30, "confirm": true})
+	host.groupMessage("#开启体力推送", "开启体力推送")
+	host.groupMessage("#开启公告推送", "开启公告推送")
+	host.message("#更新抽卡记录", "更新抽卡记录")
+	created := maps.Clone(host.jobs)
+	if len(created) != 6 {
+		t.Fatalf("jobs %v", created)
+	}
+	// Before, a job's payload held only its kind.
+	for id, job := range host.jobs {
+		job.Payload = map[string]any{"kind": job.Payload["kind"]}
+		host.jobs[id] = job
+	}
+	host.jobs["game.link.OLD"] = rayleabot.SchedulerCreateRequest{TaskID: "game.link.OLD", Cron: "* * * * *", Payload: map[string]any{"kind": "gacha_link"}}
+	end, actions := host.trigger("game.link.OLD")
+	if end["type"] != "result" || len(actions) != len(created) || len(host.deleted) != 0 || len(host.sent) != 0 {
+		t.Fatalf("the trigger ended with %v after %v", end, actions)
+	}
+	for id, job := range created {
+		if !reflect.DeepEqual(host.jobs[id], job) {
+			t.Fatalf("job %s registered as %+v, created as %+v", id, host.jobs[id], job)
+		}
+	}
+	if job := host.jobs["game.link.OLD"]; job.Payload["task_id"] != nil {
+		t.Fatalf("the link job became %+v", job)
+	}
+	ref := host.job("game.reminder.genshin.")
+	host.trigger(ref)
+	if !accounts.read("genshin.note", ref) {
+		t.Fatalf("the reminder did not read with its delegation: %+v", accounts.executes)
+	}
+	if _, actions := host.trigger("game.link.OLD"); len(actions) != 0 {
+		t.Fatalf("a later trigger asked for %v", actions)
 	}
 }

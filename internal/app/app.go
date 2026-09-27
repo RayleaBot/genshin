@@ -207,6 +207,9 @@ type App struct {
 	// ChatTasks is chat work that continues past its event, as gacha links
 	// and customer service links whose records are still being read.
 	ChatTasks chatTasks
+	// legacy is whether jobs from before task IDs were carried have been
+	// registered again.
+	legacy legacyJobs
 	// fullLinks are the senders whose next link reads the whole history;
 	// LinkHTTP reads the official wish history and customer service logs
 	// (nil uses a default client).
@@ -361,6 +364,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	if event.Event.EventType == "scheduler.trigger" {
 		task := triggerTask(event)
 		switch {
+		case task == "":
+			return a.runLegacyJob(ctx, event)
 		case strings.HasPrefix(task, "game.content."):
 			return a.runContentSubscription(ctx, event)
 		case strings.HasPrefix(task, "game.sync."):

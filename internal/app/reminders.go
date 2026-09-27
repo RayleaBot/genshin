@@ -121,7 +121,7 @@ func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext,
 		if err == nil {
 			task.DelegationRef = grant.Delegation.Ref
 			task.ExpiresAtMS = grant.Delegation.ExpiresAtMS
-			_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: "*/10 * * * *", LogLabel: a.Game.Name + "体力提醒", Payload: taskPayload("stamina_reminder", task.Ref)})
+			_, err = event.Actions().SchedulerCreate(ctx, a.reminderJob(task))
 		}
 		if err == nil {
 			task.Enabled = true
@@ -149,6 +149,27 @@ func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext,
 	}
 	return nil, gameError("operation_denied", "提醒操作不存在。")
 }
+
+// reminderLabels name the reminders and account tasks by kind; a job's log
+// label is the game's name and its task's.
+var reminderLabels = map[string]string{"": "体力提醒", notePushKind: "体力推送", "signin": "每日签到", "monthly": "每日月报收集", "community": "米游社任务", "cloudgame": "云游戏签到"}
+
+// reminderJob is the scheduler job of a saved reminder or account task: the
+// schedule of its kind, its log label, and a payload carrying its ID.
+func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
+	cron, label, kind := "*/10 * * * *", reminderLabels[task.Kind], task.Kind
+	switch task.Kind {
+	case "":
+		kind = "stamina_reminder"
+	case "community", "cloudgame":
+		cron = "* * * * *"
+	case "challenge":
+		challenge, _ := challengeKind(task.ChallengeKind)
+		cron, label, kind = "*/5 * * * *", challenge.Label+"挑战提醒", "challenge_reminder"
+	}
+	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label, Payload: taskPayload(kind, task.Ref)}
+}
+
 func (a *App) removeDelegatedTask(ctx context.Context, event *rayleabot.EventContext, ref string, kind string) (map[string]any, error) {
 	client := a.accountClient(event)
 	var task Reminder

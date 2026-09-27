@@ -184,7 +184,7 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 		return nil
 	})
 	if err == nil {
-		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "*/10 * * * *", LogLabel: a.Game.Name + "体力推送", Payload: taskPayload(notePushKind, ref)})
+		_, err = event.Actions().SchedulerCreate(ctx, a.reminderJob(Reminder{Ref: ref, Kind: notePushKind}))
 	}
 	if err != nil {
 		return event.SendText(friendlyError(err))
