@@ -197,6 +197,9 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 // have passed since the last push, the resin is read and pushed to the first
 // of the sender's groups whose threshold it reached.
 func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) error {
+	now := a.now()
+	ctx, cancel := a.eventWork(ctx, now)
+	defer cancel()
 	ref := triggerTask(event)
 	task, ok, err := a.Reminders.claim(ref)
 	if errors.Is(err, errTaskMissing) {
@@ -207,7 +210,6 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 		return event.Result(map[string]any{"checked": false})
 	}
 	defer a.Reminders.release(ref)
-	now := time.Now()
 	if !settings(event).Xiaoyao.NoteTask || !task.Enabled || now.Sub(time.UnixMilli(task.LastAttemptMS)) < notePushCooldown {
 		return event.Result(map[string]any{"checked": false})
 	}
@@ -225,6 +227,10 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	var result QueryResult
 	task.LastCheckedMS = now.UnixMilli()
 	if err = client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}, &result); err != nil {
+		if ctx.Err() != nil {
+			// The event ended during the read; the next trigger reads again.
+			return event.Result(map[string]any{"checked": false})
+		}
 		task.LastCode = PublicError(err).Code
 		switch task.LastCode {
 		case "plugin.account_delegation_denied", "plugin.account_caller_denied", "plugin.account_not_found", "plugin.account_role_denied", "plugin.upstream_auth_invalid":
@@ -241,6 +247,11 @@ func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) er
 	scope, ok := a.Groups.pushGroup(task.Groups, current)
 	if !ok {
 		return a.saveNotePush(event, task)
+	}
+	// Drawing and sending the push has the rest of the event: a read that
+	// ended past the budget is left to the next trigger, which reads again.
+	if !a.now().Before(now.Add(chatTaskBudget)) {
+		return event.Result(map[string]any{"checked": false})
 	}
 	// The push is marked before it is sent, so a restart does not send it
 	// again.

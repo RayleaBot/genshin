@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -142,6 +143,13 @@ func (s *ReminderStore) tickSignin(task *Reminder, now int64, query func(Reminde
 		return err
 	}
 	result, err := query(*task)
+	if errors.Is(err, errStepUnfinished) {
+		// The event ended before the sign-in answered; the next trigger
+		// signs in again, which upstream answers as already signed if it
+		// went through.
+		task.LastSignDay, task.NextCheckMS, task.LastCode = "", now, PublicError(err).Code
+		return s.save(*task)
+	}
 	message := ""
 	if err != nil {
 		task.LastCode = PublicError(err).Code

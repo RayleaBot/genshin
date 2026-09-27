@@ -243,6 +243,9 @@ func (s *ReminderStore) run(task *Reminder, now int64, query func(Reminder) (Que
 	task.NextCheckMS = now + int64(10*time.Minute/time.Millisecond)
 	task.LastCheckedMS = now
 	result, err := query(*task)
+	if errors.Is(err, errStepUnfinished) {
+		return nil
+	}
 	if err != nil {
 		task.LastCode = PublicError(err).Code
 		task.NextCheckMS = now + int64(time.Hour/time.Millisecond)
@@ -285,8 +288,11 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
+	start := a.now()
+	ctx, cancel := a.eventWork(ctx, start)
+	defer cancel()
 	ref := triggerTask(event)
-	err := a.Reminders.Tick(ref, time.Now().UnixMilli(), func(task Reminder) (QueryResult, error) {
+	query := func(task Reminder) (QueryResult, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var result QueryResult
 		params := map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".note", "input": map[string]any{}, "delegation_ref": task.DelegationRef}
@@ -328,6 +334,15 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 			return result, err
 		}
 		err := client.call(ctx, "execute", params, &result)
+		return result, err
+	}
+	err := a.Reminders.Tick(ref, start.UnixMilli(), func(task Reminder) (QueryResult, error) {
+		result, err := query(task)
+		if err != nil && ctx.Err() != nil {
+			// The event ended during the request; the next trigger asks
+			// again.
+			return result, errStepUnfinished
+		}
 		return result, err
 	}, func(task Reminder, text string) error {
 		found := false

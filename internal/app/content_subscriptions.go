@@ -197,14 +197,25 @@ func (a *App) pushGroup(ctx context.Context, event *rayleabot.EventContext, sub 
 			name = "资讯"
 		}
 		if err := a.pushPost(ctx, event, post.id, newsGameName+name+"推送："+post.subject, send); err != nil {
+			if ctx.Err() != nil {
+				// The event ended before the post was sent; the next
+				// trigger pushes it.
+				delete(sub.Sent, post.id)
+			}
 			return err
 		}
 	}
 	today := now.In(pushZone).Format("2006-01-02")
 	if slices.Contains(sub.Kinds, "expiry") && now.In(pushZone).Hour() >= 10 && sub.WarnedOn != today {
+		warned := sub.WarnedOn
 		sub.WarnedOn = today
 		raw, err := a.pushLists.get("announcements", func() (any, error) { return a.Content.announcements(ctx) })
 		if err != nil {
+			if ctx.Err() != nil {
+				// The event ended before the activities were read; the
+				// next trigger warns.
+				sub.WarnedOn = warned
+			}
 			return err
 		}
 		for _, activity := range expiringActivities(raw.(Announcements).Groups, now) {
@@ -270,6 +281,9 @@ func (a *App) checkPushes(ctx context.Context, event *rayleabot.EventContext, re
 				return err
 			}
 			if err := a.pushGroup(ctx, event, &item, time.Now(), send); err != nil {
+				if ctx.Err() != nil {
+					err = errStepUnfinished
+				}
 				code = PublicError(err).Code
 			}
 		}
@@ -393,6 +407,8 @@ func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.Event
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
+	ctx, cancel := a.eventWork(ctx, a.now())
+	defer cancel()
 	ref := triggerTask(event)
 	items, err := a.Subscriptions.List()
 	if err != nil {

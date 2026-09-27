@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -427,6 +428,9 @@ func (s *ReminderStore) tickMonthly(task *Reminder, now int64, query func(Remind
 	task.NextCheckMS = nextChallengeCheck(now, task.Hour, task.Minute, 0)
 	task.LastCheckedMS = now
 	result, err := query(*task)
+	if errors.Is(err, errStepUnfinished) {
+		return nil
+	}
 	if err != nil {
 		task.LastCode = PublicError(err).Code
 		switch task.LastCode {

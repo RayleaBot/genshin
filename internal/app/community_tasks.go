@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -101,6 +102,13 @@ func (s *ReminderStore) tickCommunity(task *Reminder, now int64, query func(Remi
 	}
 	result, err := query(current)
 	plan.Pending = false
+	if errors.Is(err, errStepUnfinished) {
+		// The event ended before the step answered; the next trigger does
+		// it again.
+		plan.Cursor--
+		task.LastCode = PublicError(err).Code
+		return s.save(*task)
+	}
 	if err != nil {
 		plan.State = "failed"
 		stopAccountRound(task, now, PublicError(err).Code)
@@ -204,6 +212,7 @@ func (s *ReminderStore) tickCloudGame(task *Reminder, now int64, query func(Remi
 		}
 		return s.save(*task)
 	}
+	previous := task.LastSignDay
 	task.LastSignDay = today
 	task.NextCheckMS = nextChallengeCheck(now, task.Hour, task.Minute, 0)
 	task.LastCheckedMS = now
@@ -212,6 +221,12 @@ func (s *ReminderStore) tickCloudGame(task *Reminder, now int64, query func(Remi
 		return err
 	}
 	result, err := query(*task)
+	if errors.Is(err, errStepUnfinished) {
+		// The event ended before the query answered; the next trigger
+		// queries again.
+		task.LastSignDay, task.NextCheckMS, task.LastCode = previous, now, PublicError(err).Code
+		return s.save(*task)
+	}
 	if err != nil {
 		stopAccountRound(task, now, PublicError(err).Code)
 		return s.save(*task)

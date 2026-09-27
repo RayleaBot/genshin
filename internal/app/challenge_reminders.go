@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -158,6 +159,9 @@ func (s *ReminderStore) tickChallenge(task *Reminder, now int64, query func(Remi
 	task.LastCheckedMS = now
 	task.NextCheckMS = nextChallengeCheck(now, task.Hour, task.Minute, task.Weekday)
 	result, err := query(*task)
+	if errors.Is(err, errStepUnfinished) {
+		return nil
+	}
 	if err != nil {
 		task.LastCode = PublicError(err).Code
 		switch task.LastCode {
