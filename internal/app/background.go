@@ -22,13 +22,9 @@ var errBackgroundBusy = gameError("background_busy", "正在后台处理的任�
 // off; the next trigger does the step again.
 var errStepUnfinished = gameError("task_unfinished", "本次触发未能在时限内完成，下次触发时重试。")
 
-// detach moves event to the background, unless it is there already; result is
-// what a management page receives. A refusal leaves the event in the
-// foreground.
+// detach moves event to the background; result is what a management page
+// receives. A refusal leaves the event in the foreground.
 func detach(ctx context.Context, event *rayleabot.EventContext, result any) error {
-	if event.Detached() {
-		return nil
-	}
 	if _, err := event.Detach(ctx, result); err != nil {
 		var refused *rayleabot.ActionError
 		if errors.As(err, &refused) && refused.Code == "platform.rate_limited" {
