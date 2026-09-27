@@ -187,7 +187,19 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 	ctx, cancel := a.eventWork(ctx, start)
 	defer cancel()
 	ref := triggerTask(event)
+	// Pages follow each other, each starting at least a second after the
+	// previous one to keep under 米游社's rate limits, until the event's
+	// budget is spent.
+	var last time.Time
+	pace := func(ctx context.Context) bool {
+		at := last.Add(time.Second)
+		if now := a.now(); at.Before(now) {
+			at = now
+		}
+		return at.Before(start.Add(chatTaskBudget)) && a.sleep(ctx, at.Sub(a.now())) == nil
+	}
 	err := a.SyncTasks.Tick(ctx, ref, start.UnixMilli(), &a.Syncs, a.Gacha, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
+		last = a.now()
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var response QueryResult
 		err := client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".gacha", "delegation_ref": task.DelegationRef, "input": map[string]any{"gacha_type": pool, "end_id": end, "page": page}}, &response)
@@ -198,7 +210,7 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 			return gacha.RemotePage{}, gacha.ErrInvalid
 		}
 		return gacha.ParsePage(response.Role.UID, response.Role.Region, pool, end, response.Data)
-	}, func(ctx context.Context, task SyncTask, text string) error {
+	}, pace, func(ctx context.Context, task SyncTask, text string) error {
 		if !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
 			return bot.ID == task.Owner.BotID && bot.SourceProtocol == task.Owner.SourceProtocol && bot.SourceAdapter == task.Owner.SourceAdapter
 		}) {

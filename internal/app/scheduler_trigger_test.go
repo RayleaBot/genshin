@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"reflect"
 	"slices"
-	"strings"
 	"testing"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -118,6 +118,8 @@ func TestSchedulerTriggersReachTheirAccountTasks(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			a := pluginApp(t)
+			// Waits between pages pass on the test clock.
+			a.clock = &fakeClock{at: time.Now()}
 			accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}, "genshin.gacha": {"list": []any{}, "region": "cn_gf01"}}}
 			host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, accounts.answer)
 			c.create(host)
@@ -135,21 +137,6 @@ func TestSchedulerTriggersReachTheirAccountTasks(t *testing.T) {
 				t.Fatalf("the trigger did not read %s for its task: %+v", c.operation, accounts.executes)
 			}
 		})
-	}
-}
-
-// 更新抽卡记录 is answered in the chat it was sent in once its job's trigger
-// has read the records.
-func TestGachaSyncTriggerAnswersInTheChat(t *testing.T) {
-	a := pluginApp(t)
-	accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.gacha": {"list": []any{}, "region": "cn_gf01"}}}
-	host := newSDKHost(t, a, nil, accounts.answer)
-	if end, _ := host.message("#更新抽卡记录", "更新抽卡记录"); terminalText(end) != "抽卡记录获取中请稍等..." {
-		t.Fatalf("the command ended with %v", end)
-	}
-	host.trigger(host.job("game.sync."))
-	if len(host.sent) != 1 || host.sent[0].TargetType != "private" || host.sent[0].TargetID != "u" || !strings.Contains(sentText(host.sent[0].Message), "抽卡记录更新完成") {
-		t.Fatalf("answered %+v", host.sent)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -35,11 +36,15 @@ func syncPage(_ context.Context, _ SyncTask, pool, end string, page int) (gacha.
 	}
 	return p, nil
 }
+
+// onePage lets a tick read a single page.
+func onePage(context.Context) bool { return false }
+
 func tickOne(t *testing.T, s *SyncTaskStore, j *gacha.Syncs, a *gacha.Store, task SyncTask, now int64, fetch SyncTaskFetch, send SyncTaskSend) SyncTask {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
-	if err := s.Tick(ctx, task.Ref, now, j, a, fetch, send); err != nil {
+	if err := s.Tick(ctx, task.Ref, now, j, a, fetch, onePage, send); err != nil {
 		t.Fatal(err)
 	}
 	items, err := s.List()
@@ -86,7 +91,7 @@ func TestBackgroundSyncDeletionAndConcurrentAdmission(t *testing.T) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 			defer cancel()
-			if err := s.Tick(ctx, task.Ref, now, j, a, syncPage, nil); err != nil {
+			if err := s.Tick(ctx, task.Ref, now, j, a, syncPage, onePage, nil); err != nil {
 				t.Error(err)
 			}
 		}()
@@ -223,28 +228,30 @@ func TestChatSyncAnswersInItsChatOnce(t *testing.T) {
 	}
 }
 
-// A round of 更新抽卡记录 longer than a trigger's event, run through the SDK
-// as the host runs it: each trigger ends within the event, the page its end
-// cut off is read again by the next trigger without counting as a failure,
-// and the round is answered in the chat once every pool is read.
-func TestGachaSyncTriggersEndWithinTheirEvents(t *testing.T) {
+// syncOnHost sends 更新抽卡记录 for user u's account through the SDK, with the
+// plugin on a test clock from start and page answering each page the
+// account plugin is asked for. It returns the task's job.
+func syncOnHost(t *testing.T, start time.Time, page func(clock *fakeClock)) (*App, *fakeClock, *sdkHost, string) {
+	t.Helper()
 	a := pluginApp(t)
-	start := time.Unix(1_800_000_000, 0)
 	clock := &fakeClock{at: start}
 	a.clock = clock
 	accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.gacha": {"list": []any{}, "region": "cn_gf01"}}}
-	pages := 0
 	host := newSDKHost(t, a, nil, func(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
 		if request.Method == "execute" && request.Params["operation"] == "genshin.gacha" {
-			// Each page takes twenty seconds, so a trigger reads two and
-			// its event ends during the third.
-			pages++
-			clock.set(clock.Now().Add(20 * time.Second))
+			page(clock)
 		}
 		return accounts.answer(request, scheduled)
 	})
 	host.message("#更新抽卡记录", "更新抽卡记录")
-	ref := host.job("game.sync.")
+	return a, clock, host, host.job("game.sync.")
+}
+
+// triggerUntilAnswered runs the job each minute after start, as the host's
+// scheduler does, until the round is answered in the chat, and returns how
+// many triggers it took.
+func triggerUntilAnswered(t *testing.T, clock *fakeClock, host *sdkHost, ref string, start time.Time) int {
+	t.Helper()
 	triggers := 0
 	for len(host.sent) == 0 {
 		if triggers++; triggers > 5 {
@@ -255,11 +262,54 @@ func TestGachaSyncTriggersEndWithinTheirEvents(t *testing.T) {
 			t.Fatalf("trigger %d ended with %v", triggers, end)
 		}
 	}
-	tasks, err := a.SyncTasks.List()
-	if err != nil || len(tasks) != 1 || tasks[0].State != "completed" || tasks[0].Failures != 0 || tasks[0].Restarts != 0 {
+	if !strings.Contains(sentText(host.sent[0].Message), "抽卡记录更新完成") {
+		t.Fatalf("answered %+v", host.sent)
+	}
+	return triggers
+}
+
+// A round of 更新抽卡记录 longer than a trigger's budget, run through the SDK
+// as the host runs it: each trigger reads pages until its budget is spent,
+// the next continues, and the round is answered in the chat once every pool
+// is read.
+func TestGachaSyncTriggersReadWithinTheirBudget(t *testing.T) {
+	start := time.Unix(1_800_000_000, 0)
+	pages := 0
+	// Each page takes twenty seconds, so a trigger's budget of forty seconds
+	// leaves room for two.
+	a, clock, host, ref := syncOnHost(t, start, func(clock *fakeClock) {
+		pages++
+		clock.set(clock.Now().Add(20 * time.Second))
+	})
+	if triggers := triggerUntilAnswered(t, clock, host, ref, start); triggers != 3 || pages != 6 {
+		t.Fatalf("%d triggers asked for %d pages", triggers, pages)
+	}
+	if tasks, err := a.SyncTasks.List(); err != nil || len(tasks) != 1 || tasks[0].State != "completed" || tasks[0].Failures != 0 {
 		t.Fatalf("tasks %+v, %v", tasks, err)
 	}
-	if triggers != 3 || pages != 8 || !strings.Contains(sentText(host.sent[0].Message), "抽卡记录更新完成") {
-		t.Fatalf("%d triggers asked for %d pages and answered %+v", triggers, pages, host.sent)
+}
+
+// Pages follow each other a second apart, to keep under 米游社's rate
+// limits; a page still unanswered when its trigger's event ends is read
+// again by the next trigger without counting as a failure.
+func TestGachaSyncPagesASecondApartAndRereadsACutPage(t *testing.T) {
+	start := time.Unix(1_800_000_000, 0)
+	asked := []time.Duration{}
+	a, clock, host, ref := syncOnHost(t, start, func(clock *fakeClock) {
+		asked = append(asked, clock.Now().Sub(start))
+		// The third page is answered only after its event has ended.
+		if len(asked) == 3 {
+			clock.set(clock.Now().Add(54 * time.Second))
+		}
+	})
+	if triggers := triggerUntilAnswered(t, clock, host, ref, start); triggers != 2 {
+		t.Fatalf("%d triggers", triggers)
+	}
+	want := []time.Duration{60 * time.Second, 61 * time.Second, 62 * time.Second, 120 * time.Second, 121 * time.Second, 122 * time.Second, 123 * time.Second}
+	if !slices.Equal(asked, want) {
+		t.Fatalf("pages asked at %v", asked)
+	}
+	if tasks, err := a.SyncTasks.List(); err != nil || len(tasks) != 1 || tasks[0].State != "completed" || tasks[0].Failures != 0 || tasks[0].Restarts != 0 {
+		t.Fatalf("tasks %+v, %v", tasks, err)
 	}
 }
