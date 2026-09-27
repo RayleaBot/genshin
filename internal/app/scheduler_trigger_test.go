@@ -9,10 +9,13 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
+
+// farFuture is when the delegations fakeAccounts grants expire, past any
+// test clock.
+const farFuture = int64(4_102_444_800_000)
 
 // testRole is the one role of user u's account.
 var testRole = map[string]any{"ref": "role", "game": "genshin", "uid": "100000001", "region": "cn_gf01", "nickname": "旅行者", "level": 60}
@@ -45,7 +48,7 @@ func (s *fakeAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 	case "roles":
 		return map[string]any{"roles": []any{testRole}}, ""
 	case "delegation.create":
-		return map[string]any{"delegation": map[string]any{"ref": "grant:" + asText(params["task_id"]), "expires_at_ms": time.Now().Add(30 * 24 * time.Hour).UnixMilli()}}, ""
+		return map[string]any{"delegation": map[string]any{"ref": "grant:" + asText(params["task_id"]), "expires_at_ms": farFuture}}, ""
 	case "execute":
 		call := executeCall{operation: asText(params["operation"]), delegation: asText(params["delegation_ref"]), scheduled: scheduled}
 		if scheduled && call.delegation == "" {

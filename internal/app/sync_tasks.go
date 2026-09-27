@@ -181,7 +181,10 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	err := a.SyncTasks.Tick(ctx, triggerTask(event), time.Now().UnixMilli(), &a.Syncs, a.Gacha, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
+	start := a.now()
+	ctx, cancel := a.eventWork(ctx, start)
+	defer cancel()
+	err := a.SyncTasks.Tick(ctx, triggerTask(event), start.UnixMilli(), &a.Syncs, a.Gacha, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var response QueryResult
 		err := client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".gacha", "delegation_ref": task.DelegationRef, "input": map[string]any{"gacha_type": pool, "end_id": end, "page": page}}, &response)

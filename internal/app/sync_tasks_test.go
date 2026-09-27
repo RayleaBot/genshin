@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -219,5 +220,46 @@ func TestChatSyncAnswersInItsChatOnce(t *testing.T) {
 	}
 	if task.ReplyType != "" || task.Before != nil || task.FullRound {
 		t.Fatal("reply target kept", task)
+	}
+}
+
+// A round of 更新抽卡记录 longer than a trigger's event, run through the SDK
+// as the host runs it: each trigger ends within the event, the page its end
+// cut off is read again by the next trigger without counting as a failure,
+// and the round is answered in the chat once every pool is read.
+func TestGachaSyncTriggersEndWithinTheirEvents(t *testing.T) {
+	a := pluginApp(t)
+	start := time.Unix(1_800_000_000, 0)
+	clock := &fakeClock{at: start}
+	a.clock = clock
+	accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.gacha": {"list": []any{}, "region": "cn_gf01"}}}
+	pages := 0
+	host := newSDKHost(t, a, nil, func(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
+		if request.Method == "execute" && request.Params["operation"] == "genshin.gacha" {
+			// Each page takes twenty seconds, so a trigger reads two and
+			// its event ends during the third.
+			pages++
+			clock.set(clock.Now().Add(20 * time.Second))
+		}
+		return accounts.answer(request, scheduled)
+	})
+	host.message("#更新抽卡记录", "更新抽卡记录")
+	ref := host.job("game.sync.")
+	triggers := 0
+	for len(host.sent) == 0 {
+		if triggers++; triggers > 5 {
+			t.Fatalf("%d triggers did not finish the round", triggers-1)
+		}
+		clock.set(start.Add(time.Duration(triggers) * time.Minute))
+		if end, _ := host.trigger(ref); end["type"] != "result" {
+			t.Fatalf("trigger %d ended with %v", triggers, end)
+		}
+	}
+	tasks, err := a.SyncTasks.List()
+	if err != nil || len(tasks) != 1 || tasks[0].State != "completed" || tasks[0].Failures != 0 || tasks[0].Restarts != 0 {
+		t.Fatalf("tasks %+v, %v", tasks, err)
+	}
+	if triggers != 3 || pages != 8 || !strings.Contains(sentText(host.sent[0].Message), "抽卡记录更新完成") {
+		t.Fatalf("%d triggers asked for %d pages and answered %+v", triggers, pages, host.sent)
 	}
 }
