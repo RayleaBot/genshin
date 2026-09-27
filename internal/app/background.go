@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -37,4 +38,53 @@ func detach(ctx context.Context, event *rayleabot.EventContext, result any) erro
 		return err
 	}
 	return nil
+}
+
+// answerChat answers a chat event with a reply: every message but the last is
+// sent while the event goes on, and the last ends it.
+func answerChat(ctx context.Context, event *rayleabot.EventContext, reply [][]rayleabot.Segment) error {
+	if len(reply) == 0 {
+		return event.Result(map[string]any{"handled": true})
+	}
+	for _, message := range reply[:len(reply)-1] {
+		_, _ = post(ctx, event, message...)
+	}
+	return event.Send(event.Event.Target.Type, event.Event.Target.ID, reply[len(reply)-1]...)
+}
+
+// textReply is a reply of one text message.
+func textReply(text string) [][]rayleabot.Segment {
+	return [][]rayleabot.Segment{{rayleabot.Text(text)}}
+}
+
+// clock is the time flows count and wait by, as the pause between two pages;
+// tests set their own.
+type clock interface {
+	Now() time.Time
+	Sleep(context.Context, time.Duration) error
+}
+
+func (a *App) now() time.Time {
+	if a.clock != nil {
+		return a.clock.Now()
+	}
+	return time.Now()
+}
+
+// sleep waits for d or until ctx ends.
+func (a *App) sleep(ctx context.Context, d time.Duration) error {
+	if a.clock != nil {
+		return a.clock.Sleep(ctx, d)
+	}
+	if d <= 0 {
+		return ctx.Err()
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }

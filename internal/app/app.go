@@ -204,9 +204,6 @@ type App struct {
 	Syncs          gacha.Syncs
 	// fileImports are the senders 导入记录 is waiting on for a file.
 	fileImports fileImports
-	// ChatTasks is chat work that continues past its event, as customer
-	// service links whose records are still being read.
-	ChatTasks chatTasks
 	// fullLinks are the senders whose next link reads the whole history;
 	// LinkHTTP reads the official wish history and customer service logs
 	// (nil uses a default client).
@@ -356,8 +353,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 		case strings.HasPrefix(task, "game.content."):
 			return a.runContentSubscription(ctx, event)
-		case strings.HasPrefix(task, payLogTask):
-			return a.runChatTask(ctx, event)
 		case strings.HasPrefix(task, notePushTask):
 			return a.runNotePush(ctx, event)
 		}

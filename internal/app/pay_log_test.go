@@ -58,9 +58,8 @@ func TestPayLogReadsBothLogsWithTheLinkKey(t *testing.T) {
 	a := pluginApp(t)
 	a.LinkHTTP = &http.Client{Transport: selfHelpLogs{}}
 	job := &payLogJob{key: "abcdefghij", uid: "100000001", api: "GetCrystalLog"}
-	done, err := a.stepPayLog(context.Background(), AccountsClient{}, job, time.Now().Add(time.Minute))
-	if err != nil || !done || job.pages != 4 {
-		t.Fatal(done, job.pages, err)
+	if err := a.readPayLog(context.Background(), AccountsClient{}, job); err != nil || job.pages != 4 {
+		t.Fatal(job.pages, err)
 	}
 	crystals, hymns := 0, 0
 	for _, record := range job.records {
@@ -83,7 +82,6 @@ func TestPayLogReadsBothLogsWithTheLinkKey(t *testing.T) {
 type accountLogs struct {
 	uid    string
 	inputs []map[string]any
-	grants []any
 }
 
 func (c *accountLogs) CallService(_ context.Context, r rayleabot.ServiceCallRequest, out any) error {
@@ -92,7 +90,6 @@ func (c *accountLogs) CallService(_ context.Context, r rayleabot.ServiceCallRequ
 	}
 	input := r.Params["input"].(map[string]any)
 	c.inputs = append(c.inputs, input)
-	c.grants = append(c.grants, r.Params["delegation_ref"])
 	*out.(*QueryResult) = QueryResult{Role: Role{UID: c.uid}, Data: billingPage(input)}
 	return nil
 }
@@ -120,23 +117,16 @@ func TestPayLogReadsTheAccountWithoutALink(t *testing.T) {
 	a := pluginApp(t)
 	caller := &accountLogs{uid: "100000001"}
 	job := &payLogJob{uid: "100000001", choice: Selection{AccountRef: "account", RoleRef: "role"}, api: "GetCrystalLog"}
-	done, err := a.stepPayLog(context.Background(), AccountsClient{Caller: caller}, job, time.Now().Add(time.Minute))
-	if err != nil || !done || len(job.records) != 27 {
-		t.Fatal(done, len(job.records), err)
+	if err := a.readPayLog(context.Background(), AccountsClient{Caller: caller}, job); err != nil || len(job.records) != 27 {
+		t.Fatal(len(job.records), err)
 	}
 	// Only produced crystals and primogems are asked for, from cursor 0.
 	if first := caller.inputs[0]; first["category"] != "crystal" || first["direction"] != "produce" || first["end_id"] != "0" || caller.inputs[2]["category"] != "primogem" {
 		t.Fatal(caller.inputs)
 	}
-	// A scheduled read sends the delegation.
-	caller.inputs, caller.grants = nil, nil
-	job = &payLogJob{uid: "100000001", choice: Selection{AccountRef: "account", RoleRef: "role"}, grant: "grant", api: "GetPrimogemLog"}
-	if _, err := a.stepPayLog(context.Background(), AccountsClient{Caller: caller}, job, time.Now().Add(time.Minute)); err != nil || caller.grants[0] != "grant" {
-		t.Fatal(caller.grants, err)
-	}
 	// Pages of another role are refused.
 	caller.uid = "100000002"
-	if _, err := a.stepPayLog(context.Background(), AccountsClient{Caller: caller}, &payLogJob{uid: "100000001", api: "GetCrystalLog"}, time.Now().Add(time.Minute)); err == nil {
+	if err := a.readPayLog(context.Background(), AccountsClient{Caller: caller}, &payLogJob{uid: "100000001", api: "GetCrystalLog"}); err == nil {
 		t.Fatal("read another role's logs")
 	}
 }
@@ -165,117 +155,92 @@ func TestPayLogCountsPacksByMonthAsYunzai(t *testing.T) {
 	}
 }
 
-// billingRead is a billing page the accounts plugin was asked for.
-type billingRead struct {
-	category, end, delegation string
-	scheduled                 bool
+// customerServiceLink is a customer service link with authkey abcdefghij.
+const customerServiceLink = "https://webstatic.mihoyo.com/csc-service-center-fe/index.html?page_id=1&authkey=abcdefghij&game_biz=hk4e_cn#/player-log"
+
+// A customer service link sent in private, run through the SDK as the host
+// runs it: the event moves to the background first, then answers as Yunzai
+// does, the wait and then the result, keeping it and the link's authkey for
+// the sender.
+func TestPayLogByLinkReadsInItsBackgroundEvent(t *testing.T) {
+	a := pluginApp(t)
+	a.LinkHTTP = &http.Client{Transport: selfHelpLogs{}}
+	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
+	end, actions := host.message(customerServiceLink, "")
+	if len(actions) == 0 || actions[0].Name != "event.detach" || end["type"] != "result" {
+		t.Fatalf("the link ended with %v after %+v", end, actions)
+	}
+	if len(host.sent) != 2 || sentText(host.sent[0].Message) != "正在获取消费数据,可能需要30s~~" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
+		t.Fatalf("answered %+v", host.sent)
+	}
+	owner := Subject{"onebot11", "a", "bot", "u"}
+	if logs, err := a.PayLogs.Get(owner); err != nil || len(logs) != 1 || logs[0].UID != "100000001" || logs[0].Crystal != 25*60 {
+		t.Fatalf("kept %+v, %v", logs, err)
+	}
+	if kept, ok := a.PayKeys.get(owner); !ok || kept.key != "abcdefghij" {
+		t.Fatal("the link's authkey was not kept")
+	}
 }
 
-// payLogOnHost sends 更新充值记录 for user u's account through the SDK. Each
-// billing page takes fifteen seconds, so the event reads three of the four
-// pages and hands the last to a scheduler job, whose ID it returns. fail,
-// when set, answers a read with a failure code; count is how often that page
-// was asked for.
-func payLogOnHost(t *testing.T, fail func(clock *fakeClock, read billingRead, count int) string) (*App, *fakeClock, *sdkHost, *[]billingRead, string) {
-	t.Helper()
-	a := pluginApp(t)
-	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
-	a.clock = clock
+// billingService answers the account plugin's service as accounts does, and
+// its billing pages with the logs selfHelpLogs serves, each taking fifteen
+// seconds on clock. fail, when set, answers a page with a failure code.
+func billingService(t *testing.T, clock *fakeClock, reads *[]map[string]any, fail string) func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
 	accounts := &fakeAccounts{t: t}
-	reads := &[]billingRead{}
-	host := newSDKHost(t, a, nil, func(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
+	return func(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
 		if request.Method != "execute" || request.Params["operation"] != "genshin.billing" {
 			return accounts.answer(request, scheduled)
 		}
-		input := asObject(request.Params["input"])
-		read := billingRead{category: asText(input["category"]), end: asText(input["end_id"]), delegation: asText(request.Params["delegation_ref"]), scheduled: scheduled}
-		if scheduled != (read.delegation != "") {
-			t.Errorf("read %+v", read)
+		// The event keeps its origin in the background: no delegation.
+		if scheduled || request.Params["delegation_ref"] != nil {
+			t.Errorf("read %+v", request.Params)
 		}
-		*reads = append(*reads, read)
+		input := asObject(request.Params["input"])
+		*reads = append(*reads, input)
 		clock.set(clock.Now().Add(15 * time.Second))
-		if fail != nil {
-			count := 0
-			for _, earlier := range *reads {
-				if earlier.category == read.category && earlier.end == read.end {
-					count++
-				}
-			}
-			if code := fail(clock, read, count); code != "" {
-				return nil, code
-			}
+		if fail != "" {
+			return nil, fail
 		}
 		return map[string]any{"operation": "genshin.billing", "role": testRole, "data": billingPage(input)}, ""
-	})
-	end, _ := host.message("#更新充值记录", "更新充值记录")
-	if terminalText(end) != "记录较多，将在后台继续获取，完成后在此回复。" || len(*reads) != 3 {
-		t.Fatalf("the command ended with %v after %d reads", end, len(*reads))
 	}
-	return a, clock, host, reads, host.job(payLogTask)
 }
 
-// 更新充值记录 of an account whose logs take longer than the event, run
-// through the SDK as the host runs it: the event grants the job a delegation,
-// and the job's trigger reads the rest with it and answers in the chat,
-// keeping the result for the sender.
-func TestPayLogFinishesOnTheHostsTriggers(t *testing.T) {
-	a, clock, host, reads, ref := payLogOnHost(t, nil)
-	triggerUntilDone(t, clock, host, ref, time.Unix(1_800_000_000, 0), 5)
-	if len(*reads) != 4 || (*reads)[3].delegation != "grant:"+ref {
-		t.Fatalf("reads %+v", *reads)
+// 更新充值记录 without a link, run through the SDK as the host runs it: the
+// event moves to the background and reads all four pages of the account's
+// logs as the sender, longer than an event may take, then answers in the
+// chat and keeps the result for the sender.
+func TestPayLogByAccountReadsInItsBackgroundEvent(t *testing.T) {
+	a := pluginApp(t)
+	start := time.Unix(1_800_000_000, 0)
+	clock := &fakeClock{at: start}
+	a.clock = clock
+	reads := []map[string]any{}
+	host := newSDKHost(t, a, nil, billingService(t, clock, &reads, ""))
+	end, actions := host.message("#更新充值记录", "更新充值记录")
+	if _, ok := detached(actions); !ok || end["type"] != "result" || len(host.jobs) != 0 {
+		t.Fatalf("the command ended with %v after %+v, jobs %v", end, actions, host.jobs)
 	}
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 2 || host.sent[1].TargetID != "u" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
-		t.Fatalf("deleted %v, answered %+v", host.deleted, host.sent)
+	if len(reads) != 4 || clock.Now().Sub(start) < time.Minute {
+		t.Fatalf("read %+v by %v", reads, clock.Now().Sub(start))
+	}
+	if len(host.sent) != 2 || sentText(host.sent[0].Message) != "正在获取数据,可能需要30s" || host.sent[1].TargetID != "u" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
+		t.Fatalf("answered %+v", host.sent)
 	}
 	if logs, err := a.PayLogs.Get(Subject{"onebot11", "a", "bot", "u"}); err != nil || len(logs) != 1 || logs[0].UID != "100000001" {
 		t.Fatalf("kept %+v, %v", logs, err)
 	}
 }
 
-// A trigger whose read is still open when the trigger runs out of time (the
-// account service answers only once the host has timed the event out) ends
-// its event in time and leaves the task to the next trigger, which asks for
-// that page again and answers.
-func TestPayLogRecoversFromATriggerThatRanOutOfTime(t *testing.T) {
-	_, clock, host, reads, ref := payLogOnHost(t, func(clock *fakeClock, read billingRead, count int) string {
-		if !read.scheduled || count > 1 {
-			return ""
-		}
-		clock.set(clock.Now().Add(time.Minute))
-		return "plugin.event_timeout"
-	})
-	start := time.Unix(1_800_000_000, 0)
-	clock.set(start.Add(time.Minute))
-	if end, _ := host.trigger(ref); end["type"] != "result" || len(host.sent) != 1 || len(host.deleted) != 0 {
-		t.Fatalf("the trigger that ran out ended with %v, answered %v, deleted %v", end, host.sent, host.deleted)
-	}
-	clock.set(start.Add(3 * time.Minute))
-	if end, _ := host.trigger(ref); end["type"] != "result" {
-		t.Fatalf("the next trigger ended with %v", end)
-	}
-	if len(*reads) != 5 || (*reads)[4] != (*reads)[3] {
-		t.Fatalf("reads %+v", *reads)
-	}
-	if len(host.deleted) != 1 || len(host.sent) != 2 || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
-		t.Fatalf("deleted %v, answered %v", host.deleted, host.sent)
-	}
-}
-
-// A read a trigger fails ends the task: the failure is answered in the chat,
-// the job is removed and nothing is kept.
-func TestPayLogFailedInATriggerAnswersAndEnds(t *testing.T) {
-	a, clock, host, _, ref := payLogOnHost(t, func(_ *fakeClock, read billingRead, _ int) string {
-		if read.scheduled {
-			return "plugin.upstream_auth_invalid"
-		}
-		return ""
-	})
-	clock.set(time.Unix(1_800_000_000, 0).Add(time.Minute))
-	if end, _ := host.trigger(ref); end["type"] != "result" {
-		t.Fatalf("the trigger ended with %v", end)
-	}
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 2 || sentText(host.sent[1].Message) != "plugin.upstream_auth_invalid" {
-		t.Fatalf("deleted %v, answered %v", host.deleted, host.sent)
+// A read that fails answers the failure in the chat and keeps nothing.
+func TestPayLogFailedReadAnswersTheFailure(t *testing.T) {
+	a := pluginApp(t)
+	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
+	a.clock = clock
+	reads := []map[string]any{}
+	host := newSDKHost(t, a, nil, billingService(t, clock, &reads, "plugin.upstream_auth_invalid"))
+	host.message("#更新充值记录", "更新充值记录")
+	if len(host.sent) != 2 || sentText(host.sent[1].Message) != "plugin.upstream_auth_invalid" || len(reads) != 1 {
+		t.Fatalf("answered %+v after %d reads", host.sent, len(reads))
 	}
 	if logs, _ := a.PayLogs.Get(Subject{"onebot11", "a", "bot", "u"}); len(logs) != 0 {
 		t.Fatalf("kept %+v", logs)

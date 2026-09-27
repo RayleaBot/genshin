@@ -1,10 +1,41 @@
 package app
 
 import (
+	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
+
+// fakeClock is a clock tests move by hand; sleeping moves it on. Events the
+// SDK runs read it from goroutines of their own, so it is locked.
+type fakeClock struct {
+	mu sync.Mutex
+	at time.Time
+}
+
+func (c *fakeClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.at
+}
+
+func (c *fakeClock) Sleep(ctx context.Context, d time.Duration) error {
+	c.mu.Lock()
+	if d > 0 {
+		c.at = c.at.Add(d)
+	}
+	c.mu.Unlock()
+	return ctx.Err()
+}
+
+// set moves the clock to at.
+func (c *fakeClock) set(at time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.at = at
+}
 
 // 原石任务 moves to the background before the first account, then saves every
 // account's report and answers as Yunzai does.
