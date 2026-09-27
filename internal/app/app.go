@@ -204,17 +204,18 @@ type App struct {
 	Syncs          gacha.Syncs
 	// fileImports are the senders 导入记录 is waiting on for a file.
 	fileImports fileImports
-	// LinkJobs are gacha links whose records are still being fetched;
-	// LinkHTTP reads the official wish history (nil uses a default client).
-	LinkJobs linkJobs[gachaLinkJob]
-	// fullLinks are the senders whose next link reads the whole history.
+	// ChatTasks is chat work that continues past its event, as gacha links
+	// and customer service links whose records are still being read.
+	ChatTasks chatTasks
+	// fullLinks are the senders whose next link reads the whole history;
+	// LinkHTTP reads the official wish history and customer service logs
+	// (nil uses a default client).
 	fullLinks fullLinks
 	LinkHTTP  *http.Client
-	// PayLogs keep each sender's 充值记录; PayKeys and PayJobs hold the
-	// customer service links' authkeys in memory.
+	// PayLogs keep each sender's 充值记录; PayKeys hold the customer service
+	// links' authkeys in memory.
 	PayLogs      *PayLogStore
 	PayKeys      payKeys
-	PayJobs      linkJobs[payLogJob]
 	SyncTasks    *SyncTaskStore
 	Showcase     ShowcaseClient
 	Profiles     *PanelStore
@@ -260,6 +261,8 @@ type App struct {
 	aliases            customAliases
 	maps               mapImages
 	usageOnce          sync.Once
+	// clock is nil for the wall clock.
+	clock clock
 }
 
 func New(assets Assets, directory string) (*App, error) {
@@ -362,10 +365,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return a.runContentSubscription(ctx, event)
 		case strings.HasPrefix(task, "game.sync."):
 			return a.runSyncTask(ctx, event)
-		case strings.HasPrefix(task, gachaLinkTask):
-			return a.runGachaLink(ctx, event)
-		case strings.HasPrefix(task, payLogTask):
-			return a.runPayLog(ctx, event)
+		case strings.HasPrefix(task, gachaLinkTask), strings.HasPrefix(task, payLogTask):
+			return a.runChatTask(ctx, event)
 		case strings.HasPrefix(task, notePushTask):
 			return a.runNotePush(ctx, event)
 		}
@@ -1140,7 +1141,27 @@ func (a *App) sendView(ctx context.Context, event *rayleabot.EventContext, view 
 // card, and returns the image path; it is empty when image replies are off
 // or rendering failed.
 func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, view View) string {
-	if !settings(event).ImageReplies {
+	return renderImage(ctx, event.Actions(), settings(event).ImageReplies, view)
+}
+
+// imageRenderer draws images: an event's actions.
+type imageRenderer interface {
+	RenderImage(context.Context, rayleabot.RenderImageRequest) (rayleabot.ActionResult, error)
+}
+
+// viewMessage is a message of the view: its image, or its text when images
+// is off or rendering failed.
+func viewMessage(ctx context.Context, host imageRenderer, images bool, view View) []rayleabot.Segment {
+	if path := renderImage(ctx, host, images, view); path != "" {
+		return []rayleabot.Segment{rayleabot.Image(path)}
+	}
+	return []rayleabot.Segment{rayleabot.Text(view.Text())}
+}
+
+// renderImage is renderView with the host's renderer and whether image
+// replies are on.
+func renderImage(ctx context.Context, host imageRenderer, images bool, view View) string {
+	if !images {
 		return ""
 	}
 	text := view.Text()
@@ -1152,7 +1173,7 @@ func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, vie
 	_ = decodeObject(view, &data)
 	requests = append(requests, rayleabot.RenderImageRequest{Template: "summary", Output: "png", FallbackText: text, Data: data})
 	for _, request := range requests {
-		if result, err := event.Actions().RenderImage(ctx, request); err == nil {
+		if result, err := host.RenderImage(ctx, request); err == nil {
 			if path := asText(result["image_path"]); path != "" {
 				return path
 			}

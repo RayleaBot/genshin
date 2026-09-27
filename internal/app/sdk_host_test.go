@@ -225,6 +225,22 @@ func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	return h.exchange(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}})
 }
 
+// triggerUntilDone runs the job each minute after start, as the host's
+// scheduler does, until the plugin deletes it.
+func triggerUntilDone(t *testing.T, clock *fakeClock, host *sdkHost, ref string, start time.Time, limit int) {
+	t.Helper()
+	for minute := 1; len(host.deleted) == 0; minute++ {
+		if minute > limit {
+			t.Fatalf("%d triggers of %s did not finish it", limit, ref)
+		}
+		clock.set(start.Add(time.Duration(minute) * time.Minute))
+		end, _ := host.trigger(ref)
+		if end["type"] != "result" {
+			t.Fatalf("trigger %d ended with %v", minute, end)
+		}
+	}
+}
+
 // job is the only job of the plugin whose task ID starts with prefix.
 func (h *sdkHost) job(prefix string) string {
 	h.t.Helper()

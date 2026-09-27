@@ -117,3 +117,61 @@ func TestGachaLinkRepliesAsYunzaiToOfficialErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// roundTripFunc answers a client's requests with a function.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// wishLink is a wish history link of the mainland server.
+const wishLink = "https://webstatic.mihoyo.com/hk4e/event/e20190909gacha-v3/index.html?authkey_ver=1&region=cn_gf01&authkey=abcdefghij#/log"
+
+// A link whose history takes longer than its event, run through the SDK as
+// the host runs it: the triggers of its job carry the job's payload but not
+// its task ID, fetch the rest and answer in the private chat the link came
+// from, each pool's count and then the record.
+func TestGachaLinkFinishesOnTheHostsTriggers(t *testing.T) {
+	a := pluginApp(t)
+	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
+	a.clock = clock
+	// Each request takes ten seconds, so the event reads three pages after
+	// finding the UID.
+	a.LinkHTTP = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		clock.set(clock.Now().Add(10 * time.Second))
+		return wishHistory{}.RoundTrip(r)
+	})}
+	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
+	end, _ := host.message(wishLink, "")
+	if terminalText(end) != "记录较多，将在后台继续获取，完成后在此回复。" || len(host.sent) != 1 {
+		t.Fatalf("the link event ended with %v after %d messages", end, len(host.sent))
+	}
+	ref := host.job(gachaLinkTask)
+	if payload := host.jobs[ref].Payload; payload["task_id"] != ref || payload["kind"] != "gacha_link" {
+		t.Fatalf("job payload %v", payload)
+	}
+	triggerUntilDone(t, clock, host, ref, time.Unix(1_800_000_000, 0), 5)
+	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 3 {
+		t.Fatalf("deleted %v, answered %v", host.deleted, host.sent)
+	}
+	if sent := host.sent[1]; sent.TargetType != "private" || sent.TargetID != "u" || !strings.HasPrefix(sentText(sent.Message), "[角色]记录获取成功，更新21条\n[武器]记录获取成功，更新1条") {
+		t.Fatalf("answered %+v", sent)
+	}
+	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 22 {
+		t.Fatalf("kept %d records, %v", len(archive.Records), err)
+	}
+}
+
+// A link read within its event in a group answers every message of the
+// reply, then asks the sender to recall the link.
+func TestGachaLinkInAGroupAnswersEachMessage(t *testing.T) {
+	a := pluginApp(t)
+	a.LinkHTTP = &http.Client{Transport: wishHistory{}}
+	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
+	end, _ := host.groupMessage(wishLink, "")
+	if terminalText(end) != "已收到链接，请撤回" || len(host.jobs) != 0 {
+		t.Fatalf("the link event ended with %v, jobs %v", end, host.jobs)
+	}
+	if len(host.sent) != 3 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功") || host.sent[2].TargetType != "group" {
+		t.Fatalf("answered %+v", host.sent)
+	}
+}

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
 )
 
 // testRole is the one role of user u's account.
@@ -172,42 +171,5 @@ func TestContentPushTriggerChecksItsGroup(t *testing.T) {
 	items, _ := a.Subscriptions.List()
 	if len(items) != 1 || items[0].LastCode != "checked" || len(host.deleted) != 0 {
 		t.Fatalf("subscriptions %+v, deleted %v", items, host.deleted)
-	}
-}
-
-// The job of a gacha link read past its event continues that link when the
-// host triggers it, and answers in the chat the link came from.
-func TestGachaLinkTriggerContinuesItsLink(t *testing.T) {
-	a := pluginApp(t)
-	a.LinkHTTP = &http.Client{Transport: wishHistory{}}
-	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
-	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, "100000001", "cn_gf01", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ref := gachaLinkTask + "x"
-	a.LinkJobs.put(ref, &gachaLinkJob{link: gachaLink{key: "abcdefghij", region: "cn_gf01"}, uid: "100000001", sync: info.Ref, before: map[string]int{}, owner: Subject{"onebot11", "a", "bot", "u"}, target: rayleabot.Target{Type: "private", ID: "u"}, expires: time.Now().Add(time.Minute)})
-	host.jobs[ref] = rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", Payload: taskPayload("gacha_link", ref)}
-	host.trigger(ref)
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) == 0 || !strings.HasPrefix(sentText(host.sent[0].Message), "[角色]记录获取成功，更新21条") || host.sent[0].TargetID != "u" {
-		t.Fatalf("deleted %v, answered %+v", host.deleted, host.sent)
-	}
-}
-
-// The job of a customer service link read past its event continues that
-// link when the host triggers it, and answers in the chat it came from.
-func TestPayLogTriggerContinuesItsLink(t *testing.T) {
-	a := pluginApp(t)
-	a.LinkHTTP = &http.Client{Transport: selfHelpLogs{}}
-	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
-	ref := payLogTask + "x"
-	a.PayJobs.put(ref, &payLogJob{key: "abcdefghij", uid: "100000001", api: "GetCrystalLog", owner: Subject{"onebot11", "a", "bot", "u"}, target: rayleabot.Target{Type: "private", ID: "u"}, expires: time.Now().Add(time.Minute)})
-	host.jobs[ref] = rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", Payload: taskPayload("pay_log", ref)}
-	host.trigger(ref)
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 1 || !strings.Contains(sentText(host.sent[0].Message), "充值统计") {
-		t.Fatalf("deleted %v, answered %+v", host.deleted, host.sent)
-	}
-	if logs, _ := a.PayLogs.Get(Subject{"onebot11", "a", "bot", "u"}); len(logs) != 1 {
-		t.Fatalf("kept %v", logs)
 	}
 }
