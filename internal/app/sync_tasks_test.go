@@ -13,12 +13,14 @@ import (
 
 // gachaPages answers the accounts plugin's wish history pages for user u's
 // role: characters character event records, IDs 5000-n newest first, and
-// none in the other pools. asked is when each page was asked for, and
-// before, when set, runs before page n is answered.
+// none in the other pools. Pages are read with delegation by a trigger when
+// it is set, and as the user otherwise. asked is when each page was asked
+// for, and before, when set, runs before page n is answered.
 type gachaPages struct {
 	t          *testing.T
 	clock      *fakeClock
 	characters int
+	delegation string
 	asked      []time.Time
 	before     func(n int)
 }
@@ -28,8 +30,9 @@ func (p *gachaPages) service(accounts *fakeAccounts) func(rayleabot.ServiceCallR
 		if request.Method != "execute" || request.Params["operation"] != "genshin.gacha" {
 			return accounts.answer(request, scheduled)
 		}
-		// The event keeps its origin in the background: no delegation.
-		if scheduled || request.Params["delegation_ref"] != nil {
+		// An event keeps its origin in the background: only a trigger reads
+		// with a delegation.
+		if scheduled != (p.delegation != "") || asText(request.Params["delegation_ref"]) != p.delegation {
 			p.t.Errorf("read %+v", request.Params)
 		}
 		p.asked = append(p.asked, p.clock.Now())
@@ -140,10 +143,12 @@ func TestGachaSyncRefusedTheBackgroundAnswersThePage(t *testing.T) {
 	}
 }
 
-// Removing an archive stops its background sync: the pages read are not
-// merged, the removed archive is not revived, and the chat is told.
+// Removing an archive stops its background sync and pauses its daily sync:
+// the pages read are not merged, the removed archive is not revived, and the
+// chat is told.
 func TestRemovingAnArchiveStopsItsBackgroundSync(t *testing.T) {
 	a, host, pages := syncHost(t)
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 8, "confirm": true})
 	if _, _, err := a.Gacha.Import(gacha.Archive{UID: "100000001", Region: "cn_gf01", Timezone: 8, Language: "zh-cn", Records: []gacha.Record{{ID: "1", ItemID: "10000046", GachaType: "301", UIGFType: "301", Time: "2023-01-01 00:00:00", Rank: "5"}}}); err != nil {
 		t.Fatal(err)
 	}
@@ -163,5 +168,71 @@ func TestRemovingAnArchiveStopsItsBackgroundSync(t *testing.T) {
 	}
 	if _, err := a.Gacha.Read("100000001", "cn_gf01"); err == nil {
 		t.Fatal("the removed archive was revived")
+	}
+	if tasks, _ := a.SyncTasks.List(); len(tasks) != 1 || tasks[0].State != "paused" || tasks[0].LastCode != "archive_removed" {
+		t.Fatalf("daily syncs %+v", tasks)
+	}
+}
+
+// A daily sync, run through the SDK as the host runs it: once its hour has
+// come, its trigger moves to the background and reads the round with the
+// task's delegation, a second a page, then tells the account's user and
+// waits for the next day; later triggers that day read nothing.
+func TestDailyGachaSyncReadsItsRoundInItsTriggersBackgroundEvent(t *testing.T) {
+	a := pluginApp(t)
+	start := time.Date(2026, 9, 20, 9, 0, 0, 0, time.FixedZone("UTC+8", 8*3600))
+	clock := &fakeClock{at: start}
+	a.clock = clock
+	pages := &gachaPages{t: t, clock: clock, characters: 45}
+	host := newSDKHost(t, a, nil, pages.service(&fakeAccounts{t: t}))
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 8, "notify": true, "confirm": true})
+	ref := host.job("game.sync.")
+	pages.delegation = "grant:" + ref
+	end, actions := host.trigger(ref)
+	if _, ok := detached(actions); !ok || end["type"] != "result" || len(pages.asked) != 8 {
+		t.Fatalf("the trigger ended with %v after %d pages", end, len(pages.asked))
+	}
+	pagedASecondApart(t, pages.asked)
+	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 45 {
+		t.Fatalf("kept %d records, %v", len(archive.Records), err)
+	}
+	next := time.Date(2026, 9, 21, 8, 0, 0, 0, time.FixedZone("UTC+8", 8*3600)).UnixMilli()
+	tasks, _ := a.SyncTasks.List()
+	if len(tasks) != 1 || tasks[0].State != "waiting" || tasks[0].LastCode != "sync_completed" || tasks[0].NextCheckMS != next || tasks[0].Result == nil || tasks[0].Result.Added != 45 || tasks[0].LastNotificationMS == 0 {
+		t.Fatalf("tasks %+v", tasks)
+	}
+	if len(host.sent) != 1 || host.sent[0].TargetType != "private" || host.sent[0].TargetID != "u" || !strings.HasPrefix(sentText(host.sent[0].Message), "抽卡后台同步完成") {
+		t.Fatalf("told %+v", host.sent)
+	}
+	clock.set(start.Add(time.Hour))
+	if _, actions := host.trigger(ref); len(pages.asked) != 8 || len(actions) != 0 {
+		t.Fatalf("a later trigger asked for %+v", actions)
+	}
+}
+
+// A daily round the host would not move to the background, while the plugin
+// holds its limit of background events, is read by the next trigger.
+func TestDailyGachaSyncRefusedTheBackgroundReadsOnTheNextTrigger(t *testing.T) {
+	a := pluginApp(t)
+	start := time.Date(2026, 9, 20, 9, 0, 0, 0, time.FixedZone("UTC+8", 8*3600))
+	clock := &fakeClock{at: start}
+	a.clock = clock
+	pages := &gachaPages{t: t, clock: clock, characters: 45}
+	host := newSDKHost(t, a, nil, pages.service(&fakeAccounts{t: t}))
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 8, "confirm": true})
+	ref := host.job("game.sync.")
+	pages.delegation = "grant:" + ref
+	host.busy = true
+	if end, _ := host.trigger(ref); end["type"] != "result" || len(pages.asked) != 0 {
+		t.Fatalf("the refused trigger ended with %v after %d pages", end, len(pages.asked))
+	}
+	if tasks, _ := a.SyncTasks.List(); len(tasks) != 1 || tasks[0].State != "waiting" || tasks[0].RunDay != "" {
+		t.Fatalf("tasks %+v", tasks)
+	}
+	host.busy = false
+	clock.set(start.Add(time.Minute))
+	host.trigger(ref)
+	if tasks, _ := a.SyncTasks.List(); len(pages.asked) != 8 || tasks[0].LastCode != "sync_completed" {
+		t.Fatalf("read %d pages, tasks %+v", len(pages.asked), tasks)
 	}
 }

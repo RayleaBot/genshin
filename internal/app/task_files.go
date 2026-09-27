@@ -20,6 +20,7 @@ type storedTask interface {
 }
 
 func (r Reminder) taskRef() string { return r.Ref }
+func (t SyncTask) taskRef() string { return t.Ref }
 
 // errTaskChanged stops a trigger whose task was edited, paused or removed
 // while it ran; its results are not written back.

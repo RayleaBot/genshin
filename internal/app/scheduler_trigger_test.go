@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"testing"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -108,10 +109,15 @@ func TestSchedulerTriggersReachTheirAccountTasks(t *testing.T) {
 		{"挑战提醒", "game.challenge.", "genshin.abyss", func(h *sdkHost) {
 			h.manage("challenge.reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "abyss", "metric": "star", "threshold": 36, "hour": 20, "days": 30, "confirm": true})
 		}, true},
+		{"每日抽卡同步", "game.sync.", "genshin.gacha", func(h *sdkHost) {
+			h.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 0, "confirm": true})
+		}, false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			a := pluginApp(t)
-			accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}}}
+			// Waits between pages pass on the test clock.
+			a.clock = &fakeClock{at: time.Now()}
+			accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}, "genshin.gacha": {"list": []any{}, "region": "cn_gf01"}}}
 			host := newSDKHost(t, a, map[string]any{"xiaoyao": map[string]any{"is_note_task": true}}, accounts.answer)
 			c.create(host)
 			ref := host.job(c.prefix)
@@ -199,6 +205,9 @@ func TestRemovingATaskDeletesItsJob(t *testing.T) {
 		{"挑战提醒", "game.challenge.", func(h *sdkHost) {
 			h.manage("challenge.reminder.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "abyss", "metric": "star", "threshold": 36, "hour": 20, "days": 30, "confirm": true})
 		}, func(h *sdkHost) { h.manage("challenge.reminder.remove", ref(h, "game.challenge.")) }},
+		{"每日抽卡同步", "game.sync.", func(h *sdkHost) {
+			h.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 8, "confirm": true})
+		}, func(h *sdkHost) { h.manage("gacha.task.remove", ref(h, "game.sync.")) }},
 		{"群推送", "game.content.", func(h *sdkHost) {
 			h.groupMessage("#开启公告推送", "开启公告推送")
 		}, func(h *sdkHost) {
@@ -233,6 +242,14 @@ func TestATriggerWhoseTaskIsGoneDeletesItsJob(t *testing.T) {
 		{"体力推送", notePushTask, func(h *sdkHost) {
 			h.groupMessage("#开启体力推送", "开启体力推送")
 		}, forgetReminder},
+		{"每日抽卡同步", "game.sync.", func(h *sdkHost) {
+			h.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 8, "confirm": true})
+		}, func(a *App, ref string) error {
+			return a.SyncTasks.edit(ref, func(items *[]SyncTask, i int) error {
+				*items = slices.Delete(*items, i, i+1)
+				return nil
+			})
+		}},
 		{"群推送", "game.content.", func(h *sdkHost) {
 			h.groupMessage("#开启公告推送", "开启公告推送")
 		}, func(a *App, ref string) error {
