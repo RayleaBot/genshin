@@ -24,6 +24,8 @@ import (
 const (
 	notePushKind     = "note_push"
 	notePushCooldown = 12 * time.Hour
+	// notePushTask prefixes the senders' push tasks.
+	notePushTask = "game.reminder.push."
 )
 
 // NotePush is a group's 体力推送 settings: Off turns the group's pushes off,
@@ -80,7 +82,7 @@ type XiaoyaoSettings struct {
 
 func notePushRef(game string, owner Subject) string {
 	sum := sha256.Sum256([]byte(owner.SourceProtocol + "\x00" + owner.SourceAdapter + "\x00" + owner.BotID + "\x00" + owner.ActorID))
-	return "game.reminder.push." + game + "." + hex.EncodeToString(sum[:])
+	return notePushTask + game + "." + hex.EncodeToString(sum[:])
 }
 
 // notePushCommand answers xiaoyao's 体力推送 words, which it takes only in
@@ -182,7 +184,7 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 		return nil
 	})
 	if err == nil {
-		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "*/10 * * * *", LogLabel: a.Game.Name + "体力推送", Payload: map[string]any{"kind": notePushKind}})
+		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "*/10 * * * *", LogLabel: a.Game.Name + "体力推送", Payload: taskPayload(notePushKind, ref)})
 	}
 	if err != nil {
 		return event.SendText(friendlyError(err))
@@ -194,7 +196,7 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 // have passed since the last push, the resin is read and pushed to the first
 // of the sender's groups whose threshold it reached.
 func (a *App) runNotePush(ctx context.Context, event *rayleabot.EventContext) error {
-	ref := asText(event.Event.Payload["task_id"])
+	ref := triggerTask(event)
 	task, ok, err := a.Reminders.claim(ref)
 	if err != nil || !ok {
 		return event.Result(map[string]any{"checked": false})

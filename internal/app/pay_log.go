@@ -389,7 +389,7 @@ func (a *App) startPayLog(ctx context.Context, event *rayleabot.EventContext, jo
 			job.grant = grant.Delegation.Ref
 		}
 		a.PayJobs.put(ref, job)
-		if _, err := event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "充值记录", Payload: map[string]any{"kind": "pay_log"}}); err != nil {
+		if _, err := event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "充值记录", Payload: taskPayload("pay_log", ref)}); err != nil {
 			a.PayJobs.take(ref)
 			return event.SendText(retry)
 		}
@@ -404,7 +404,7 @@ func (a *App) runPayLog(ctx context.Context, event *rayleabot.EventContext) erro
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	ref := asText(event.Event.Payload["task_id"])
+	ref := triggerTask(event)
 	job := a.PayJobs.take(ref)
 	if job == nil || time.Now().After(job.expires) {
 		_, _ = event.Actions().SchedulerDelete(ctx, ref)

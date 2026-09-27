@@ -122,7 +122,7 @@ func (a *App) challengeReminder(ctx context.Context, event *rayleabot.EventConte
 	if err == nil {
 		task.DelegationRef = grant.Delegation.Ref
 		task.ExpiresAtMS = grant.Delegation.ExpiresAtMS
-		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: "*/5 * * * *", LogLabel: a.Game.Name + kind.Label + "挑战提醒", Payload: map[string]any{"kind": "challenge_reminder"}})
+		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: "*/5 * * * *", LogLabel: a.Game.Name + kind.Label + "挑战提醒", Payload: taskPayload("challenge_reminder", task.Ref)})
 	}
 	if err == nil {
 		task.Enabled = true
