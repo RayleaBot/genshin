@@ -332,7 +332,11 @@ func (a *App) subscriptionManage(ctx context.Context, event *rayleabot.EventCont
 // administrator turns a push on or off for the group.
 func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	if command == "content-push" {
-		// As upstream, the pushes are the only answer.
+		// Checking every group may take minutes, so the event moves to the
+		// background first. As upstream, the pushes are the only answer.
+		if err := detach(ctx, event, nil); err != nil {
+			return event.SendText(friendlyError(err))
+		}
 		if err := a.checkPushes(ctx, event, ""); err != nil {
 			return event.SendText(friendlyError(err))
 		}

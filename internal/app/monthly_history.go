@@ -278,10 +278,10 @@ func ledgerMonth(word string, now time.Time) (int, error) {
 	return month, nil
 }
 
-// monthlyTask is Yunzai's 原石任务 for a super administrator: every account's
-// report is saved as refreshMonthly saves one, as upstream saves each bound
-// CK's. What one event cannot finish is left for the command sent again,
-// which skips the accounts saved in the last hour.
+// monthlyTask is Yunzai's ledgerTask for a super administrator's 原石任务:
+// every account's report is saved as refreshMonthly saves one, as upstream
+// saves each bound CK's half a second apart. Upstream reckons 0.7 seconds an
+// account, so the event moves to the background before the first.
 func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) error {
 	client := a.accountClient(event)
 	choices := []Selection{}
@@ -302,7 +302,9 @@ func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) er
 		}
 		page = *listed.NextPage
 	}
-	// Upstream reckons 0.7 seconds an account.
+	if err := detach(ctx, event, nil); err != nil {
+		return event.SendText(friendlyError(err))
+	}
 	cost := time.Duration(len(choices)) * 700 * time.Millisecond
 	took := ""
 	for _, part := range []struct {
@@ -316,16 +318,10 @@ func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) er
 	start := time.Now()
 	notice(ctx, event, "开始任务：保存原石数据，完成前请勿重复执行")
 	notice(ctx, event, "札记ck："+strconv.Itoa(len(choices))+"个\n预计需要："+took+"\n完成时间："+start.Add(cost).In(time.FixedZone("UTC+8", 28800)).Format("01-02 15:04:05"))
-	for index, choice := range choices {
-		if time.Since(start) > 45*time.Second {
-			return event.SendText("原石任务未完成：剩余" + strconv.Itoa(len(choices)-index) + "个，请稍后再次发送“" + a.Game.Prefix + "原石任务”继续")
-		}
-		archive, err := a.Monthly.Read(client.Provider, choice)
-		if err == nil && slices.ContainsFunc(archive.Items, func(item MonthlySnapshot) bool { return time.Since(time.UnixMilli(item.SavedMS)) < time.Hour }) {
-			continue
-		}
+	for _, choice := range choices {
 		// An account that cannot be read is left as saved, as upstream.
 		_ = a.refreshMonthly(ctx, client, choice)
+		_ = a.sleep(ctx, 500*time.Millisecond)
 	}
 	return event.SendText("原石任务完成")
 }
