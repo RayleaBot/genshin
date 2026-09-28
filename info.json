@@ -973,8 +973,8 @@
     {
       "id": "help",
       "name": "原神帮助",
-      "description": "查看全部命令，可按关键词筛选",
-      "usage": "#原神帮助 [关键词]",
+      "description": "查看全部命令",
+      "usage": "#原神帮助",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
