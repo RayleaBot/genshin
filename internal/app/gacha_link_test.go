@@ -77,9 +77,9 @@ func TestGachaLinkFindsTheUIDWithoutAnAccount(t *testing.T) {
 	a := pluginApp(t)
 	a.LinkHTTP = &http.Client{Transport: wishHistory{}}
 	link, _, _ := parseGachaLink("https://webstatic.mihoyo.com/hk4e/event/e20190909gacha-v3/index.html?authkey=" + url.QueryEscape("abcdefghij") + "#/log")
-	uid, err := a.checkGachaLink(context.Background(), &link, 80)
-	if err != nil || uid != "100000001" || link.region != "cn_gf01" {
-		t.Fatal(uid, link.region, err)
+	uid, characters, err := a.checkGachaLink(context.Background(), &link, 80)
+	if err != nil || uid != "100000001" || !characters || link.region != "cn_gf01" {
+		t.Fatal(uid, characters, link.region, err)
 	}
 }
 
@@ -88,13 +88,13 @@ func TestGachaLinkRepliesAsYunzaiToOfficialErrors(t *testing.T) {
 	for retcode, want := range map[int]string{-101: "该链接已失效，请重新进入游戏，重新复制链接", -109: "2.3版本后，反馈的链接已无法查询！请用安卓方式获取链接", -100: "链接不完整"} {
 		a.LinkHTTP = &http.Client{Transport: wishHistory{retcode: retcode}}
 		link := gachaLink{key: "abcdefghij", region: "cn_gf01"}
-		if _, err := a.checkGachaLink(context.Background(), &link, 80); err == nil || !strings.HasPrefix(friendlyError(err), want) {
+		if _, _, err := a.checkGachaLink(context.Background(), &link, 80); err == nil || !strings.HasPrefix(friendlyError(err), want) {
 			t.Fatal(retcode, err)
 		}
 	}
 	a.LinkHTTP = &http.Client{Transport: wishHistory{retcode: -100}}
 	link := gachaLink{key: "abcdefghij", region: "cn_gf01"}
-	if _, err := a.checkGachaLink(context.Background(), &link, 1000); err == nil || !strings.HasPrefix(friendlyError(err), "输入法限制") {
+	if _, _, err := a.checkGachaLink(context.Background(), &link, 1000); err == nil || !strings.HasPrefix(friendlyError(err), "输入法限制") {
 		t.Fatal(err)
 	}
 }
@@ -110,8 +110,8 @@ const wishLink = "https://webstatic.mihoyo.com/hk4e/event/e20190909gacha-v3/inde
 // A link whose history takes minutes to read, run through the SDK as the
 // host runs it: the event moves to the background at once and reads every
 // page in turn, then answers in the private chat the link came from as
-// Yunzai does, each pool's count and then the record, without any scheduled
-// job.
+// Yunzai does, the first read announced, each pool's count and then the
+// record, without any scheduled job.
 func TestGachaLinkReadsEveryPageInItsBackgroundEvent(t *testing.T) {
 	a := pluginApp(t)
 	start := time.Unix(1_800_000_000, 0)
@@ -140,7 +140,7 @@ func TestGachaLinkReadsEveryPageInItsBackgroundEvent(t *testing.T) {
 		}
 		texts = append(texts, sentText(sent.Message))
 	}
-	if len(texts) != 3 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新205条\n[武器]记录获取成功，更新1条\n\n抽卡记录更新完成") || !strings.Contains(texts[2], "胡桃") {
+	if len(texts) != 4 || texts[0] != "链接发送成功，数据获取中……" || texts[1] != "开始获取角色记录，首次获取数据较多，请耐心等待..." || !strings.HasPrefix(texts[2], "[角色]记录获取成功，更新205条\n[武器]记录获取成功，更新1条\n\n抽卡记录更新完成") || !strings.Contains(texts[3], "胡桃") {
 		t.Fatalf("answered %q", texts)
 	}
 	if archive, err := a.Gacha.Read("100000001", "cn_gf01"); err != nil || len(archive.Records) != 206 {
@@ -149,7 +149,8 @@ func TestGachaLinkReadsEveryPageInItsBackgroundEvent(t *testing.T) {
 }
 
 // A link in a group answers every message of the reply, then asks the
-// sender to recall the link.
+// sender to recall the link. A second link reads without announcing a first
+// read.
 func TestGachaLinkInAGroupAnswersEachMessage(t *testing.T) {
 	a := pluginApp(t)
 	a.clock = &fakeClock{at: time.Now()}
@@ -159,8 +160,13 @@ func TestGachaLinkInAGroupAnswersEachMessage(t *testing.T) {
 	if end["type"] != "result" || len(host.jobs) != 0 {
 		t.Fatalf("the link event ended with %v, jobs %v", end, host.jobs)
 	}
-	if len(host.sent) != 4 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功") || sentText(host.sent[3].Message) != "已收到链接，请撤回" || host.sent[3].TargetType != "group" || host.sent[3].TargetID != "g" {
+	if len(host.sent) != 5 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[2].Message), "[角色]记录获取成功") || sentText(host.sent[4].Message) != "已收到链接，请撤回" || host.sent[4].TargetType != "group" || host.sent[4].TargetID != "g" {
 		t.Fatalf("answered %+v", host.sent)
+	}
+	host.sent = nil
+	host.groupMessage(wishLink, "")
+	if len(host.sent) != 4 || !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功，更新0条") {
+		t.Fatalf("answered the second link with %+v", host.sent)
 	}
 }
 

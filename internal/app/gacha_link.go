@@ -115,8 +115,9 @@ func (a *App) gachaLinkPage(ctx context.Context, link gachaLink, pool, endID str
 
 // checkGachaLink finds the link's region when it names none, as Yunzai tries
 // the mainland server and then America, and takes the UID from the first
-// record of any pool.
-func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (string, error) {
+// record of any pool; characters reports that the character event pool,
+// read first, has records.
+func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (uid string, characters bool, err error) {
 	regions := []string{link.region}
 	if link.region == "" {
 		regions = []string{"cn_gf01", "os_usa"}
@@ -129,7 +130,7 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 			if err != nil {
 				var public *rayleabot.ActionError
 				if errors.As(err, &public) && public.Code == "plugin.game_gacha_link_incomplete" && length == 1000 {
-					return "", gameError("gacha_link_incomplete", "输入法限制，链接复制不完整，请更换输入法复制完整链接")
+					return "", false, gameError("gacha_link_incomplete", "输入法限制，链接复制不完整，请更换输入法复制完整链接")
 				}
 				failure = err
 				break
@@ -138,24 +139,25 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 				link.region = region
 			}
 			if list := asList(data["list"]); len(list) > 0 {
-				return asText(asObject(list[0])["uid"]), nil
+				return asText(asObject(list[0])["uid"]), pool[0] == "301", nil
 			}
 		}
 	}
 	if failure != nil {
 		if len(regions) > 1 {
-			return "", gameError("gacha_link_expired", "链接复制错误或已失效")
+			return "", false, gameError("gacha_link_expired", "链接复制错误或已失效")
 		}
-		return "", failure
+		return "", false, failure
 	}
-	return "", gameError("gacha_link_empty", "暂无数据，请等待记录后再查询")
+	return "", false, gameError("gacha_link_empty", "暂无数据，请等待记录后再查询")
 }
 
 // gachaLinkMessage answers a message holding a gacha link; handled is false
-// for any other message. As Yunzai's logUrl, the link is checked, every pool
-// read, and the answer is each pool's new records, the full read turned off
-// when it was on, the character event wish record and, in a group, the ask
-// to recall the link.
+// for any other message. As Yunzai's logUrl, the link is checked, a first or
+// full read of the character event pool is announced, every pool read, and
+// the answer is each pool's new records, the full read turned off when it
+// was on, the character event wish record and, in a group, the ask to recall
+// the link.
 func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
 	text := event.Event.Message.PlainText
 	link, ok, err := parseGachaLink(text)
@@ -175,7 +177,7 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	if err := detach(ctx, event, nil); err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
-	uid, err := a.checkGachaLink(ctx, &link, len([]rune(text)))
+	uid, characters, err := a.checkGachaLink(ctx, &link, len([]rune(text)))
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
@@ -184,7 +186,10 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	owner := chatOwner(event)
 	full := a.fullLinks.active(owner)
 	before := gachaPoolCounts(a.archiveOrEmpty(uid, link.region))
-	if full {
+	switch {
+	case characters && before["301"] == 0:
+		notice(ctx, event, "开始获取角色记录，首次获取数据较多，请耐心等待...")
+	case characters && full:
 		notice(ctx, event, "开始获取角色记录，全量更新获取数据较多，请耐心等待...")
 	}
 	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, full)
