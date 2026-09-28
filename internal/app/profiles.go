@@ -205,6 +205,12 @@ func post(ctx context.Context, event *rayleabot.EventContext, segments ...raylea
 	return asText(result["message_id"]), nil
 }
 
+// atSender is a group reply that mentions the sender, as Yunzai's reply with
+// at: true puts the mention and a line break before the text.
+func atSender(event *rayleabot.EventContext, text string) []rayleabot.Segment {
+	return []rayleabot.Segment{rayleabot.At(event.Event.Actor.ID), rayleabot.Text("\n" + text)}
+}
+
 // mentionedUser is the first user a message mentions other than the bot.
 func mentionedUser(event *rayleabot.EventContext) string {
 	for _, segment := range event.Event.Message.Segments {

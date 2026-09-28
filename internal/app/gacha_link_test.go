@@ -149,8 +149,8 @@ func TestGachaLinkReadsEveryPageInItsBackgroundEvent(t *testing.T) {
 }
 
 // A link in a group answers every message of the reply, then asks the
-// sender to recall the link. A second link reads without announcing a first
-// read.
+// sender to recall the link, mentioning them. A second link reads without
+// announcing a first read.
 func TestGachaLinkInAGroupAnswersEachMessage(t *testing.T) {
 	a := pluginApp(t)
 	a.clock = &fakeClock{at: time.Now()}
@@ -160,8 +160,12 @@ func TestGachaLinkInAGroupAnswersEachMessage(t *testing.T) {
 	if end["type"] != "result" || len(host.jobs) != 0 {
 		t.Fatalf("the link event ended with %v, jobs %v", end, host.jobs)
 	}
-	if len(host.sent) != 5 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[2].Message), "[角色]记录获取成功") || sentText(host.sent[4].Message) != "已收到链接，请撤回" || host.sent[4].TargetType != "group" || host.sent[4].TargetID != "g" {
+	recall := host.sent[len(host.sent)-1]
+	if len(host.sent) != 5 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" || !strings.HasPrefix(sentText(host.sent[2].Message), "[角色]记录获取成功") || recall.TargetType != "group" || recall.TargetID != "g" {
 		t.Fatalf("answered %+v", host.sent)
+	}
+	if mention := recall.Message.Segments[0]; mention.Type != "at" || asText(mention.Data["user_id"]) != "u" || sentText(recall.Message) != "\n已收到链接，请撤回" {
+		t.Fatalf("asked to recall with %+v", recall.Message)
 	}
 	host.sent = nil
 	host.groupMessage(wishLink, "")

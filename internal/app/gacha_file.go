@@ -80,7 +80,7 @@ func senderKey(event *rayleabot.EventContext) string {
 func (a *App) gachaFileCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	word := map[string]string{"gacha-export": "导出", "gacha-import": "导入"}[command]
 	if event.Event.Target.Type == "group" && !slices.Contains(args, "强制") {
-		return event.SendText(fmt.Sprintf("建议私聊%s，若你确认要在此%s，请发送【%s强制%s记录】", word, word, a.Game.Prefix, word))
+		return event.Send(event.Event.Target.Type, event.Event.Target.ID, atSender(event, fmt.Sprintf("建议私聊%s，若你确认要在此%s，请发送【%s强制%s记录】", word, word, a.Game.Prefix, word))...)
 	}
 	if command == "gacha-import" {
 		a.fileImports.wait(senderKey(event))
@@ -118,7 +118,8 @@ func (a *App) gachaFile(archive gacha.Archive, legacy bool) map[string]any {
 		gachaFileField: []any{map[string]any{"uid": archive.UID, "timezone": archive.Timezone, "lang": archive.Language, "list": archive.Records}}}
 }
 
-// gachaFileMessage imports the file a sender sends after 导入记录; handled is
+// gachaFileMessage imports the file a sender sends after 导入记录 and, in a
+// group, then asks the sender to recall it, mentioning them; handled is
 // false for other messages, which leave the wait running as Yunzai's context
 // does.
 func (a *App) gachaFileMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
@@ -136,24 +137,28 @@ func (a *App) gachaFileMessage(ctx context.Context, event *rayleabot.EventContex
 		return false, nil
 	}
 	a.fileImports.done(key)
-	defer func() {
-		if event.Event.Target.Type == "group" {
-			notice(ctx, event, "已收到文件，请撤回")
-		}
-	}()
+	reply := textReply(a.importGachaFile(ctx, event, file, name))
+	if event.Event.Target.Type == "group" {
+		reply = append(reply, atSender(event, "已收到文件，请撤回"))
+	}
+	return true, answerChat(ctx, event, reply)
+}
+
+// importGachaFile imports the file at the address and returns the report.
+func (a *App) importGachaFile(ctx context.Context, event *rayleabot.EventContext, file, name string) string {
 	if file == "" {
-		return true, event.SendText("文件链接获取失败")
+		return "文件链接获取失败"
 	}
 	raw, err := downloadFile(ctx, file, gachaImportLimit)
 	if err != nil {
-		return true, event.SendText("下载json文件错误")
+		return "下载json文件错误"
 	}
 	archives, err := a.parseGachaFile(raw)
 	if err != nil {
-		return true, event.SendText(strings.ReplaceAll(friendlyError(err), "{name}", name))
+		return strings.ReplaceAll(friendlyError(err), "{name}", name)
 	}
 	if len(archives) == 0 {
-		return true, event.SendText("文件中没有" + a.Game.Name + "记录")
+		return "文件中没有" + a.Game.Name + "记录"
 	}
 	listed, _ := a.accountClient(event).List(ctx, 0)
 	lines := []string{name + "，" + a.Game.Name + "记录导入成功"}
@@ -163,10 +168,10 @@ func (a *App) gachaFileMessage(ctx context.Context, event *rayleabot.EventContex
 			archive.Timezone = regionTimezone(archive.Region)
 		}
 		if gacha.Validate(archive) != nil {
-			return true, event.SendText("json文件内容错误：记录格式不正确")
+			return "json文件内容错误：记录格式不正确"
 		}
 		if _, _, err := a.Gacha.Import(archive); err != nil {
-			return true, event.SendText("记录与已有档案冲突，原档案已保留")
+			return "记录与已有档案冲突，原档案已保留"
 		}
 		if len(archives) > 1 {
 			lines = append(lines, "UID："+archive.UID)
@@ -178,7 +183,7 @@ func (a *App) gachaFileMessage(ctx context.Context, event *rayleabot.EventContex
 			}
 		}
 	}
-	return true, event.SendText(strings.Join(lines, "\n"))
+	return strings.Join(lines, "\n")
 }
 
 var fileLink = regexp.MustCompile(`https://[^\s]+`)

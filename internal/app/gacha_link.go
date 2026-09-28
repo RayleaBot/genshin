@@ -157,7 +157,7 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 // full read of the character event pool is announced, every pool read, and
 // the answer is each pool's new records, the full read turned off when it
 // was on, the character event wish record and, in a group, the ask to recall
-// the link.
+// the link, mentioning the sender.
 func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
 	text := event.Event.Message.PlainText
 	link, ok, err := parseGachaLink(text)
@@ -208,7 +208,7 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	}
 	reply := a.gachaLinkReply(ctx, event, owner, result, before, full)
 	if group {
-		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已收到链接，请撤回")})
+		reply = append(reply, atSender(event, "已收到链接，请撤回"))
 	}
 	return true, answerChat(ctx, event, reply)
 }

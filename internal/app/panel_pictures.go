@@ -124,7 +124,7 @@ func (a *App) pictureCommand(ctx context.Context, event *rayleabot.EventContext,
 	}
 	reply := func(text string) error {
 		if event.Event.Target.Type == "group" {
-			return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.At(event.Event.Actor.ID), rayleabot.Text("\n"+text))
+			return event.Send(event.Event.Target.Type, event.Event.Target.ID, atSender(event, text)...)
 		}
 		return event.SendText(text)
 	}

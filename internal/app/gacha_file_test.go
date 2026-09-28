@@ -92,3 +92,26 @@ func TestGachaImportFindsTheSentFile(t *testing.T) {
 		t.Fatal("the wait outlived the import")
 	}
 }
+
+// In a group the import command suggests a private chat and, once forced, a
+// file sent is answered and the sender then asked to recall it; both mention
+// the sender, as Yunzai does.
+func TestGachaFileInAGroupMentionsTheSender(t *testing.T) {
+	a := pluginApp(t)
+	host := newSDKHost(t, a, nil, (&fakeAccounts{t: t}).answer)
+	mentions := func(frame map[string]any, text string) bool {
+		var message rayleabot.MessageOut
+		_ = decodeObject(asObject(frame["data"])["message"], &message)
+		return len(message.Segments) == 2 && message.Segments[0].Type == "at" && asText(message.Segments[0].Data["user_id"]) == "u" && sentText(message) == "\n"+text
+	}
+	if end, _ := host.groupMessage("#导入记录", "导入记录"); !mentions(end, "建议私聊导入，若你确认要在此导入，请发送【#强制导入记录】") {
+		t.Fatalf("suggested %+v", end)
+	}
+	if end, _ := host.groupMessage("#强制导入记录", "强制导入记录"); terminalText(end) != "请发送Json文件" {
+		t.Fatalf("asked for the file with %+v", end)
+	}
+	end, _ := host.groupMessage("https://127.0.0.1:1/record.json", "")
+	if len(host.sent) != 1 || sentText(host.sent[0].Message) != "下载json文件错误" || !mentions(end, "已收到文件，请撤回") {
+		t.Fatalf("answered %+v, then %+v", host.sent, end)
+	}
+}
