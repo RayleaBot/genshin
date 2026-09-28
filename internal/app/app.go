@@ -599,7 +599,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.statisticsCommand(ctx, event, command)
 	case "character-card":
 		return a.characterCard(ctx, event, args)
-	case "pay-log", "pay-log-update":
+	case "pay-log", "pay-log-update", "pay-log-refresh":
 		return a.payLogCommand(ctx, event, command)
 	case "theater-training":
 		return a.theaterTraining(ctx, event, args)

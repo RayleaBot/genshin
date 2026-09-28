@@ -866,6 +866,17 @@
       }
     },
     {
+      "id": "pay-log-refresh",
+      "name": "刷新充值记录",
+      "description": "按逍遥插件用当前账号重新读取充值统计",
+      "usage": "#刷新充值记录 / #刷新氪金记录",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^刷新(?:充值|氪金)记录$"
+      }
+    },
+    {
       "id": "pay-help",
       "name": "充值记录帮助",
       "description": "充值与消费记录的查询方法",
@@ -1911,6 +1922,7 @@
         "monthly-task",
         "pay-log",
         "pay-log-update",
+        "pay-log-refresh",
         "pay-help"
       ]
     },

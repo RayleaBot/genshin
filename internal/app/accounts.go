@@ -143,6 +143,10 @@ func (c AccountsClient) ExecuteConfirmed(ctx context.Context, choice Selection, 
 	err := c.call(ctx, "execute", map[string]any{"account_ref": choice.AccountRef, "role_ref": choice.RoleRef, "operation": operation, "input": input, "write_confirmed": true}, &result)
 	return result, err
 }
+
+// errRoleMissing answers a sender without an authorized role of the game.
+var errRoleMissing = &rayleabot.ActionError{Code: "plugin.game_role_missing", Message: "未找到可用角色，请先扫码并授权此游戏。"}
+
 func Choose(accounts Accounts, game, uid string) (Selection, Role, error) {
 	var choices []Selection
 	var roles []Role
@@ -167,7 +171,7 @@ func Choose(accounts Accounts, game, uid string) (Selection, Role, error) {
 		return choices[0], roles[0], nil
 	}
 	if len(choices) == 0 {
-		return Selection{}, Role{}, &rayleabot.ActionError{Code: "plugin.game_role_missing", Message: "未找到可用角色，请先扫码并授权此游戏。"}
+		return Selection{}, Role{}, errRoleMissing
 	}
 	return Selection{}, Role{}, &rayleabot.ActionError{Code: "plugin.game_role_ambiguous", Message: "存在多个角色，请指定 UID 或选择默认角色。"}
 }

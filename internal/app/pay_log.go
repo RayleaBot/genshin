@@ -21,11 +21,11 @@ import (
 // the Genesis Crystals bought and the 680 primogems of each Gnostic Hymn with
 // its authkey, and draws them by month and pack. The result is kept for the
 // sender; the authkey only in memory, for a day, so 更新充值记录 can read
-// again, as upstream keeps it a day in redis. Without a link 更新充值记录
-// reads the same logs with the account's SToken, as xiaoyao's 刷新充值记录
-// hands Yunzai a customer service authkey; the accounts plugin reads them
-// as the sender and the authkey stays there. Either read moves its event to
-// the background first and reads every page in turn.
+// again, as upstream keeps it a day in redis. Without a link 更新充值记录,
+// and xiaoyao's 刷新充值记录 always, reads the same logs with the account's
+// SToken, as xiaoyao hands Yunzai a customer service authkey; the accounts
+// plugin reads them as the sender and the authkey stays there. Either read
+// moves its event to the background first and reads every page in turn.
 
 const payLogURL = "https://hk4e-api.mihoyo.com/common/hk4e_self_help_query/User/"
 
@@ -397,12 +397,13 @@ func (a *App) payLogMessage(ctx context.Context, host imageRenderer, images bool
 // PayPackNames name the packs in payPrices' order, as Yunzai's chart does.
 var PayPackNames = [8]string{"大月卡", "小月卡", "648", "328", "198", "98", "30", "6"}
 
-// payLogCommand answers 充值记录 and 更新充值记录: the kept result of the
-// sender's current UID, else the first kept, and a new read with the
-// authkey kept for that UID, else with the account of the UID.
+// payLogCommand answers 充值记录, 更新充值记录 and 刷新充值记录: the kept result
+// of the sender's current UID, else the first kept; a new read with the
+// authkey kept for that UID, else, and always for 刷新充值记录, with the
+// account of the UID, announced as xiaoyao does.
 func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, command string) error {
 	owner := chatOwner(event)
-	player, _ := a.panelOwner(ctx, event, "")
+	player, err := a.panelOwner(ctx, event, "")
 	current := player.UID
 	if command == "pay-log" {
 		logs, err := a.PayLogs.Get(owner)
@@ -418,13 +419,17 @@ func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, 
 			return event.SendText("当前绑定的uid未获取数据，请私聊获取")
 		}
 	}
-	job := &payLogJob{}
-	if kept, ok := a.PayKeys.get(owner); ok && (current == "" || kept.uid == current) {
-		job.key = kept.key
-	} else if player.Owned {
-		job.choice, job.provider, job.uid = player.Choice, a.accountClient(event).Provider, player.UID
-	} else {
-		return event.SendText("请私聊发送米游社链接，可以发送【" + a.Game.Prefix + "充值统计帮助】查看链接教程")
+	if kept, ok := a.PayKeys.get(owner); ok && command != "pay-log-refresh" && (current == "" || kept.uid == current) {
+		return a.startPayLog(ctx, event, &payLogJob{key: kept.key}, "正在获取数据,可能需要30s")
 	}
-	return a.startPayLog(ctx, event, job, "正在获取数据,可能需要30s")
+	if player.Owned {
+		return a.startPayLog(ctx, event, &payLogJob{choice: player.Choice, provider: a.accountClient(event).Provider, uid: player.UID}, "充值记录获取中请稍等...")
+	}
+	if command == "pay-log-refresh" {
+		if err == nil {
+			err = errRoleMissing
+		}
+		return event.SendText(friendlyError(err))
+	}
+	return event.SendText("请私聊发送米游社链接，可以发送【" + a.Game.Prefix + "充值统计帮助】查看链接教程")
 }

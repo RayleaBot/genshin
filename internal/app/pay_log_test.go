@@ -208,7 +208,7 @@ func billingService(t *testing.T, clock *fakeClock, reads *[]map[string]any, fai
 // 更新充值记录 without a link, run through the SDK as the host runs it: the
 // event moves to the background and reads all four pages of the account's
 // logs as the sender, longer than an event may take, then answers in the
-// chat and keeps the result for the sender.
+// chat with xiaoyao's wait and the result, and keeps it for the sender.
 func TestPayLogByAccountReadsInItsBackgroundEvent(t *testing.T) {
 	a := pluginApp(t)
 	start := time.Unix(1_800_000_000, 0)
@@ -223,11 +223,32 @@ func TestPayLogByAccountReadsInItsBackgroundEvent(t *testing.T) {
 	if len(reads) != 4 || clock.Now().Sub(start) < time.Minute {
 		t.Fatalf("read %+v by %v", reads, clock.Now().Sub(start))
 	}
-	if len(host.sent) != 2 || sentText(host.sent[0].Message) != "正在获取数据,可能需要30s" || host.sent[1].TargetID != "u" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
+	if len(host.sent) != 2 || sentText(host.sent[0].Message) != "充值记录获取中请稍等..." || host.sent[1].TargetID != "u" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
 		t.Fatalf("answered %+v", host.sent)
 	}
 	if logs, err := a.PayLogs.Get(Subject{"onebot11", "a", "bot", "u"}); err != nil || len(logs) != 1 || logs[0].UID != "100000001" {
 		t.Fatalf("kept %+v, %v", logs, err)
+	}
+}
+
+// With a link's authkey kept for the UID, 更新充值记录 reads with it as Yunzai
+// does, while xiaoyao's 刷新充值记录 reads with the account.
+func TestPayLogRefreshReadsTheAccountDespiteAKeptLink(t *testing.T) {
+	a := pluginApp(t)
+	a.LinkHTTP = &http.Client{Transport: selfHelpLogs{}}
+	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
+	a.clock = clock
+	reads := []map[string]any{}
+	host := newSDKHost(t, a, nil, billingService(t, clock, &reads, ""))
+	a.PayKeys.put(Subject{"onebot11", "a", "bot", "u"}, "100000001", "abcdefghij")
+	host.message("#更新充值记录", "更新充值记录")
+	if len(reads) != 0 || len(host.sent) != 2 || sentText(host.sent[0].Message) != "正在获取数据,可能需要30s" {
+		t.Fatalf("更新充值记录 read %d account pages and answered %+v", len(reads), host.sent)
+	}
+	host.sent = nil
+	host.message("#刷新氪金记录", "刷新氪金记录")
+	if len(reads) != 4 || len(host.sent) != 2 || sentText(host.sent[0].Message) != "充值记录获取中请稍等..." {
+		t.Fatalf("刷新充值记录 read %d account pages and answered %+v", len(reads), host.sent)
 	}
 }
 
