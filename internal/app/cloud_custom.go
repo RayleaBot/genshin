@@ -250,19 +250,9 @@ func (a *App) customRankCommand(ctx context.Context, event *rayleabot.EventConte
 	}
 	id, _ := strconv.Atoi(character.ID)
 	decoded, err := a.arkRequest(ctx, event, "rank/custom", map[string]any{"charId": id, "data": query, "game": arkGame})
-	if err != nil {
-		// Upstream's 排名服务暂不可用 waits for a request that throws, which its
-		// request never does: a failed request has no answer and reads as an
-		// unknown error.
-		decoded = nil
-	}
 	result := asObject(decoded)
-	if code := asText(result["retcode"]); code != "0" {
-		message := cmpOr(cloudText(result["message"]), "未知错误")
-		if code != "401" && code != "403" && code != "429" && strings.Contains(message, "does not exist") {
-			message = "该角色暂无数据"
-		}
-		return event.SendText("查询失败：" + message)
+	if err != nil || asText(result["retcode"]) != "0" {
+		return event.SendText(arkQueryFailure(result))
 	}
 	data := asObject(result["data"])
 	var record reference.Character
@@ -415,11 +405,11 @@ func (a *App) customRankPanel(ctx context.Context, event *rayleabot.EventContext
 
 // customRankAvatar reads a rank/custom/specific answer as upstream's
 // getPanelData and setAvatars do: the player data under info or playerData,
-// its UID as ark shows it, and the ranked character, else the first. failure
-// is upstream's reason when the answer holds none.
+// its UID as ark shows it, and the ranked character, else the first. Failed
+// answers use local messages without forwarding upstream diagnostics.
 func customRankAvatar(result map[string]any, id string) (uid string, avatar map[string]any, failure string) {
 	if asText(result["retcode"]) != "0" {
-		return "", nil, cmpOr(cloudText(result["message"]), "未知错误")
+		return "", nil, arkQueryFailure(result)
 	}
 	data := asObject(result["data"])
 	for _, key := range []string{"info", "playerData"} {

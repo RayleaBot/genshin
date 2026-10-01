@@ -322,13 +322,10 @@ func (a *App) cloudUsage(ctx context.Context, event *rayleabot.EventContext) err
 // of every request's minute, hour and day quota, the custom ranking's
 // multiplier and what is left of its ordinary and advanced quota.
 func arkUsageText(decoded any) string {
-	if text, ok := decoded.(string); ok {
-		return cloudText(text)
-	}
 	result := asObject(decoded)
 	data := asObject(result["data"])
 	if asText(result["retcode"]) != "0" || data == nil {
-		return cmpOr(cloudText(result["message"]), "查询失败")
+		return arkQueryFailure(result)
 	}
 	auth, quota := asObject(data["auth"]), asObject(data["quota"])
 	rank, custom := asObject(quota["rank"]), asObject(quota["custom"])

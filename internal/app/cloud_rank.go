@@ -56,6 +56,20 @@ func customCloudRequest(input CloudInput, id int) (string, map[string]any, error
 	filters = append(filters, advanced...)
 	return "rank/custom", map[string]any{"version": "0.1.0", "charId": id, "game": arkGame, "data": map[string]any{"rank": map[string]any{"col": input.Sort, "order": "desc"}, "filter": filters, "nums": input.Limit}}, nil
 }
+
+// arkQueryFailure handles the retcode=0 query APIs; their message fields may
+// contain upstream diagnostics and are never suitable for a chat reply.
+func arkQueryFailure(result map[string]any) string {
+	switch asText(result["retcode"]) {
+	case "401", "403":
+		return "云服务授权不可用，请联系管理员检查。"
+	case "429":
+		return "云服务请求过于频繁，请稍后重试。"
+	default:
+		return "云服务请求失败，请稍后重试。"
+	}
+}
+
 func cloudText(v any) string {
 	s, ok := v.(string)
 	if !ok {

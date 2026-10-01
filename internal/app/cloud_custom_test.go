@@ -106,8 +106,8 @@ func TestCustomRankAvatarReadsArkPlayerData(t *testing.T) {
 		t.Fatalf("panel %+v %v", panel, err)
 	}
 	for raw, want := range map[string]string{
-		`{"retcode":-1}`: "未知错误",
-		`{"retcode":1,"message":"query expired"}`:         "query expired",
+		`{"retcode":-1}`: "云服务请求失败，请稍后重试。",
+		`{"retcode":1,"message":"query expired"}`:         "云服务请求失败，请稍后重试。",
 		`{"retcode":0,"data":{"playerData":{"uid":"1"}}}`: "返回数据异常",
 		`{"retcode":0,"data":{"uid":"1","avatars":{}}}`:   "未找到对应角色面板",
 		`{"retcode":0,"data":{"avatars":{"1":{"id":1}}}}`: "返回数据异常",

@@ -47,7 +47,7 @@ func TestArkUsageTextFollowsArk(t *testing.T) {
 	if got := arkUsageText(token); got != want {
 		t.Fatalf("token usage:\n%s", got)
 	}
-	for raw, want := range map[string]string{`{"retcode":401,"message":"invalid token"}`: "invalid token", `{"retcode":0}`: "查询失败"} {
+	for raw, want := range map[string]string{`{"retcode":401,"message":"invalid token"}`: "云服务授权不可用，请联系管理员检查。", `{"retcode":0}`: "云服务请求失败，请稍后重试。"} {
 		if got := arkUsageText(cloudObject(t, raw)); got != want {
 			t.Errorf("%s: %q", raw, got)
 		}
