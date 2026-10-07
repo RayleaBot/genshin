@@ -340,7 +340,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 // Yunzai's saveLedger does; a month that fails to load is left as saved.
 func (a *App) keepMonthly(ctx context.Context, client AccountsClient, choice Selection, read QueryResult) error {
 	operation := a.Game.ID + ".monthly"
-	now := time.Now()
+	now := a.now()
 	if err := a.Monthly.Keep(client.Provider, choice, read.Data, now); err != nil {
 		return err
 	}
