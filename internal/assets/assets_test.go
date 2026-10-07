@@ -3,7 +3,7 @@ package assets
 import (
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // The plugin starts exactly this way; a manifest or data change that the shared

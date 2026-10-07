@@ -1,4 +1,4 @@
-module github.com/RayleaBot/plugin-genshin
+module github.com/RayleaBot/genshin
 
 go 1.26.6
 

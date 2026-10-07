@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // trainingLevels is miao's talent colour step for each original level.

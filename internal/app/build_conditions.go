@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 type BuildConditions struct {

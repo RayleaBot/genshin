@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/assets"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/assets"
 )
 
 func main() {

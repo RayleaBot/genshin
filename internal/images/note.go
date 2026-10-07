@@ -8,7 +8,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // Builders lists the image builders by the operation they draw.

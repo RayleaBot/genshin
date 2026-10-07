@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 var cloudTalentPattern = regexp.MustCompile(`^[a-z][a-z0-9_]{0,15}$`)

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 type Row struct {

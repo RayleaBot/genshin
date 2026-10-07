@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 type BuildWeapon struct {

@@ -12,7 +12,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // miaoFlatAttrs are MysPanelMappings' fixedAttrNames, the substats miao

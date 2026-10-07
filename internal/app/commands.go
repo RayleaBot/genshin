@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
+	"github.com/RayleaBot/genshin/internal/pluginmeta"
 )
 
 // commandSet maps the command word the host delivered back to this plugin's

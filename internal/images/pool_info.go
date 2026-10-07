@@ -4,7 +4,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // poolArtwork are the fonts and backgrounds of miao's gacha-info page.

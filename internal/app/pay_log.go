@@ -14,7 +14,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 // Yunzai's 充值记录 (payLog): a customer service link sent in private reads

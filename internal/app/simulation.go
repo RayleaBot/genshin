@@ -18,7 +18,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 type SimulationBanner struct {

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
+	"github.com/RayleaBot/genshin/internal/pluginmeta"
 )
 
 // help lists the commands the requester may use, and the same list grouped

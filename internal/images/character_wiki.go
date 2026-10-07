@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // characterWikiArtwork maps the images the converted stylesheets (miao's

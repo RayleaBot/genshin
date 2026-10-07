@@ -7,7 +7,7 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 //go:embed bootstrap.js common.js runner.js

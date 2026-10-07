@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
-	"github.com/RayleaBot/plugin-genshin/internal/reference/miao"
+	"github.com/RayleaBot/genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference/miao"
 )
 
 // pluginFile reads a file of this plugin, for tests that need the shipped

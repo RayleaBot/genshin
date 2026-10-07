@@ -14,7 +14,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 // A gacha link pasted in chat is read as Yunzai's gcLog reads it: its

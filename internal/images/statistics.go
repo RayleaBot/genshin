@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // statisticsArtwork maps the images of miao's common and stat/common

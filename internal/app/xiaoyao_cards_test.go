@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/artwork"
 )
 
 // xiaoyaoApp is an app with the shipped xiaoyao settings and a downloaded

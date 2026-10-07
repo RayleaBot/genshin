@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
-	"github.com/RayleaBot/plugin-genshin/internal/assets"
-	"github.com/RayleaBot/plugin-genshin/internal/images"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/assets"
+	"github.com/RayleaBot/genshin/internal/images"
 )
 
 func TestPanelFollowsMiaoRules(t *testing.T) {

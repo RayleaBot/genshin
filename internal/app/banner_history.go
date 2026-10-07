@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 type BannerAppearance struct {

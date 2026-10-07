@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 // storedTask is a scheduled task kept in its own file.

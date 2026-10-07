@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // miao's getArtifactAttrIdCombination takes, of every sequence of times+1

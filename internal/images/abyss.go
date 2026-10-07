@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // Abyss draws the Spiral Abyss the way Yunzai's html/abyss/abyss does: the

@@ -4,7 +4,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // ledgerColors are Yunzai's colours for the primogem sources, by action ID.

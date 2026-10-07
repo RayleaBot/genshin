@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // score-vectors.json holds three shared panels and the expected per-slot marks

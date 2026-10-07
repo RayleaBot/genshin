@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 // miaoGachaArtwork are the fonts and backgrounds of miao's gacha-detail and

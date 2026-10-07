@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/assets"
-	"github.com/RayleaBot/plugin-genshin/internal/showcase"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/assets"
+	"github.com/RayleaBot/genshin/internal/showcase"
 )
 
 // miao's EnkaData saves a showcase artifact's mainPropId and appendPropIdList

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // panelArtwork maps the miao images named in the panel stylesheet to their

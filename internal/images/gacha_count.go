@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 // countWords are stripped before picking the pool, as LogCount.getPool does.

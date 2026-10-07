@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 func TestGachaTextListsEachTopPullWithUpAndAverages(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/gacha"
 )
 
 // SyncTask is a daily background sync: each day after Hour, Beijing time,

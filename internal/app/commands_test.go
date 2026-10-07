@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
+	"github.com/RayleaBot/genshin/internal/pluginmeta"
 )
 
 func TestCommandSetFollowsHostMatchingOrder(t *testing.T) {

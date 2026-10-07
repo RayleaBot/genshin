@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/pluginmeta"
+	"github.com/RayleaBot/genshin/internal/pluginmeta"
 )
 
 // The shipped manifests follow upstream wording; these cases pin the words

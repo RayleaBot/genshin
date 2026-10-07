@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 type PanelSnapshot struct {

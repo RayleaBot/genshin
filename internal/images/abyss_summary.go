@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // AbyssSummary draws this period's Spiral Abyss the way miao's

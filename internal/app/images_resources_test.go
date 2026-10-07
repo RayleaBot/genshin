@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/artwork"
 )
 
 func TestImageResourcesAddEachFileOnce(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/artwork"
 )
 
 func writeArtwork(t *testing.T, root, name, content string) {

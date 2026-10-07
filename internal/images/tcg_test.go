@@ -3,8 +3,8 @@ package images_test
 import (
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/images"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/images"
 )
 
 func TestTCGDecksFollowYunzai(t *testing.T) {

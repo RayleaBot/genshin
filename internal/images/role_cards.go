@@ -3,7 +3,7 @@ package images
 import (
 	"slices"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // RoleCards draws 月谕圣牌 the way miao's stat/role-card does: the cards

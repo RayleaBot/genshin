@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 type vector struct {

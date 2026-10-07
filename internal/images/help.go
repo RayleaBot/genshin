@@ -3,7 +3,7 @@ package images
 import (
 	"fmt"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // helpIcons gives each command the icon of the miao help entry that lists it

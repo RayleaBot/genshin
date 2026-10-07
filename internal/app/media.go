@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/localdata"
+	"github.com/RayleaBot/genshin/internal/localdata"
 )
 
 const mediaMaxBytes = 4 * 1024 * 1024

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 func TestConditionScopeAndPresetRevision(t *testing.T) {

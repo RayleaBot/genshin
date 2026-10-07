@@ -8,9 +8,9 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
-	"github.com/RayleaBot/plugin-genshin/internal/gacha"
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/gacha"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // Image is a reply drawn with one of the game plugin's own templates, laid out

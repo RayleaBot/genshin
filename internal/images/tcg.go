@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // tcgArtwork maps the images the Genius Invokation TCG pages name to

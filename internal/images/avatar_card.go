@@ -3,8 +3,8 @@ package images
 import (
 	"strconv"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // avatarCards builds miao's common avatar-card for the requester's own

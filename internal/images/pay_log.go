@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // payLogArtwork maps the images the payLog page names to Yunzai's paths.

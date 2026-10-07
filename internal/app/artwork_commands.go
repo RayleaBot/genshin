@@ -6,7 +6,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/artwork"
 )
 
 // artworkCommand starts downloads or reports their progress. A download runs

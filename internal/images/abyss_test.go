@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 func TestAbyssFollowsYunzai(t *testing.T) {

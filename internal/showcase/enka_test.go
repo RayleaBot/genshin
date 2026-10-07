@@ -5,9 +5,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/assets"
-	"github.com/RayleaBot/plugin-genshin/internal/showcase"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/assets"
+	"github.com/RayleaBot/genshin/internal/showcase"
 )
 
 // The fixture follows an Enka answer's shape with one artifact and the

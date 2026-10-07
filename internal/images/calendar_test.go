@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // The expected words are what moment's zh-cn humanize() prints.

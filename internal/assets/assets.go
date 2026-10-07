@@ -5,11 +5,11 @@ import (
 	"embed"
 	"io/fs"
 
-	plugin "github.com/RayleaBot/plugin-genshin"
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/images"
-	"github.com/RayleaBot/plugin-genshin/internal/reference/miao"
-	"github.com/RayleaBot/plugin-genshin/internal/showcase"
+	plugin "github.com/RayleaBot/genshin"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/images"
+	"github.com/RayleaBot/genshin/internal/reference/miao"
+	"github.com/RayleaBot/genshin/internal/showcase"
 )
 
 //go:embed catalog.json

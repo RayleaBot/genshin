@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
-	"github.com/RayleaBot/plugin-genshin/internal/reference"
+	"github.com/RayleaBot/genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/reference"
 )
 
 // panelListArtwork maps the images named in the converted stylesheets (miao's

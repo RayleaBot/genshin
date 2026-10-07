@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	"github.com/RayleaBot/plugin-genshin/internal/app"
+	"github.com/RayleaBot/genshin/internal/app"
 )
 
 // uidListArtwork maps the images named in the converted stylesheets (miao's

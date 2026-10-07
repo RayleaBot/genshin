@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-genshin/internal/artwork"
+	"github.com/RayleaBot/genshin/internal/artwork"
 )
 
 func TestAtlasRulesTakeMessagesAsPickRule(t *testing.T) {
