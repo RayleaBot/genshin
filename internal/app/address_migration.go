@@ -106,7 +106,7 @@ func recoverAddresses(value any, bots []rayleabot.Bot) (changed bool, pending in
 		if protocol != "" && (actor || group) {
 			id, _ := v["bot_id"].(string)
 			adapter, _ := v["source_adapter"].(string)
-			if id == "" && adapter != "" {
+			if id == "" && adapter != "" && protocol == "onebot11" {
 				for _, bot := range bots {
 					if bot.SourceProtocol == protocol && bot.SourceAdapter == adapter && bot.ID != "" {
 						id = bot.ID

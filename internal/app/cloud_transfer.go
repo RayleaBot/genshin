@@ -110,10 +110,6 @@ func (a *App) cloudTransferAction(ctx context.Context, client AccountsClient, ac
 		return map[string]any{"ref": ref, "uid": role.UID, "region": role.Region, "total": len(t.Items), "revision": archive.Revision}, err
 	}
 	ref := asText(input["ref"])
-	if action == "cloud.archive.import.cancel" || action == "cloud.archive.export.close" {
-		a.CloudTransfers.remove(ref)
-		return map[string]any{"closed": true}, nil
-	}
 	a.CloudTransfers.mu.Lock()
 	defer a.CloudTransfers.mu.Unlock()
 	t := a.CloudTransfers.items[ref]
@@ -127,6 +123,11 @@ func (a *App) cloudTransferAction(ctx context.Context, client AccountsClient, ac
 	}
 	if role.UID != t.Role.UID || role.Region != t.Role.Region {
 		return nil, gameError("role_missing", "传输角色授权已变化。")
+	}
+	if action == "cloud.archive.import.cancel" || action == "cloud.archive.export.close" {
+		t.Timer.Stop()
+		delete(a.CloudTransfers.items, ref)
+		return map[string]any{"closed": true}, nil
 	}
 	var q struct {
 		Offset int `json:"offset"`
@@ -167,7 +168,7 @@ func (a *App) cloudTransferAction(ctx context.Context, client AccountsClient, ac
 		for i, id := range t.IDs {
 			avatars[id] = t.Items[i]
 		}
-		if err = a.CloudArchive.Update(t.Provider, t.Selection, t.Revision, role, avatars, false); err != nil {
+		if err = a.CloudArchive.Update(t.Provider, t.Selection, t.Revision, role, avatars, false, client.owner); err != nil {
 			return nil, err
 		}
 		t.Timer.Stop()

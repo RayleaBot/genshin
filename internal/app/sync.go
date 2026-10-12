@@ -9,7 +9,17 @@ import (
 )
 
 func (a *App) manageSync(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
-	return a.syncAction(ctx, a.accountClient(event), action, input)
+	client := a.accountClient(event)
+	if action == "gacha.sync.step" || action == "gacha.sync.cancel" {
+		choice, err := a.Syncs.Choice(asText(input["ref"]))
+		if err != nil || choice.Link {
+			return nil, syncError(gacha.ErrSync)
+		}
+		if _, _, err = client.Authorize(ctx, Selection{AccountRef: choice.AccountRef, RoleRef: choice.RoleRef}); err != nil {
+			return nil, err
+		}
+	}
+	return a.syncAction(ctx, client, action, input)
 }
 func (a *App) syncAction(ctx context.Context, client AccountsClient, action string, input map[string]any) (result map[string]any, err error) {
 	defer func() { err = syncError(err) }()

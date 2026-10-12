@@ -75,12 +75,18 @@ func (c AccountsClient) Authorize(ctx context.Context, choice Selection) (Accoun
 func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
 	client := a.accountClient(event)
 	switch action {
-	case "reminder.list":
+	case "reminder.list", "reminder.push.list":
+		kind := ""
+		if action == "reminder.push.list" {
+			kind = notePushKind
+		}
 		items, err := a.Reminders.List()
-		items = slices.DeleteFunc(items, func(task Reminder) bool { return task.Kind != "" })
+		items = slices.DeleteFunc(items, func(task Reminder) bool { return task.Kind != kind || !managementOwns(event, task.Owner) })
 		return map[string]any{"items": items}, err
 	case "reminder.remove":
 		return a.removeDelegatedTask(ctx, event, asText(input["ref"]), "")
+	case "reminder.push.remove":
+		return a.removeDelegatedTask(ctx, event, asText(input["ref"]), notePushKind)
 	case "reminder.create":
 		var inputValue struct {
 			Selection
@@ -92,6 +98,9 @@ func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext,
 		}
 		account, role, err := client.Authorize(ctx, inputValue.Selection)
 		if err != nil {
+			return nil, err
+		}
+		if err = checkManagementOwner(event, account.Owner); err != nil {
 			return nil, err
 		}
 		digest := sha256.Sum256([]byte(client.Provider + "\x00" + inputValue.AccountRef + "\x00" + inputValue.RoleRef))
@@ -176,6 +185,9 @@ func (a *App) removeDelegatedTask(ctx context.Context, event *rayleabot.EventCon
 			return gameError("reminder_missing", "提醒不存在或已移除。")
 		}
 		task = (*items)[i]
+		if err := checkManagementOwner(event, task.Owner); err != nil {
+			return err
+		}
 		if event.Event.EventType != "management.action" && !task.Owner.same(Subject{SourceProtocol: event.Event.SourceProtocol, BotID: event.Event.BotID, ActorID: event.Event.Actor.ID}) {
 			return gameError("source_invalid", "只能移除自己的提醒。")
 		}
@@ -326,7 +338,7 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 			if err = client.call(ctx, "execute", params, &result); err != nil {
 				return result, err
 			}
-			_, err = a.Monthly.Save(task.Provider, task.Selection, archive.Revision, result.Data, time.Now())
+			_, err = a.Monthly.Save(task.Provider, task.Selection, archive.Revision, result.Data, time.Now(), task.Owner)
 			return result, err
 		}
 		err := client.call(ctx, "execute", params, &result)

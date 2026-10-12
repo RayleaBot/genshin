@@ -133,7 +133,7 @@ func (a *App) compareCloudOCR(ctx context.Context, client AccountsClient, input 
 	ref := asText(input["ref"])
 	a.Cloud.mu.Lock()
 	job := a.Cloud.jobs[ref]
-	if job == nil || job.game != a.Game.ID || job.State != "completed" || job.OCR == nil {
+	if job == nil || job.bot.SourceProtocol != client.owner.SourceProtocol || job.bot.BotID != client.owner.BotID || job.game != a.Game.ID || job.State != "completed" || job.OCR == nil {
 		a.Cloud.mu.Unlock()
 		return nil, gameError("cloud_missing", "OCR 结果已失效，请重新识别。")
 	}

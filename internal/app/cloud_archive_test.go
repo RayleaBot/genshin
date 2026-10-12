@@ -102,7 +102,7 @@ func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	old, _ := a.CloudArchive.Read(client.Provider, choice)
-	if err = a.CloudArchive.Update(client.Provider, choice, old.Revision, role, nil, true); err != nil {
+	if err = a.CloudArchive.Update(client.Provider, choice, old.Revision, role, nil, true, Subject{}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = a.cloudTransferAction(t.Context(), client, "cloud.archive.import.finish", map[string]any{"ref": pending["ref"]}); err == nil {

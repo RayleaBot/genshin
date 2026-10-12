@@ -197,10 +197,12 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 	switch action {
 	case "gacha.task.list":
 		tasks, err := a.SyncTasks.List()
-		return map[string]any{"items": a.BackgroundSyncs.list(), "tasks": tasks}, err
+		tasks = slices.DeleteFunc(tasks, func(task SyncTask) bool { return !managementOwns(event, task.Owner) })
+		rounds := slices.DeleteFunc(a.BackgroundSyncs.list(), func(task BackgroundSync) bool { return !managementOwns(event, task.Owner) })
+		return map[string]any{"items": rounds, "tasks": tasks}, err
 	case "gacha.task.cancel":
 		ref := asText(input["ref"])
-		if !a.BackgroundSyncs.stop("canceled", func(s BackgroundSync) bool { return s.Ref == ref }) {
+		if !a.BackgroundSyncs.stop("canceled", func(s BackgroundSync) bool { return s.Ref == ref && managementOwns(event, s.Owner) }) {
 			return nil, gameError("sync_task_missing", "后台同步不存在或已结束。")
 		}
 		return map[string]any{"canceled": true}, nil
@@ -236,6 +238,9 @@ func (a *App) startSync(ctx context.Context, event *rayleabot.EventContext, inpu
 	client := a.accountClient(event)
 	account, role, err := client.Authorize(ctx, q.Selection)
 	if err != nil {
+		return nil, err
+	}
+	if err = checkManagementOwner(event, account.Owner); err != nil {
 		return nil, err
 	}
 	if !syncRegionAllowed(role.Region) {
@@ -274,6 +279,9 @@ func (a *App) createSyncTask(ctx context.Context, event *rayleabot.EventContext,
 	client := a.accountClient(event)
 	account, role, err := client.Authorize(ctx, q.Selection)
 	if err != nil {
+		return nil, err
+	}
+	if err = checkManagementOwner(event, account.Owner); err != nil {
 		return nil, err
 	}
 	if !syncRegionAllowed(role.Region) {
@@ -342,6 +350,9 @@ func (a *App) rerunSyncTask(ctx context.Context, event *rayleabot.EventContext, 
 	if i < 0 {
 		return nil, gameError("sync_task_missing", "同步任务不存在。")
 	}
+	if err := checkManagementOwner(event, items[i].Owner); err != nil {
+		return nil, err
+	}
 	// The account check runs before the task is edited, outside the store's
 	// lock.
 	client := AccountsClient{Caller: event.Actions(), Provider: items[i].Provider, Game: a.Game.ID}
@@ -354,6 +365,9 @@ func (a *App) rerunSyncTask(ctx context.Context, event *rayleabot.EventContext, 
 			return gameError("sync_task_missing", "同步任务不存在。")
 		}
 		t := &(*items)[i]
+		if err := checkManagementOwner(event, t.Owner); err != nil {
+			return err
+		}
 		switch {
 		case t.State == "running" || t.State == "creating":
 			return gameError("sync_task_running", "此任务正在处理，请查看进度。")
@@ -377,6 +391,9 @@ func (a *App) removeSyncTask(ctx context.Context, event *rayleabot.EventContext,
 			return gameError("sync_task_missing", "同步任务不存在。")
 		}
 		t = (*items)[i]
+		if err := checkManagementOwner(event, t.Owner); err != nil {
+			return err
+		}
 		*items = slices.Delete(*items, i, i+1)
 		return nil
 	})

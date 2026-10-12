@@ -141,7 +141,7 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 		return nil, gameError("input_invalid", "请明确确认交换档案操作。")
 	}
 	if action == "cloud.archive.remove" {
-		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, nil, true)
+		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, nil, true, client.owner)
 		if err == nil {
 			a.CloudTransfers.mu.Lock()
 			for ref, t := range a.CloudTransfers.items {
@@ -157,7 +157,8 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 	if action == "cloud.archive.receive" {
 		a.Cloud.mu.Lock()
 		job := a.Cloud.jobs[asText(input["ref"])]
-		if job == nil || job.game != a.Game.ID || job.State != "completed" || len(job.exchange) == 0 {
+		bot, _ := event.Event.ManagementBot()
+		if job == nil || job.bot != bot || job.game != a.Game.ID || job.State != "completed" || len(job.exchange) == 0 {
 			a.Cloud.mu.Unlock()
 			return nil, gameError("cloud_missing", "交换下载已失效，请重新下载。")
 		}
@@ -171,7 +172,7 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 		if err != nil {
 			return nil, err
 		}
-		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, avatars, false)
+		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, avatars, false, client.owner)
 		return map[string]any{"received": len(avatars)}, err
 	}
 	return nil, gameError("operation_denied", "交换档案操作不存在。")

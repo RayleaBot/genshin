@@ -26,6 +26,7 @@ type MonthlySnapshot struct {
 	Data          json.RawMessage `json:"data"`
 }
 type MonthlyArchive struct {
+	Owner    Subject           `json:"owner"`
 	Revision uint64            `json:"revision"`
 	Items    []MonthlySnapshot `json:"items"`
 }
@@ -143,7 +144,7 @@ func (a *App) monthlyAction(ctx context.Context, client AccountsClient, action s
 		if err != nil {
 			return nil, err
 		}
-		key, err := a.Monthly.Save(client.Provider, choice, archive.Revision, result.Data, time.Now())
+		key, err := a.Monthly.Save(client.Provider, choice, archive.Revision, result.Data, time.Now(), client.owner)
 		if err != nil {
 			return nil, err
 		}
@@ -341,7 +342,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 func (a *App) keepMonthly(ctx context.Context, client AccountsClient, choice Selection, read QueryResult) error {
 	operation := a.Game.ID + ".monthly"
 	now := a.now()
-	if err := a.Monthly.Keep(client.Provider, choice, read.Data, now); err != nil {
+	if err := a.Monthly.Keep(client.Provider, choice, read.Data, now, client.owner); err != nil {
 		return err
 	}
 	archive, err := a.Monthly.Read(client.Provider, choice)
@@ -361,7 +362,7 @@ func (a *App) keepMonthly(ctx context.Context, client AccountsClient, choice Sel
 		if err != nil {
 			continue
 		}
-		_ = a.Monthly.Keep(client.Provider, choice, result.Data, now)
+		_ = a.Monthly.Keep(client.Provider, choice, result.Data, now, client.owner)
 	}
 	return nil
 }
@@ -379,16 +380,16 @@ func monthlyFinal(archive MonthlyArchive, key string) bool {
 
 // Keep saves a month over whatever archive is current, for reads the user did
 // not start from the archive page.
-func (s *MonthlyStore) Keep(provider string, choice Selection, data map[string]any, now time.Time) error {
+func (s *MonthlyStore) Keep(provider string, choice Selection, data map[string]any, now time.Time, owner Subject) error {
 	archive, err := s.Read(provider, choice)
 	if err != nil {
 		return err
 	}
-	_, err = s.Save(provider, choice, archive.Revision, data, now)
+	_, err = s.Save(provider, choice, archive.Revision, data, now, owner)
 	return err
 }
 
-func (s *MonthlyStore) Save(provider string, choice Selection, revision uint64, data map[string]any, now time.Time) (string, error) {
+func (s *MonthlyStore) Save(provider string, choice Selection, revision uint64, data map[string]any, now time.Time, owner Subject) (string, error) {
 	if asObject(data["month_data"]) == nil {
 		return "", gameError("monthly_invalid", "官方月报没有月度内容，未保存。")
 	}
@@ -402,6 +403,7 @@ func (s *MonthlyStore) Save(provider string, choice Selection, revision uint64, 
 	}
 	snapshot := MonthlySnapshot{key, estimated, now.UnixMilli(), raw}
 	err = s.Update(provider, choice, revision, func(v *MonthlyArchive) error {
+		v.Owner = owner
 		i := slices.IndexFunc(v.Items, func(item MonthlySnapshot) bool { return item.Month == key })
 		if i >= 0 {
 			v.Items[i] = snapshot

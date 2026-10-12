@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { botLabel, type BotAccount } from './bots'
-interface Task { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string; source_protocol: string; bot_id: string }; threshold: number; enabled: boolean; armed: boolean; expires_at_ms: number; last_checked_ms: number; last_attempt_ms: number; next_check_ms: number; last_code: string }
-const props = defineProps<{ bots: BotAccount[]; choices: { key: string; label: string; role: { ref: string }; account: { ref: string; owner: { actor_id: string } } }[]; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
+interface Task { ref: string; kind?: string; groups?: { group_id: string }[]; role: { uid: string; nickname: string }; owner: { actor_id: string; source_protocol: string; bot_id: string }; threshold: number; enabled: boolean; armed: boolean; expires_at_ms: number; last_checked_ms: number; last_attempt_ms: number; next_check_ms: number; last_code: string }
+const props = defineProps<{ choices: { key: string; label: string; role: { ref: string }; account: { ref: string; owner: { actor_id: string } } }[]; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
 const items = ref<Task[]>([]), selected = ref(''), threshold = ref(80), days = ref(30), confirmed = ref(false), busy = ref(false), error = ref(''), notice = ref('')
 watch(selected, () => { confirmed.value = false })
 const labels: Record<string, string> = { checked: '已检查', notified: '已发送提醒', notification_attempted: '已尝试发送', notification_failed: '发送未确认', expired: '委托到期', 'plugin.account_caller_denied': '游戏授权已撤销', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_not_found': '账号已移除', 'plugin.account_role_denied': '角色授权失效', 'plugin.upstream_auth_invalid': '账号需要重新登录', 'plugin.upstream_device_required': '需要官方设备验证，已退避', 'plugin.upstream_challenge_required': '需要官方验证，已退避', 'plugin.vault_locked': '账号库锁定', 'plugin.game_note_invalid': '体力数据暂不兼容' }
 function date(value: number) { return value ? new Date(value).toLocaleString() : '尚无记录' }
-async function load() { items.value = (await props.invoke<{ items: Task[] }>('reminder.list')).items }
+async function load() { const [privateTasks, groupTasks] = await Promise.all([props.invoke<{ items: Task[] }>('reminder.list'), props.invoke<{ items: Task[] }>('reminder.push.list')]); items.value = [...privateTasks.items, ...groupTasks.items] }
 async function run(fn: () => Promise<void>) { if (busy.value) return; busy.value = true; error.value = ''; notice.value = ''; try { await fn() } catch (cause) { error.value = cause instanceof Error ? cause.message : '提醒操作未完成。' } finally { busy.value = false } }
 async function create() { const choice = props.choices.find(value => value.key === selected.value); if (!choice || !confirmed.value) return; await run(async () => { await props.invoke('reminder.create', { account_ref: choice.account.ref, role_ref: choice.role.ref, threshold: Number(threshold.value), days: Number(days.value) }); await load(); confirmed.value = false; notice.value = '提醒已开启，下一次检查将在十分钟内执行。' }) }
-async function remove(ref: string) { await run(async () => { const result = await props.invoke<{ delegation_revoked: boolean }>('reminder.remove', { ref }); await load(); notice.value = result.delegation_revoked ? '提醒与账号委托已关闭。' : '本地提醒已关闭；账号服务暂未确认撤销，原委托到期后失效，此任务不会再使用它。' }) }
+async function remove(ref: string) { await run(async () => { const root = items.value.find(item => item.ref === ref)?.kind === 'note_push' ? 'reminder.push.remove' : 'reminder.remove'; const result = await props.invoke<{ delegation_revoked: boolean }>(root, { ref }); await load(); notice.value = result.delegation_revoked ? '提醒与账号委托已关闭。' : '本地提醒已关闭；账号服务暂未确认撤销，原委托到期后失效，此任务不会再使用它。' }) }
 void run(load)
 </script>
 <template>
@@ -25,7 +24,8 @@ void run(load)
     <div class="section-heading"><h3>已保存的提醒</h3><button :disabled="busy" @click="run(load)">刷新提醒</button></div>
     <p v-if="!items.length" class="empty">尚未开启提醒。</p>
     <ul v-else class="reminder-list"><li v-for="item in items" :key="item.ref"><div class="section-heading"><strong>{{ item.role.nickname }} · {{ item.role.uid }}</strong><button :disabled="busy" @click="remove(item.ref)">关闭并移除提醒</button></div>
-      <p>{{ item.enabled ? (item.armed ? '等待达到阈值' : '等待体力低于阈值') : '已暂停' }} · {{ item.threshold }}% · 私聊 {{ item.owner.actor_id }}（{{ botLabel(bots,item.owner.source_protocol,item.owner.bot_id) }}）</p>
+      <p v-if="item.kind === 'note_push'">群体力推送 · 用户 {{ item.owner.actor_id }} · 群 {{ item.groups?.map(group => group.group_id).join('、') }} · {{ item.enabled ? '已开启' : '已暂停' }}</p>
+      <p v-else>{{ item.enabled ? (item.armed ? '等待达到阈值' : '等待体力低于阈值') : '已暂停' }} · {{ item.threshold }}% · 私聊 {{ item.owner.actor_id }}</p>
       <p class="hint">到期：{{ date(item.expires_at_ms) }}<br>最近检查：{{ date(item.last_checked_ms) }} · {{ labels[item.last_code] || item.last_code || '等待首次检查' }}<br>下一次可检查：{{ date(item.next_check_ms) }}</p>
     </li></ul>
     <p class="hint">发送结果不确定时不自动补发，以免重复通知。设备验证失败会暂停查询至少一天；撤销授权、凭据失效或到期后暂停，处理后可移除并重新开启。</p>

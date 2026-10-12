@@ -46,7 +46,7 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
 <template>
   <section class="cloud-queries">
     <h2>云排名与面板</h2>
-    <p class="hint">由第三方 ark.ivny.cn 提供，可使用匿名额度或本游戏已配置的授权额度。排名按服务收录与算法计算，云面板是服务保存的历史资料。</p>
+    <p class="hint">全局公开排名由第三方 ark.ivny.cn 提供，可使用匿名额度或本游戏已配置的授权额度。下方交换档案按当前机器人账号管理。</p>
     <p class="hint">授权查询使用账号插件管理页“ark 授权令牌”中配置的令牌，由账号插件代发请求，本插件不保存令牌。</p>
     <details><summary>验证跨机器人 UID 关联</summary><p class="hint">在聊天中发送“{{ prefix }}ark绑定原神uid”获取当前 UID 的签名验证码，将验证码设为游戏签名，审核通过后发送“{{ prefix }}ark验证原神uid”。验证会把你的 QQ 与 UID 发送给 ark，仅支持 OneBot11。</p></details>
     <form @submit.prevent="start">

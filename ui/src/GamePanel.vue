@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { botAccounts, type BotAccount } from './bots'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { usePluginHost } from '@rayleabot/plugin-ui'
 import BusinessView, { type View } from './BusinessView.vue'
@@ -33,6 +32,8 @@ import InteractionSettings from './InteractionSettings.vue'
 import GuidesPanel from './GuidesPanel.vue'
 import EnemyCalculator from './EnemyCalculator.vue'
 import BlueprintCalculator from './BlueprintCalculator.vue'
+import HistoricalRecords from './HistoricalRecords.vue'
+import ContentSubscriptions from './ContentSubscriptions.vue'
 
 interface Operation { name: string; label: string; command: string; input: string }
 interface Game { id: string; name: string; prefix: string; region: string; operations: Operation[] }
@@ -45,7 +46,6 @@ interface Transfer { ref: string; uid: string; region: string; timezone: number;
 const host = usePluginHost()
 const page = host.client.pageId || 'overview'
 const game = ref<Game | null>(null)
-const bots = ref<BotAccount[]>([])
 const catalogVersion = ref('')
 const busy = ref(false), error = ref(''), notice = ref('')
 const accountIssue = ref('')
@@ -86,6 +86,7 @@ const regions = [{ id: 'cn_gf01', name: '国服天空岛' }, { id: 'cn_qd01', na
 const selectedImport = computed(() => imported.value[importIndex.value])
 
 async function invoke<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> { return await host.client.invokeAction(action, payload) as unknown as T }
+async function apiRequest<T>(path: string): Promise<T> { return host.client.apiRequest<T>('GET', path) }
 async function run(work: () => Promise<void>, success = '') {
   if (busy.value) return
   busy.value = true; error.value = ''; notice.value = ''
@@ -99,22 +100,20 @@ async function loadAccounts(page = 0) {
     nextAccountPage.value = result.accounts.next_page
     if (!roleOptions.value.some(item => item.key === selection.value)) selection.value = roleOptions.value[0]?.key ?? ''
     accountIssue.value = ''
-  } catch (cause) { accountIssue.value = cause instanceof Error ? cause.message : '账号服务暂不可用。' }
+  } catch (cause) { accounts.value = []; selection.value = ''; nextAccountPage.value = null; accountIssue.value = cause instanceof Error ? cause.message : '账号服务暂不可用。' }
 }
 async function loadCatalog() { const result = await invoke<{ entries: CatalogEntry[] }>('catalog.search', { query: search.value, kind: kind.value }); entries.value = result.entries }
 async function loadArchives() { archives.value = (await invoke<{ items: SavedArchive[] }>('gacha.list')).items }
 async function load() {
-  const result = await invoke<{ game: Game; bots?:BotAccount[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; custom_aliases: Record<string, string>; ark?: Partial<ArkSettings>; xiaoyao?: Partial<XiaoyaoSettings> } }>('status')
-  bots.value = botAccounts(result.bots ?? [])
+  const result = await invoke<{ game: Game; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; custom_aliases: Record<string, string>; ark?: Partial<ArkSettings>; xiaoyao?: Partial<XiaoyaoSettings> } }>('status')
   game.value = result.game; catalogVersion.value = result.catalog_version
   operationName.value ||= game.value.operations[0]?.name ?? ''
   importRegion.value ||= game.value.region
   publicProfileRegion.value ||= game.value.region
   provider.value = result.settings.account_provider; imageReplies.value = result.settings.image_replies; aliasPermission.value = result.settings.alias_permission ?? 0; pokeCard.value = result.settings.poke_card ?? true; aliases.value = result.settings.custom_aliases || {}; ark.value = { ...arkDefaults, ...result.settings.ark }; xiaoyao.value = { ...xiaoyaoDefaults, ...result.settings.xiaoyao }
-  if (page === 'help' || page === 'media' || page === 'content' || page === 'resources' || page === 'groups' || page === 'simulation' || page === 'cloud') return
   if (page === 'catalog') await loadCatalog()
-  else if (page === 'gacha') await Promise.all([loadArchives(), loadAccounts()])
-  else await loadAccounts()
+  else if (page === 'gacha') await loadArchives()
+  else if (host.page.value?.scope === 'bot_account' && page !== 'groups') await loadAccounts()
 }
 void host.ready.then(() => run(load)).catch(cause => { error.value = cause instanceof Error ? cause.message : '页面连接失败。' })
 
@@ -162,7 +161,7 @@ async function synchronize(resume = false) {
     const completed = await driveSync(invoke, syncInfo.value!, syncController.signal, value => { syncInfo.value = value })
     if (completed.state === 'completed' && completed.result) {
       notice.value = `同步完成，新增 ${completed.result.added} 条，档案共 ${completed.result.total} 条。`
-      await loadArchives()
+      if (page === 'gacha') await loadArchives()
     } else notice.value = '同步已取消，原有档案保持不变。'
   })
   syncController = undefined
@@ -236,6 +235,8 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
     <p v-if="notice" class="feedback" role="status">{{ notice }}</p>
     <p v-if="!game" class="empty">正在读取插件资料… <button :disabled="busy" @click="run(load)">重新连接</button></p>
     <template v-else>
+      <p v-if="host.bot.value" class="hint">当前机器人：{{ host.bot.value.nickname || host.bot.value.bot_id }} · {{ host.bot.value.bot_id }} · {{ host.bot.value.state === 'online' ? '在线' : host.bot.value.state === 'offline' ? '离线' : '无连接' }}</p>
+      <p v-if="accountIssue && !['overview','signin','growth','history','reminders'].includes(page)" class="feedback attention" role="alert">{{ accountIssue }}</p>
       <template v-if="page === 'overview'">
         <section aria-labelledby="query-heading"><div class="section-heading"><h2 id="query-heading">游戏查询</h2><button :disabled="busy" @click="run(() => loadAccounts())">刷新账号</button></div>
           <p v-if="accountIssue" class="feedback attention">{{ accountIssue }} 可在米游社账号管理页扫码或调整授权。</p>
@@ -249,24 +250,23 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
             <div class="actions wide"><button class="primary" type="submit" :disabled="busy">{{ busy ? '正在查询…' : '查询' }}</button><button type="button" :disabled="busy" @click="setDefault">设为此用户的默认角色</button><button v-if="nextAccountPage !== null" type="button" :disabled="busy" @click="run(() => loadAccounts(nextAccountPage!))">更多账号</button></div>
           </form>
         </section>
-        <section class="separated" aria-labelledby="public-heading"><h2 id="public-heading">公开展柜</h2><p class="muted">读取游戏内角色展柜并保存为该 UID 的面板，无需绑定账号。</p><form class="inline-form" @submit.prevent="showcase"><label><span class="sr-only">公开 UID</span><input v-model="publicUID" required inputmode="numeric" pattern="[0-9]{6,12}" placeholder="输入游戏 UID" :disabled="busy"></label><button type="submit" :disabled="busy">读取展柜</button></form></section>
-        <details class="settings"><summary>通过公共查询池查看基础资料</summary><p class="hint">仅使用账号所有者主动开启的公共查询用途。没有可用账号或额度时会明确提示，不会借用其他私人账号。</p><form class="inline-form" @submit.prevent="queryPublicProfile"><label>公开资料 UID<input v-model="publicProfileUID" inputmode="numeric" pattern="[0-9]{6,12}" required :disabled="busy"></label><label>公开资料区服<select v-model="publicProfileRegion" :disabled="busy"><option v-for="region in regions.filter(r=>r.id.startsWith('cn_'))" :key="region.id" :value="region.id">{{region.name}}</option></select></label><button type="submit" :disabled="busy">查询公开基础资料</button></form></details>
+        <section class="separated" aria-labelledby="public-heading"><h2 id="public-heading">全局公开展柜</h2><p class="muted">读取游戏内角色展柜并保存为该 UID 的面板，无需绑定账号。</p><form class="inline-form" @submit.prevent="showcase"><label><span class="sr-only">公开 UID</span><input v-model="publicUID" required inputmode="numeric" pattern="[0-9]{6,12}" placeholder="输入游戏 UID" :disabled="busy"></label><button type="submit" :disabled="busy">读取展柜</button></form></section>
+        <details class="settings"><summary>全局公开资料（公共查询池）</summary><p class="hint">仅使用账号所有者主动开启的公共查询用途。没有可用账号或额度时会明确提示，不会借用其他私人账号。</p><form class="inline-form" @submit.prevent="queryPublicProfile"><label>公开资料 UID<input v-model="publicProfileUID" inputmode="numeric" pattern="[0-9]{6,12}" required :disabled="busy"></label><label>公开资料区服<select v-model="publicProfileRegion" :disabled="busy"><option v-for="region in regions.filter(r=>r.id.startsWith('cn_'))" :key="region.id" :value="region.id">{{region.name}}</option></select></label><button type="submit" :disabled="busy">查询公开基础资料</button></form></details>
         <section v-if="panels.length" class="separated" aria-labelledby="score-heading"><h2 id="score-heading">装备评分</h2><p class="hint">按角色专属权重比较装备词条，权重随当前属性、命座与配装自动选择；评分不代表实际伤害。</p><form class="query-form" @submit.prevent="scorePanel"><label>评分角色<select v-model="scoreCharacter" :disabled="busy"><option v-for="panel in panels" :key="panel.id" :value="panel.id">{{ panel.name }}</option></select></label><div class="actions wide"><button :disabled="busy || !scoreCharacter" type="submit">计算装备评分</button></div></form></section>
         <BusinessView v-if="view" :value="view" />
         <MonthlyHistory v-if="operationName.endsWith('.monthly') && selectedRole" :key="selection" :account-ref="selectedRole.account.ref" :role-ref="selectedRole.role.ref" :invoke="invoke" />
+        <details class="settings"><summary>按本人角色匹配深渊配队</summary><PublicStatistics :roles="roleOptions" :invoke="invoke" /></details>
         <PanelDetails v-if="detailPanel" :panel="detailPanel" />
         <BuildCalculator v-if="detailPanel && selectedRole" :key="`build:${selection}:${detailPanel.id}`" :character-id="detailPanel.id" :character-name="detailPanel.name" :account-ref="selectedRole.account.ref" :role-ref="selectedRole.role.ref" :invoke="invoke" />
-        <details class="settings"><summary>查询设置</summary><form @submit.prevent="saveSettings()"><label>账号服务插件 ID<input v-model="provider" required :disabled="busy"></label><label class="check"><input v-model="imageReplies" type="checkbox" :disabled="busy">聊天查询优先发送图片</label><label class="check"><input v-model="pokeCard" type="checkbox" :disabled="busy">戳一戳展示角色卡片</label><label>聊天设置别名<select v-model.number="aliasPermission" :disabled="busy"><option :value="0">所有群员</option><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
-        <details class="settings"><summary>ark 扩展设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="ark.panel_rank" type="checkbox" :disabled="busy">面板伤害计算中显示 ark 全服排名</label><label>角色面板排名类型<select v-model.number="ark.query_type" :disabled="busy"><option :value="0">伤害排名</option><option :value="1">圣遗物排名</option><option :value="2">均显示</option><option :value="3">图表排名</option></select></label><label>排名展示规则<select v-model.number="ark.rank_type" :disabled="busy"><option :value="0">位次排名</option><option :value="1">百分比排名</option><option :value="2">混合排名</option></select></label><label class="check"><input v-model="ark.local_panel_rank" type="checkbox" :disabled="busy">面板排名按本地面板计算（关闭时查询 ark 保存的该 UID 面板）</label><label class="check"><input v-model="ark.profile_change_diff" type="checkbox" :disabled="busy">面板换装时显示伤害变化</label><label>换装面板伤害标题过长时<select v-model.number="ark.deal_long_dmg_title" :disabled="busy"><option :value="0">不处理</option><option :value="1">截断过长部分</option><option :value="2">换行</option></select></label><label class="check"><input v-model="ark.profile_change_ocr" type="checkbox" :disabled="busy">面板换装时识别附带或引用的圣遗物截图（OCR）</label><label class="check"><input v-model="ark.group_rank" type="checkbox" :disabled="busy">群排行中显示 ark 全服排名</label><label class="check"><input v-model="ark.local_group_rank" type="checkbox" :disabled="busy">群排行的全服排名按本群记录的面板计算（关闭时查询 ark 保存的各 UID 面板）</label><label class="check"><input v-model="ark.mark_rank_type" type="checkbox" :disabled="busy">排名注明本地数据，如总伤害排名(本地)、(面板变换)</label><label>导出面板数据<select v-model.number="ark.export_panel_data" :disabled="busy"><option :value="0">任何人</option><option :value="1">绑定 CK 的用户或超级管理员</option><option :value="2">仅超级管理员</option><option :value="3">禁用</option></select></label><label>导入面板数据<select v-model.number="ark.import_panel_data" :disabled="busy"><option :value="0">任何人</option><option :value="1">绑定 CK 的用户或超级管理员</option><option :value="2">仅超级管理员</option><option :value="3">禁用</option></select></label><label>导出面板文件<select v-model.number="ark.export_panel_require" :disabled="busy"><option :value="0">任何人</option><option :value="1">绑定 CK 或已在 ark 验证 UID 的用户</option><option :value="2">绑定 CK 的用户</option><option :value="3">禁用</option></select></label><label class="check"><input v-model="ark.new_user_panel" type="checkbox" :disabled="busy">首次更新面板时自动从 ark 获取面板（需在 ark 验证 UID，会发送 QQ 与 UID）</label><label class="check"><input v-model="ark.stygian_rank" type="checkbox" :disabled="busy">群内更新面板时登记幽境危战排名</label><label>幽境危战数据源<select v-model.number="ark.stygian_data_from" :disabled="busy"><option :value="0">ark</option><option :value="1">akasha.cv</option><option :value="2">二者混合</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
-        <details class="settings"><summary>逍遥插件设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="xiaoyao.is_note_task" type="checkbox" :disabled="busy">群体力推送（每十分钟检查已“开启体力推送”的成员，树脂达到本群阈值时在群里 @ 提醒）</label><label>群体力推送设置权限<select v-model.number="xiaoyao.note_set_auth" :disabled="busy"><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+
       </template>
 
-      <template v-else-if="page === 'content'"><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>
-      <template v-else-if="page === 'collections'"><CollectionsPanel :bots="bots" :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
-      <template v-else-if="page === 'statistics'"><PublicStatistics :roles="roleOptions" :invoke="invoke"/></template>
-      <template v-else-if="page === 'help'"><HelpPanel :invoke="invoke"/></template>
-      <template v-else-if="page === 'media'"><ArtworkPanel :prefix="game.prefix" :invoke="invoke"/><MediaLibrary :prefix="game.prefix" :invoke="invoke"/><InteractionSettings :bots="bots" :prefix="game.prefix" :invoke="invoke"/></template>
-      <template v-else-if="page === 'guides'"><GuidesPanel :invoke="invoke"/><EnemyCalculator :invoke="invoke"/><BlueprintCalculator :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
+      <template v-else-if="page === 'content'"><p class="hint">群推送在“群设置与排行”中。</p><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>
+      <template v-else-if="page === 'collections'"><CollectionsPanel :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
+      <template v-else-if="page === 'statistics'"><p class="hint">本人配队在“游戏查询”中。</p><PublicStatistics :roles="[]" :invoke="invoke"/></template>
+      <template v-else-if="page === 'help'"><HelpPanel :invoke="invoke"/><HistoricalRecords :invoke="invoke" :api-request="apiRequest"/></template>
+      <template v-else-if="page === 'media'"><p class="hint">互动偏好在“提醒与收集”中。</p><ArtworkPanel :prefix="game.prefix" :invoke="invoke"/><MediaLibrary :prefix="game.prefix" :invoke="invoke"/></template>
+      <template v-else-if="page === 'guides'"><p class="hint">尘歌壶材料计算在“养成计算”中。</p><GuidesPanel :invoke="invoke"/><EnemyCalculator :invoke="invoke"/></template>
       <template v-else-if="page === 'assets'"><CodesPanel :roles="roleOptions" :invoke="invoke"/><BillingRecords :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'community'"><CommunityPanel :accounts="accounts" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多社区账号</button></template>
       <template v-else-if="page === 'cloud'">
@@ -281,14 +281,14 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
         <GachaSimulation :invoke="invoke" />
       </template>
       <template v-else-if="page === 'groups'">
-        <GroupSettings :bots="bots" :invoke="invoke" />
+        <GroupSettings :invoke="invoke" /><ContentSubscriptions :prefix="game.prefix" :invoke="invoke" />
       </template>
       <template v-else-if="page === 'resources'">
         <ResourceLibrary :invoke="invoke" />
       </template>
       <template v-else-if="page === 'growth'">
         <p v-if="accountIssue" role="alert" class="feedback attention">{{ accountIssue }}</p>
-        <GrowthCalculator :choices="roleOptions" :invoke="invoke" />
+        <GrowthCalculator :choices="roleOptions" :invoke="invoke" /><BlueprintCalculator :roles="roleOptions" :invoke="invoke"/>
         <button v-if="nextAccountPage !== null" :disabled="busy" @click="run(() => loadAccounts(nextAccountPage!))">更多账号</button>
       </template>
       <template v-else-if="page === 'history'">
@@ -298,24 +298,14 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
       </template>
       <template v-else-if="page === 'reminders'">
         <p v-if="accountIssue" role="alert" class="feedback attention">{{ accountIssue }}</p>
-        <Reminders :bots="bots" :choices="roleOptions" :invoke="invoke" />
+        <Reminders :choices="roleOptions" :invoke="invoke" />
         <ChallengeReminders :choices="roleOptions" :invoke="invoke" />
         <MonthlyCollection :choices="roleOptions" :invoke="invoke" />
         <button v-if="nextAccountPage !== null" :disabled="busy" @click="run(() => loadAccounts(nextAccountPage!))">更多账号</button>
-      </template>
-      <template v-else-if="page === 'catalog'">
-        <div class="section-heading"><div><h2>资料图鉴</h2><p class="muted">本地资料 · {{ catalogVersion }}</p></div></div>
-        <form class="catalog-search" @submit.prevent="run(loadCatalog)"><label><span class="sr-only">搜索角色、装备或 ID</span><input v-model="search" placeholder="搜索角色、装备或 ID" :disabled="busy"></label><label><span class="sr-only">资料类型</span><select v-model="kind" :disabled="busy"><option value="">全部类型</option><option value="character">角色</option><option value="weapon">装备</option></select></label><button type="submit" :disabled="busy">搜索</button></form>
-        <div class="catalog-layout"><section><ul class="catalog-list"><li v-for="entry in entries" :key="entry.id"><button type="button" :disabled="busy" @click="showEntry(entry)" :aria-label="`查看${entry.name}`"><strong>{{ entry.name }}</strong><span>{{ entry.element || entry.weapon || entry.id }}</span></button></li></ul><p v-if="!entries.length" class="empty">没有匹配资料，请尝试全名或 ID。</p><p v-if="entries.length === 50" class="hint">显示前 50 项，请使用关键词缩小范围。</p></section><BusinessView v-if="view" :value="view" /><p v-else class="empty">选择一项查看资料。</p></div>
-        <details class="settings"><summary>自定义别名</summary><p v-if="aliasConflicts.length" class="feedback attention">以下别名覆盖了内置名称：{{aliasConflicts.map(v=>v.name).join('、')}}。</p><p class="hint">先选择资料，再为它添加常用称呼；自定义别名优先于内置名称。</p><form class="inline-form" @submit.prevent="addAlias"><label><span class="sr-only">别名</span><input v-model="aliasName" placeholder="输入别名" required :disabled="busy"></label><button :disabled="busy || !aliasTarget" type="submit">添加别名</button></form><ul class="alias-list"><li v-for="(id, name) in aliases" :key="name"><span>{{ name }} → {{ id }}</span><button type="button" :disabled="busy" :aria-label="`移除别名${name}`" @click="removeAlias(String(name))">移除</button></li></ul></details>
-      </template>
-
-      <template v-else-if="page === 'gacha'">
-        <div class="section-heading"><div><h2>抽卡档案</h2><p class="muted">导入、分析与导出自己的抽卡记录。</p></div><button :disabled="busy" @click="run(loadArchives)">刷新列表</button></div>
         <section aria-labelledby="sync-heading" class="separated"><div class="section-heading"><h3 id="sync-heading">官方同步</h3><button :disabled="busy" @click="run(() => loadAccounts())">刷新账号</button></div>
-          <p class="hint">复用已绑定账号的授权。只能获取官方仍保留的历史；读完全部频段后合并保存。</p>
+          <p class="hint">使用当前机器人账号下已绑定角色的授权。只能获取官方仍保留的历史；读完全部频段后合并保存。</p>
           <p v-if="accountIssue" class="feedback attention">{{ accountIssue }}</p>
-          <p v-else-if="!roleOptions.length" class="empty">请先扫码登录并授权此游戏，也可以在下方导入已有记录。</p>
+          <p v-else-if="!roleOptions.length" class="empty">请先扫码登录并授权此游戏。</p>
           <form v-else class="query-form" @submit.prevent="synchronize()">
             <label class="wide">同步角色<select v-model="selection" :disabled="busy || syncInfo?.state === 'running'"><option v-for="item in roleOptions" :key="item.key" :value="item.key">{{ item.label }}</option></select></label>
             <label class="check wide"><input v-model="fullSync" type="checkbox" :disabled="busy || syncInfo?.state === 'running'">全量读取官方历史（默认只同步新增记录）</label>
@@ -325,6 +315,20 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
           <p class="hint">上方即时同步需要保持页面打开；需要离开页面时，可使用下方后台任务。</p>
         </section>
         <GachaTasks :choices="roleOptions" :invoke="invoke" />
+        <InteractionSettings :prefix="game.prefix" :invoke="invoke" />
+      </template>
+      <template v-else-if="page === 'catalog'">
+        <div class="section-heading"><div><h2>资料图鉴</h2><p class="muted">本地资料 · {{ catalogVersion }}</p></div></div>
+        <form class="catalog-search" @submit.prevent="run(loadCatalog)"><label><span class="sr-only">搜索角色、装备或 ID</span><input v-model="search" placeholder="搜索角色、装备或 ID" :disabled="busy"></label><label><span class="sr-only">资料类型</span><select v-model="kind" :disabled="busy"><option value="">全部类型</option><option value="character">角色</option><option value="weapon">装备</option></select></label><button type="submit" :disabled="busy">搜索</button></form>
+        <div class="catalog-layout"><section><ul class="catalog-list"><li v-for="entry in entries" :key="entry.id"><button type="button" :disabled="busy" @click="showEntry(entry)" :aria-label="`查看${entry.name}`"><strong>{{ entry.name }}</strong><span>{{ entry.element || entry.weapon || entry.id }}</span></button></li></ul><p v-if="!entries.length" class="empty">没有匹配资料，请尝试全名或 ID。</p><p v-if="entries.length === 50" class="hint">显示前 50 项，请使用关键词缩小范围。</p></section><BusinessView v-if="view" :value="view" /><p v-else class="empty">选择一项查看资料。</p></div>
+        <details class="settings"><summary>自定义别名</summary><p v-if="aliasConflicts.length" class="feedback attention">以下别名覆盖了内置名称：{{aliasConflicts.map(v=>v.name).join('、')}}。</p><p class="hint">先选择资料，再为它添加常用称呼；自定义别名优先于内置名称。</p><form class="inline-form" @submit.prevent="addAlias"><label><span class="sr-only">别名</span><input v-model="aliasName" placeholder="输入别名" required :disabled="busy"></label><button :disabled="busy || !aliasTarget" type="submit">添加别名</button></form><ul class="alias-list"><li v-for="(id, name) in aliases" :key="name"><span>{{ name }} → {{ id }}</span><button type="button" :disabled="busy" :aria-label="`移除别名${name}`" @click="removeAlias(String(name))">移除</button></li></ul></details>
+        <details class="settings"><summary>全局查询设置</summary><form @submit.prevent="saveSettings()"><label>账号服务插件 ID<input v-model="provider" required :disabled="busy"></label><label class="check"><input v-model="imageReplies" type="checkbox" :disabled="busy">聊天查询优先发送图片</label><label class="check"><input v-model="pokeCard" type="checkbox" :disabled="busy">戳一戳展示角色卡片</label><label>聊天设置别名<select v-model.number="aliasPermission" :disabled="busy"><option :value="0">所有群员</option><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+        <details class="settings"><summary>全局 ark 扩展设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="ark.panel_rank" type="checkbox" :disabled="busy">面板伤害计算中显示 ark 全服排名</label><label>角色面板排名类型<select v-model.number="ark.query_type" :disabled="busy"><option :value="0">伤害排名</option><option :value="1">圣遗物排名</option><option :value="2">均显示</option><option :value="3">图表排名</option></select></label><label>排名展示规则<select v-model.number="ark.rank_type" :disabled="busy"><option :value="0">位次排名</option><option :value="1">百分比排名</option><option :value="2">混合排名</option></select></label><label class="check"><input v-model="ark.local_panel_rank" type="checkbox" :disabled="busy">面板排名按本地面板计算（关闭时查询 ark 保存的该 UID 面板）</label><label class="check"><input v-model="ark.profile_change_diff" type="checkbox" :disabled="busy">面板换装时显示伤害变化</label><label>换装面板伤害标题过长时<select v-model.number="ark.deal_long_dmg_title" :disabled="busy"><option :value="0">不处理</option><option :value="1">截断过长部分</option><option :value="2">换行</option></select></label><label class="check"><input v-model="ark.profile_change_ocr" type="checkbox" :disabled="busy">面板换装时识别附带或引用的圣遗物截图（OCR）</label><label class="check"><input v-model="ark.group_rank" type="checkbox" :disabled="busy">群排行中显示 ark 全服排名</label><label class="check"><input v-model="ark.local_group_rank" type="checkbox" :disabled="busy">群排行的全服排名按本群记录的面板计算（关闭时查询 ark 保存的各 UID 面板）</label><label class="check"><input v-model="ark.mark_rank_type" type="checkbox" :disabled="busy">排名注明本地数据，如总伤害排名(本地)、(面板变换)</label><label>导出面板数据<select v-model.number="ark.export_panel_data" :disabled="busy"><option :value="0">任何人</option><option :value="1">绑定 CK 的用户或超级管理员</option><option :value="2">仅超级管理员</option><option :value="3">禁用</option></select></label><label>导入面板数据<select v-model.number="ark.import_panel_data" :disabled="busy"><option :value="0">任何人</option><option :value="1">绑定 CK 的用户或超级管理员</option><option :value="2">仅超级管理员</option><option :value="3">禁用</option></select></label><label>导出面板文件<select v-model.number="ark.export_panel_require" :disabled="busy"><option :value="0">任何人</option><option :value="1">绑定 CK 或已在 ark 验证 UID 的用户</option><option :value="2">绑定 CK 的用户</option><option :value="3">禁用</option></select></label><label class="check"><input v-model="ark.new_user_panel" type="checkbox" :disabled="busy">首次更新面板时自动从 ark 获取面板（需在 ark 验证 UID，会发送 QQ 与 UID）</label><label class="check"><input v-model="ark.stygian_rank" type="checkbox" :disabled="busy">群内更新面板时登记幽境危战排名</label><label>幽境危战数据源<select v-model.number="ark.stygian_data_from" :disabled="busy"><option :value="0">ark</option><option :value="1">akasha.cv</option><option :value="2">二者混合</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+        <details class="settings"><summary>全局逍遥插件设置</summary><form @submit.prevent="saveSettings()"><label class="check"><input v-model="xiaoyao.is_note_task" type="checkbox" :disabled="busy">群体力推送（每十分钟检查已“开启体力推送”的成员，树脂达到本群阈值时在群里 @ 提醒）</label><label>群体力推送设置权限<select v-model.number="xiaoyao.note_set_auth" :disabled="busy"><option :value="1">群管理员</option><option :value="2">仅超级管理员</option></select></label><button :disabled="busy" type="submit">保存设置</button></form></details>
+      </template>
+
+      <template v-else-if="page === 'gacha'">
+        <div class="section-heading"><div><h2>抽卡档案</h2><p class="muted">全局档案按游戏 UID 保存；官方同步在“提醒与收集”中管理。</p></div><button :disabled="busy" @click="run(loadArchives)">刷新列表</button></div>
         <details class="import-panel"><summary>导入记录</summary><p class="hint">支持 <a href="https://uigf.org/en/standards/uigf.html" target="_blank" rel="noreferrer">UIGF</a> v4、旧版 UIGF v2/v3 和本插件导出的完整档案。不接收抽卡链接。</p><div class="import-fields"><label>旧版文件缺省时区<select v-model="legacyTimezone" :disabled="busy"><option :value="8">UTC+8（国服/亚服）</option><option :value="1">UTC+1（欧服）</option><option :value="-5">UTC−5（美服）</option></select></label><label>选择 JSON 文件<input ref="importFile" type="file" accept=".json,application/json" :disabled="busy" @change="readImport"></label></div>
           <form v-if="imported.length" class="import-fields" @submit.prevent="importArchive"><label>文件中的账号<select v-model="importIndex" :disabled="busy"><option v-for="(archive, index) in imported" :key="`${archive.uid}:${index}`" :value="index">{{ archive.uid }} · {{ archive.list.length }} 条 · UTC{{ archive.timezone >= 0 ? '+' : '' }}{{ archive.timezone }}</option></select></label><label>游戏区服<select v-model="importRegion" :disabled="busy"><option v-for="region in regions" :key="region.id" :value="region.id">{{ region.name }}</option></select></label><button class="primary" type="submit" :disabled="busy">{{ busy ? '正在导入…' : '导入所选账号' }}</button></form>
         </details>

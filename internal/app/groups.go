@@ -158,6 +158,10 @@ func (s *GroupStore) Update(scope GroupScope, fn func(*GroupData) error) error {
 	return nil
 }
 func (s *GroupStore) List(page int) ([]map[string]any, *int, error) {
+	return s.list(page, nil)
+}
+
+func (s *GroupStore) list(page int, bot *rayleabot.BotAccount) ([]map[string]any, *int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	files, err := os.ReadDir(s.Directory)
@@ -173,6 +177,13 @@ func (s *GroupStore) List(page int) ([]map[string]any, *int, error) {
 		if f.IsDir() || !strings.HasSuffix(f.Name(), ".json") {
 			continue
 		}
+		var data GroupData
+		if err := localdata.Read(filepath.Join(s.Directory, f.Name()), &data); err != nil {
+			return nil, nil, err
+		}
+		if bot != nil && (data.Scope.Protocol != bot.SourceProtocol || data.Scope.BotID != bot.BotID) {
+			continue
+		}
 		matched++
 		if matched <= page*50 {
 			continue
@@ -181,10 +192,6 @@ func (s *GroupStore) List(page int) ([]map[string]any, *int, error) {
 			next := page + 1
 			return out, &next, nil
 		}
-		var data GroupData
-		if err := localdata.Read(filepath.Join(s.Directory, f.Name()), &data); err != nil {
-			return nil, nil, err
-		}
 		item := map[string]any{"scope": data.Scope, "config": data.Config, "rank_entries": len(data.Rank), "challenge_entries": len(data.Challenges), "revision": data.Revision}
 		if data.Scope.BotID == "" {
 			item["legacy_ref"] = strings.TrimSuffix(f.Name(), ".json")
@@ -192,6 +199,17 @@ func (s *GroupStore) List(page int) ([]map[string]any, *int, error) {
 		out = append(out, item)
 	}
 	return out, nil, nil
+}
+
+func (a *App) listManagementGroups(bot rayleabot.BotAccount, input map[string]any) (map[string]any, error) {
+	var q struct {
+		Page int `json:"page"`
+	}
+	if decodeObject(input, &q) != nil || q.Page < 0 || q.Page > 100000 {
+		return nil, gameError("input_invalid", "群列表页码无效。")
+	}
+	items, next, err := a.Groups.list(q.Page, &bot)
+	return map[string]any{"items": items, "next_page": next}, err
 }
 func applyGroupConfig(event *rayleabot.EventContext, config GroupConfig) {
 	copy := map[string]any{}

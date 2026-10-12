@@ -55,7 +55,7 @@ func challengeTarget(kind ChallengeKind, metric string, threshold float64, data 
 func (a *App) challengeReminder(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
 	if action == "challenge.reminder.list" {
 		items, err := a.Reminders.List()
-		items = slices.DeleteFunc(items, func(r Reminder) bool { return r.Kind != "challenge" })
+		items = slices.DeleteFunc(items, func(r Reminder) bool { return r.Kind != "challenge" || !managementOwns(event, r.Owner) })
 		return map[string]any{"items": items}, err
 	}
 	if action == "challenge.reminder.remove" {
@@ -96,6 +96,9 @@ func (a *App) challengeReminder(ctx context.Context, event *rayleabot.EventConte
 	}
 	account, role, err := client.Authorize(ctx, q.Selection)
 	if err != nil {
+		return nil, err
+	}
+	if err = checkManagementOwner(event, account.Owner); err != nil {
 		return nil, err
 	}
 	hash := sha256.Sum256([]byte(client.Provider + "\x00" + q.AccountRef + "\x00" + q.RoleRef + "\x00" + kind.ID))

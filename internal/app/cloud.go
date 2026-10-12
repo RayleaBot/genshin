@@ -18,6 +18,7 @@ import (
 )
 
 type CloudInput struct {
+	bot             rayleabot.BotAccount
 	localPanel      json.RawMessage
 	exchangeData    string
 	ImageURL        string                `json:"image_url,omitempty"`
@@ -44,6 +45,7 @@ type CloudInput struct {
 	Index       *int          `json:"index,omitempty"`
 }
 type CloudJob struct {
+	bot rayleabot.BotAccount
 	CloudResult
 	Ref         string `json:"ref"`
 	State       string `json:"state"`
@@ -239,7 +241,7 @@ func (c *CloudClient) Start(game Game, input CloudInput) (CloudJob, error) {
 		c.jobs = map[string]*CloudJob{}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	job := &CloudJob{Ref: rand.Text(), State: "running", CreatedAtMS: time.Now().UnixMilli(), cancel: cancel, game: game.ID, characterID: input.CharacterID}
+	job := &CloudJob{Ref: rand.Text(), State: "running", CreatedAtMS: time.Now().UnixMilli(), cancel: cancel, game: game.ID, characterID: input.CharacterID, bot: input.bot}
 	c.jobs[job.Ref] = job
 	expiry := time.AfterFunc(5*time.Minute, func() {
 		c.mu.Lock()
@@ -289,9 +291,16 @@ func (c *CloudClient) Wait(ctx context.Context, job CloudJob) CloudJob {
 }
 
 func (c *CloudClient) Poll(ref string, cancel bool) (CloudJob, error) {
+	return c.poll(ref, cancel, nil)
+}
+
+func (c *CloudClient) poll(ref string, cancel bool, bot *rayleabot.BotAccount) (CloudJob, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	job := c.jobs[ref]
+	if job != nil && bot != nil && job.bot != *bot {
+		return CloudJob{}, managementInvalid("查询任务不属于当前机器人账号。")
+	}
 	if job != nil && time.Since(time.UnixMilli(job.CreatedAtMS)) > 5*time.Minute {
 		job.cancel()
 		delete(c.jobs, ref)
@@ -552,7 +561,8 @@ func (a *App) cloudAction(ctx context.Context, event *rayleabot.EventContext, ac
 		return a.startCloudJob(ctx, event, q)
 	}
 	if action == "cloud.poll" || action == "cloud.cancel" {
-		job, err := a.Cloud.Poll(asText(input["ref"]), action == "cloud.cancel")
+		bot, _ := event.Event.ManagementBot()
+		job, err := a.Cloud.poll(asText(input["ref"]), action == "cloud.cancel", &bot)
 		return map[string]any{"job": job}, err
 	}
 	return nil, gameError("operation_denied", "云查询操作不存在。")
@@ -571,6 +581,7 @@ func (a *App) Close() {
 }
 
 func (a *App) startCloudJob(ctx context.Context, event *rayleabot.EventContext, q CloudInput) (map[string]any, error) {
+	q.bot, _ = event.Event.ManagementBot()
 	if q.Authenticated {
 		client := a.accountClient(event)
 		q.proxy = func(_ context.Context, route string, body map[string]any) (any, error) {

@@ -2055,79 +2055,98 @@
     "pages": [
       {
         "id": "overview",
-        "label": "游戏查询"
+        "label": "游戏查询",
+        "scope": "bot_account"
       },
       {
         "id": "catalog",
-        "label": "资料图鉴"
+        "label": "资料图鉴",
+        "scope": "global"
       },
       {
         "id": "gacha",
-        "label": "抽卡档案"
+        "label": "抽卡档案",
+        "scope": "global"
       },
       {
         "id": "reminders",
-        "label": "提醒与收集"
+        "label": "提醒与收集",
+        "scope": "bot_account"
       },
       {
         "id": "history",
-        "label": "面板历史"
+        "label": "面板历史",
+        "scope": "bot_account"
       },
       {
         "id": "growth",
-        "label": "养成计算"
+        "label": "养成计算",
+        "scope": "bot_account"
       },
       {
         "id": "resources",
-        "label": "材料与卡池"
+        "label": "材料与卡池",
+        "scope": "global"
       },
       {
         "id": "groups",
-        "label": "群设置与排行"
+        "label": "群设置与排行",
+        "scope": "bot_account"
       },
       {
         "id": "simulation",
-        "label": "模拟抽卡"
+        "label": "模拟抽卡",
+        "scope": "global"
       },
       {
         "id": "signin",
-        "label": "游戏签到"
+        "label": "游戏签到",
+        "scope": "bot_account"
       },
       {
         "id": "cloud",
-        "label": "云排名与面板"
+        "label": "云排名与面板",
+        "scope": "bot_account"
       },
       {
         "id": "community",
-        "label": "社区与云游戏"
+        "label": "社区与云游戏",
+        "scope": "bot_account"
       },
       {
         "id": "assets",
-        "label": "兑换码与资产"
+        "label": "兑换码与资产",
+        "scope": "bot_account"
       },
       {
         "id": "content",
-        "label": "公告与活动"
+        "label": "公告与活动",
+        "scope": "global"
       },
       {
         "id": "guides",
-        "label": "攻略与工具"
+        "label": "攻略与工具",
+        "scope": "global"
       },
       {
         "id": "media",
-        "label": "素材与互动"
+        "label": "素材与互动",
+        "scope": "global"
       },
       {
         "id": "help",
-        "label": "帮助与版本"
+        "label": "帮助与版本",
+        "scope": "global"
       },
       {
         "id": "collections",
-        "label": "活动与收藏"
+        "label": "活动与收藏",
+        "scope": "bot_account"
       },
       {
         "id": "statistics",
-        "label": "公开统计与配队"
+        "label": "公开统计与配队",
+        "scope": "global"
       }
     ]
   }

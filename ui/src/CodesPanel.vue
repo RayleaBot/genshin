@@ -11,7 +11,7 @@ async function redeem(){if(!role.value||!confirmed.value||busy.value)return;busy
 onUnmounted(task.dispose)
 </script>
 <template><section><div class="section-heading"><h2>官方前瞻兑换码</h2><button :disabled="task.busy.value||task.job.value?.state==='running'" @click="task.start({kind:'codes'})">查询公开兑换码</button></div>
-<p>读取本游戏官方入口；是否可兑换以官方结果为准。国服请在游戏内兑换。</p>
+<p>全局公开兑换码。是否可兑换以官方结果为准；国服请在游戏内兑换。</p>
 <p v-if="task.error.value||task.job.value?.message" class="feedback danger" role="alert">{{task.error.value||task.job.value?.message}}</p>
 <p v-if="task.job.value?.state==='running'">正在查询… <button @click="task.cancel">取消</button><button @click="task.poll">刷新进度</button></p>
 <template v-if="task.job.value?.state==='completed'"><h3>{{task.job.value.result?.title}}</h3><p v-if="!rows.length" class="empty">当前官方入口没有可读取的兑换码。</p><ul><li v-for="row in rows" :key="row.code"><strong>{{row.code}}</strong> · {{row.reward}} <span v-if="row.expires_at">· {{row.expiry_estimated?'参考估计期限':'有效期'}}：{{row.expires_at}}</span> <button @click="code=row.code;confirmed=false">填入兑换</button></li></ul></template>

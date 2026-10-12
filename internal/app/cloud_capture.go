@@ -303,7 +303,7 @@ func (a *App) captureCloudPanel(ctx context.Context, client AccountsClient, choi
 	if err != nil {
 		return nil, err
 	}
-	if err = a.CloudArchive.Update(client.Provider, choice, archive.Revision, role, map[string]json.RawMessage{exportID: data}, false); err != nil {
+	if err = a.CloudArchive.Update(client.Provider, choice, archive.Revision, role, map[string]json.RawMessage{exportID: data}, false, client.owner); err != nil {
 		return nil, err
 	}
 	return map[string]any{"captured": exportID, "note": "已保存官方面板的交换副本。强化档位按显示值还原，存在舍入误差，不代表真实升级顺序；尚未上传云服务。"}, nil

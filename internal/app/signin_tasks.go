@@ -27,7 +27,7 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	label := reminderLabels[kind]
 	if action == root+"list" {
 		items, err := a.Reminders.List()
-		items = slices.DeleteFunc(items, func(task Reminder) bool { return task.Kind != kind })
+		items = slices.DeleteFunc(items, func(task Reminder) bool { return task.Kind != kind || !managementOwns(event, task.Owner) })
 		return map[string]any{"items": items}, err
 	}
 	if action == root+"remove" {
@@ -61,6 +61,9 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 		account, role, err = client.Authorize(ctx, q.Selection)
 	}
 	if err != nil {
+		return nil, err
+	}
+	if err = checkManagementOwner(event, account.Owner); err != nil {
 		return nil, err
 	}
 	if kind == "cloudgame" && !slices.Contains(account.CloudConfigured, a.Game.ID) {

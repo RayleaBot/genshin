@@ -236,10 +236,18 @@ func (h *sdkHost) groupMessage(text, command string, args ...string) (map[string
 
 // manage runs an action of the plugin's management page.
 func (h *sdkHost) manage(action string, input map[string]any) (map[string]any, []hostAction) {
+	return h.manageFor(&rayleabot.BotAccount{SourceProtocol: "onebot11", BotID: "bot"}, action, input)
+}
+
+func (h *sdkHost) manageFor(bot *rayleabot.BotAccount, action string, input map[string]any) (map[string]any, []hostAction) {
 	h.t.Helper()
 	h.next++
 	id := fmt.Sprintf("manage-%d", h.next)
-	return h.exchange(id, h.frame(id, map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}))
+	payload := map[string]any{"action": action, "payload": input, "page_id": "help"}
+	if bot != nil {
+		payload["page_id"], payload["bot"] = "overview", bot
+	}
+	return h.exchange(id, h.frame(id, map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": payload}))
 }
 
 // trigger runs a job the plugin created as the host's scheduler does: the

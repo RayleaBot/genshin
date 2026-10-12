@@ -25,6 +25,7 @@ type BillingRow struct {
 	Item   string `json:"item,omitempty"`
 }
 type BillingArchive struct {
+	Owner     Subject      `json:"owner"`
 	Revision  uint64       `json:"revision"`
 	UID       string       `json:"uid"`
 	Region    string       `json:"region"`
@@ -166,12 +167,6 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 		if j == nil {
 			return nil, gameError("billing_missing", "收集任务已失效，请重新开始。")
 		}
-		if action == "billing.sync.cancel" {
-			j.timer.Stop()
-			delete(a.BillingJobs.items, ref)
-			return map[string]any{"canceled": true}, nil
-		}
-		j.timer.Reset(15 * time.Minute)
 		client.Provider = j.Provider
 		role, err := authorizeCloudRole(ctx, client, j.Selection)
 		if err != nil {
@@ -180,6 +175,12 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 		if role.UID != j.Role.UID || role.Region != j.Role.Region {
 			return nil, gameError("role_missing", "任务角色授权已变化。")
 		}
+		if action == "billing.sync.cancel" {
+			j.timer.Stop()
+			delete(a.BillingJobs.items, ref)
+			return map[string]any{"canceled": true}, nil
+		}
+		j.timer.Reset(15 * time.Minute)
 		var q struct {
 			Sequence int `json:"sequence"`
 		}
@@ -227,7 +228,7 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 			if err != nil {
 				return nil, err
 			}
-			archive = BillingArchive{UID: role.UID, Region: role.Region, Category: j.Category, Direction: j.Direction, Rows: combined}
+			archive = BillingArchive{UID: role.UID, Region: role.Region, Category: j.Category, Direction: j.Direction, Rows: combined, Owner: client.owner}
 			if err = a.Billing.Write(j.Provider, j.Selection, j.revision, archive); err != nil {
 				return nil, err
 			}

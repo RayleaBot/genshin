@@ -311,7 +311,11 @@ func decodeObject(value any, target any) error {
 	return json.Unmarshal(raw, target)
 }
 func (a *App) accountClient(event *rayleabot.EventContext) AccountsClient {
-	return AccountsClient{Caller: event.Actions(), Provider: settings(event).AccountProvider, Game: a.Game.ID}
+	owner := chatOwner(event)
+	if bot, ok := event.Event.ManagementBot(); ok {
+		owner = Subject{SourceProtocol: bot.SourceProtocol, BotID: bot.BotID}
+	}
+	return AccountsClient{Caller: event.Actions(), Provider: settings(event).AccountProvider, Game: a.Game.ID, owner: owner}
 }
 func (a *App) operation(name string) (Operation, bool) {
 	for _, item := range a.Game.Operations {
@@ -844,6 +848,14 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 }
 
 func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
+	var err error
+	input, err = managementInput(event, action, input)
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasPrefix(action, "history.records.") {
+		return a.manageHistoricalRecords(ctx, event, action, input)
+	}
 	switch action {
 	case "public.query":
 		result, err := a.accountClient(event).PublicProfile(ctx, asText(input["uid"]), asText(input["region"]))
@@ -869,7 +881,7 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 	case "aliases.validate":
 		return a.aliasAction(input)
 	case "interaction.list", "interaction.remove":
-		return a.interactionManage(action, input)
+		return a.interactionManage(event, action, input)
 	case "guides.schema", "guides.settings", "guides.configure":
 		return a.GuideSettings.Manage(action, input)
 	case "enemies.schema", "enemies.query":
@@ -893,6 +905,10 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 	case "challenge.schema", "challenge.list", "challenge.clear":
 		return a.manageChallenge(action, input)
 	case "groups.list", "groups.clear", "groups.set":
+		if action == "groups.list" {
+			bot, _ := event.Event.ManagementBot()
+			return a.listManagementGroups(bot, input)
+		}
 		return a.manageGroups(action, input)
 	case "materials.query", "calendar.query":
 		return a.resourceQuery(action, input)
@@ -905,7 +921,7 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 	case "build.conditions", "build.presets.list", "build.presets.save", "build.presets.remove":
 		return a.buildPresetAction(action, input)
 	case "status":
-		return map[string]any{"game": a.Game, "catalog_version": a.Catalog.Version, "catalog_entries": len(a.Catalog.Entries), "settings": settings(event), "bots": event.Bots}, nil
+		return map[string]any{"game": a.Game, "catalog_version": a.Catalog.Version, "catalog_entries": len(a.Catalog.Entries), "settings": settings(event)}, nil
 	case "accounts.list":
 		result, err := a.accountClient(event).List(ctx, number(input["page"]))
 		return map[string]any{"accounts": result}, err

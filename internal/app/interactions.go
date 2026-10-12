@@ -244,7 +244,7 @@ func (a *App) interactionCommand(ctx context.Context, event *rayleabot.EventCont
 	}
 	return event.Result(map[string]any{"handled": false})
 }
-func (a *App) interactionManage(action string, input map[string]any) (map[string]any, error) {
+func (a *App) interactionManage(event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
 	s := a.Interactions
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -253,6 +253,7 @@ func (a *App) interactionManage(action string, input map[string]any) (map[string
 		return nil, err
 	}
 	if action == "interaction.list" {
+		items = slices.DeleteFunc(items, func(item InteractionProfile) bool { return !managementOwns(event, item.Owner) })
 		var q struct {
 			Offset int `json:"offset"`
 		}
@@ -273,6 +274,9 @@ func (a *App) interactionManage(action string, input map[string]any) (map[string
 	i := slices.IndexFunc(items, func(p InteractionProfile) bool { return p.Ref == ref })
 	if i < 0 {
 		return nil, gameError("interaction_missing", "互动偏好不存在。")
+	}
+	if err := checkManagementOwner(event, items[i].Owner); err != nil {
+		return nil, err
 	}
 	items = slices.Delete(items, i, i+1)
 	err = localdata.Write(s.Path, items)

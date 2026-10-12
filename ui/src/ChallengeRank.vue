@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-interface Scope {source_protocol:string;bot_id:string;group_id:string}
+interface Scope {group_id:string}
 interface Metric {key:string;label:string;lower:boolean}
 interface Kind {id:string;label:string;metrics:Metric[]}
 interface Entry {actor_id:string;nickname:string;uid:string;metrics:Record<string,number>;updated_ms:number}
@@ -10,8 +10,8 @@ const kinds=ref<Kind[]>([]),kind=ref(''),season=ref(''),dimension=ref(''),offset
 const selected=computed(()=>kinds.value.find(v=>v.id===kind.value)),hasNext=computed(()=>groups.value.some(v=>v.next_offset!==null))
 let generation=0,disposed=false
 watch([()=>props.scope,kind,season,dimension],()=>{generation++;groups.value=[];offset.value=0;confirm.value=false;loaded.value=false})
-async function load(start=0){if(busy.value)return;const current=++generation;busy.value=true;error.value='';confirm.value=false;try{const r=await props.invoke<{groups:Partition[];revision:number}>('challenge.list',{scope:props.scope,kind:kind.value,season:season.value,dimension:dimension.value,offset:start});if(!disposed&&current===generation){groups.value=r.groups;revision.value=r.revision;offset.value=start;loaded.value=true}}catch(e){if(current===generation)error.value=e instanceof Error?e.message:'群榜读取失败。'}finally{busy.value=false}}
-async function clear(){if(busy.value||!confirm.value)return;busy.value=true;error.value='';try{await props.invoke('challenge.clear',{scope:props.scope,kind:kind.value,season:season.value,revision:revision.value,confirmed:true});groups.value=[];loaded.value=false;confirm.value=false}catch(e){error.value=e instanceof Error?e.message:'清空未完成。'}finally{busy.value=false}}
+async function load(start=0){if(busy.value)return;const current=++generation;busy.value=true;error.value='';confirm.value=false;try{const r=await props.invoke<{groups:Partition[];revision:number}>('challenge.list',{scope:{group_id:props.scope.group_id},kind:kind.value,season:season.value,dimension:dimension.value,offset:start});if(!disposed&&current===generation){groups.value=r.groups;revision.value=r.revision;offset.value=start;loaded.value=true}}catch(e){if(current===generation)error.value=e instanceof Error?e.message:'群榜读取失败。'}finally{busy.value=false}}
+async function clear(){if(busy.value||!confirm.value)return;busy.value=true;error.value='';try{await props.invoke('challenge.clear',{scope:{group_id:props.scope.group_id},kind:kind.value,season:season.value,revision:revision.value,confirmed:true});groups.value=[];loaded.value=false;confirm.value=false}catch(e){error.value=e instanceof Error?e.message:'清空未完成。'}finally{busy.value=false}}
 void props.invoke<{kinds:Kind[]}>('challenge.schema').then(r=>{if(!disposed){kinds.value=r.kinds;kind.value=r.kinds[0]?.id??''}}).catch(e=>{error.value=e instanceof Error?e.message:'玩法列表读取失败。'})
 onUnmounted(()=>{disposed=true;generation++})
 </script>
