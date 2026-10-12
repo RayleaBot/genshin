@@ -75,7 +75,7 @@ func (s *PayLogStore) Get(owner Subject) ([]PayLog, error) {
 		return nil, err
 	}
 	for _, item := range items {
-		if item.Owner == owner {
+		if item.Owner.same(owner) {
 			return item.Logs, nil
 		}
 	}
@@ -90,7 +90,7 @@ func (s *PayLogStore) Keep(owner Subject, log PayLog) error {
 	if err := localdata.Read(s.Path, &items); err != nil {
 		return err
 	}
-	index := slices.IndexFunc(items, func(item payLogOwner) bool { return item.Owner == owner })
+	index := slices.IndexFunc(items, func(item payLogOwner) bool { return item.Owner.same(owner) })
 	if index < 0 {
 		items = append(items, payLogOwner{Owner: owner})
 		index = len(items) - 1
@@ -117,6 +117,7 @@ type payKey struct {
 }
 
 func (k *payKeys) put(owner Subject, uid, key string) {
+	owner = owner.account()
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	if k.keys == nil {
@@ -126,6 +127,7 @@ func (k *payKeys) put(owner Subject, uid, key string) {
 }
 
 func (k *payKeys) get(owner Subject) (payKey, bool) {
+	owner = owner.account()
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	kept, ok := k.keys[owner]

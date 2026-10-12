@@ -19,10 +19,10 @@ func (a *App) accountTaskCommand(ctx context.Context, event *rayleabot.EventCont
 		if err != nil {
 			return event.SendText(friendlyError(err))
 		}
-		owner := Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}
+		owner := Subject{SourceProtocol: event.Event.SourceProtocol, BotID: event.Event.BotID, ActorID: event.Event.Actor.ID}
 		count := 0
 		for _, task := range items {
-			if task.Kind == kind && task.Owner == owner {
+			if task.Kind == kind && task.Owner.same(owner) {
 				if _, err = a.removeDelegatedTask(ctx, event, task.Ref, kind); err != nil {
 					return event.SendText(friendlyError(err))
 				}

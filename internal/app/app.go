@@ -261,6 +261,7 @@ type App struct {
 	aliases            customAliases
 	maps               mapImages
 	usageOnce          sync.Once
+	addressMigration   addressMigration
 	// clock is nil for the wall clock.
 	clock clock
 }
@@ -335,6 +336,9 @@ func (a *App) routedQuery(operation Operation, query string) (string, Operation)
 }
 
 func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
+	if err := a.migrateAddresses(ctx, event); err != nil {
+		return event.Fail(PublicError(err).Code, PublicError(err).Message)
+	}
 	// Replies name commands with the first prefix the host gives this plugin;
 	// the list is fixed for the process session.
 	a.usageOnce.Do(func() {

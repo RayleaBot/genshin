@@ -36,7 +36,7 @@ type InteractionStore struct {
 }
 
 func interactionRef(owner Subject) string {
-	raw, _ := json.Marshal(owner)
+	raw, _ := json.Marshal(owner.account())
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }
@@ -58,7 +58,7 @@ func (s *InteractionStore) Get(owner Subject) (InteractionProfile, error) {
 		return InteractionProfile{}, err
 	}
 	for _, v := range items {
-		if v.Owner == owner {
+		if v.Owner.same(owner) {
 			return v, nil
 		}
 	}
@@ -71,7 +71,7 @@ func (s *InteractionStore) edit(owner Subject, fn func(*InteractionProfile) erro
 	if err != nil {
 		return err
 	}
-	i := slices.IndexFunc(items, func(v InteractionProfile) bool { return v.Owner == owner })
+	i := slices.IndexFunc(items, func(v InteractionProfile) bool { return v.Owner.same(owner) })
 	if i < 0 {
 		if len(items) >= 2000 {
 			return gameError("interaction_limit", "互动偏好超过2000个主体，请先清理。")
@@ -88,10 +88,10 @@ func (s *InteractionStore) edit(owner Subject, fn func(*InteractionProfile) erro
 	return localdata.Write(s.Path, items)
 }
 func chatOwner(event *rayleabot.EventContext) Subject {
-	return Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}
+	return Subject{SourceProtocol: event.Event.SourceProtocol, BotID: event.Event.BotID, ActorID: event.Event.Actor.ID}
 }
 func validInteractionOwner(s Subject) bool {
-	return s.SourceProtocol != "" && s.SourceAdapter != "" && s.BotID != "" && s.ActorID != "" && len(s.ActorID) <= 256 && len(s.BotID) <= 256
+	return s.SourceProtocol != "" && s.BotID != "" && s.ActorID != "" && len(s.ActorID) <= 256 && len(s.BotID) <= 256
 }
 
 // pokeEligible is whether a poke in the conversation shows a card: miao's
@@ -101,7 +101,7 @@ func (a *App) pokeEligible(event *rayleabot.EventContext, owner Subject) (bool, 
 		return false, nil
 	}
 	if event.Event.Target.Type == "group" {
-		config, err := a.Groups.Config(GroupScope{owner.SourceProtocol, owner.SourceAdapter, owner.BotID, event.Event.Target.ID})
+		config, err := a.Groups.Config(GroupScope{Protocol: owner.SourceProtocol, BotID: owner.BotID, GroupID: event.Event.Target.ID})
 		if err != nil {
 			return false, err
 		}

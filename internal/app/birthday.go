@@ -70,8 +70,7 @@ func (a *App) birthdayCommand(ctx context.Context, event *rayleabot.EventContext
 		name := asText(item["name"])
 		notice(ctx, event, "正在获取"+name+"的图片，请稍等~")
 		if image := asText(item["image_url"]); image != "" {
-			_, _ = event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID,
-				Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Image(image)}}})
+			_, _ = event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: event.Event.SourceProtocol, BotID: event.Event.BotID, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID}, rayleabot.Image(image))
 		}
 		if _, err := client.ExecuteConfirmed(ctx, choice, "genshin.birthday_claim", map[string]any{"role_id": asText(item["role_id"])}); err != nil {
 			return event.SendText(friendlyError(err))

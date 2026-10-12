@@ -184,13 +184,11 @@ func (a *App) readAccountGacha(ctx context.Context, client AccountsClient, choic
 // account belongs to, what the round added.
 func (a *App) notifySync(ctx context.Context, event *rayleabot.EventContext, round BackgroundSync) error {
 	owner, result := round.Owner, round.Progress.Result
-	if result == nil || !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
-		return bot.ID == owner.BotID && bot.SourceProtocol == owner.SourceProtocol && bot.SourceAdapter == owner.SourceAdapter
-	}) {
+	if result == nil || !accountOnline(event.Bots, owner.SourceProtocol, owner.BotID) {
 		return gameError("bot_missing", "所属机器人暂不可用。")
 	}
 	text := fmt.Sprintf("抽卡后台同步完成\n%s · %s\n新增 %d 条，档案共 %d 条。", round.Role.Nickname, round.Role.UID, result.Added, result.Total)
-	_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: owner.SourceProtocol, SourceAdapter: owner.SourceAdapter, TargetType: "private", TargetID: owner.ActorID, Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
+	_, err := event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: owner.SourceProtocol, BotID: owner.BotID, TargetType: "private", TargetID: owner.ActorID}, rayleabot.Text(text))
 	return err
 }
 

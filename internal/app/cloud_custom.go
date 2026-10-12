@@ -287,10 +287,9 @@ func (a *App) customRankCommand(ctx context.Context, event *rayleabot.EventConte
 	return event.Result(map[string]any{"handled": true})
 }
 
-// customRankKey is where a message's custom ranking is remembered; message
-// IDs are counted per chat adapter.
+// customRankKey keeps a message's custom ranking under its bot account.
 func customRankKey(event *rayleabot.EventContext, messageID string) string {
-	return "ark-query:" + event.Event.SourceAdapter + ":" + messageID
+	return accountMessageKey("ark-query:", event, messageID)
 }
 
 // customRankView is the custom ranking in text, for replies without images.
@@ -314,8 +313,7 @@ func (a *App) sendKept(ctx context.Context, event *rayleabot.EventContext, view 
 	if path := a.renderView(ctx, event, view); path != "" {
 		segment = rayleabot.Image(path)
 	}
-	result, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID,
-		Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{segment}}})
+	result, err := event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: event.Event.SourceProtocol, BotID: event.Event.BotID, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID}, segment)
 	if err != nil {
 		return nil
 	}
@@ -375,7 +373,7 @@ func (a *App) customRankPanel(ctx context.Context, event *rayleabot.EventContext
 		return event.Result(map[string]any{"handled": false})
 	}
 	index, _ := strconv.Atoi(args[0])
-	remembered, err := event.Actions().KVGet(ctx, customRankKey(event, quoted))
+	remembered, err := accountMessageCache(ctx, event, "ark-query:", quoted)
 	cache := asObject(remembered["value"])
 	if err != nil || remembered["exists"] != true || asText(cache["query_id"]) == "" {
 		return event.SendText("未找到该排行图片的查询缓存，请重新发送 " + a.Game.Prefix + "ark自定义排行 后再获取面板")

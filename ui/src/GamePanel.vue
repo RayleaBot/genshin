@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { botAccounts, type BotAccount } from './bots'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { usePluginHost } from '@rayleabot/plugin-ui'
 import BusinessView, { type View } from './BusinessView.vue'
@@ -44,7 +45,7 @@ interface Transfer { ref: string; uid: string; region: string; timezone: number;
 const host = usePluginHost()
 const page = host.client.pageId || 'overview'
 const game = ref<Game | null>(null)
-const bots = ref<{source_protocol:string;source_adapter:string;id:string}[]>([])
+const bots = ref<BotAccount[]>([])
 const catalogVersion = ref('')
 const busy = ref(false), error = ref(''), notice = ref('')
 const accountIssue = ref('')
@@ -103,8 +104,8 @@ async function loadAccounts(page = 0) {
 async function loadCatalog() { const result = await invoke<{ entries: CatalogEntry[] }>('catalog.search', { query: search.value, kind: kind.value }); entries.value = result.entries }
 async function loadArchives() { archives.value = (await invoke<{ items: SavedArchive[] }>('gacha.list')).items }
 async function load() {
-  const result = await invoke<{ game: Game; bots?:{source_protocol:string;source_adapter:string;id:string}[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; custom_aliases: Record<string, string>; ark?: Partial<ArkSettings>; xiaoyao?: Partial<XiaoyaoSettings> } }>('status')
-  bots.value = result.bots ?? []
+  const result = await invoke<{ game: Game; bots?:BotAccount[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; poke_card?: boolean; custom_aliases: Record<string, string>; ark?: Partial<ArkSettings>; xiaoyao?: Partial<XiaoyaoSettings> } }>('status')
+  bots.value = botAccounts(result.bots ?? [])
   game.value = result.game; catalogVersion.value = result.catalog_version
   operationName.value ||= game.value.operations[0]?.name ?? ''
   importRegion.value ||= game.value.region
@@ -261,10 +262,10 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
       </template>
 
       <template v-else-if="page === 'content'"><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>
-      <template v-else-if="page === 'collections'"><CollectionsPanel :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
+      <template v-else-if="page === 'collections'"><CollectionsPanel :bots="bots" :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'statistics'"><PublicStatistics :roles="roleOptions" :invoke="invoke"/></template>
       <template v-else-if="page === 'help'"><HelpPanel :invoke="invoke"/></template>
-      <template v-else-if="page === 'media'"><ArtworkPanel :prefix="game.prefix" :invoke="invoke"/><MediaLibrary :prefix="game.prefix" :invoke="invoke"/><InteractionSettings :prefix="game.prefix" :invoke="invoke"/></template>
+      <template v-else-if="page === 'media'"><ArtworkPanel :prefix="game.prefix" :invoke="invoke"/><MediaLibrary :prefix="game.prefix" :invoke="invoke"/><InteractionSettings :bots="bots" :prefix="game.prefix" :invoke="invoke"/></template>
       <template v-else-if="page === 'guides'"><GuidesPanel :invoke="invoke"/><EnemyCalculator :invoke="invoke"/><BlueprintCalculator :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'assets'"><CodesPanel :roles="roleOptions" :invoke="invoke"/><BillingRecords :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'community'"><CommunityPanel :accounts="accounts" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多社区账号</button></template>
@@ -297,7 +298,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
       </template>
       <template v-else-if="page === 'reminders'">
         <p v-if="accountIssue" role="alert" class="feedback attention">{{ accountIssue }}</p>
-        <Reminders :choices="roleOptions" :invoke="invoke" />
+        <Reminders :bots="bots" :choices="roleOptions" :invoke="invoke" />
         <ChallengeReminders :choices="roleOptions" :invoke="invoke" />
         <MonthlyCollection :choices="roleOptions" :invoke="invoke" />
         <button v-if="nextAccountPage !== null" :disabled="busy" @click="run(() => loadAccounts(nextAccountPage!))">更多账号</button>

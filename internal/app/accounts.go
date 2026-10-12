@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"slices"
 
@@ -10,10 +11,44 @@ import (
 
 type Subject struct {
 	SourceProtocol string `json:"source_protocol"`
-	SourceAdapter  string `json:"source_adapter"`
-	BotID          string `json:"bot_id"`
-	ActorID        string `json:"actor_id"`
+	// SourceAdapter is retained only while an old record lacks BotID.
+	SourceAdapter string `json:"source_adapter,omitempty"`
+	BotID         string `json:"bot_id"`
+	ActorID       string `json:"actor_id"`
 }
+
+func (s Subject) account() Subject {
+	s.SourceAdapter = ""
+	return s
+}
+
+func (s Subject) same(other Subject) bool { return s.account() == other.account() }
+
+func (s *Subject) UnmarshalJSON(raw []byte) error {
+	type stored Subject
+	if err := json.Unmarshal(raw, (*stored)(s)); err != nil {
+		return err
+	}
+	if s.BotID != "" {
+		s.SourceAdapter = ""
+	}
+	return nil
+}
+
+func (s Subject) MarshalJSON() ([]byte, error) {
+	type stored Subject
+	if s.BotID != "" {
+		s.SourceAdapter = ""
+	}
+	return json.Marshal(stored(s))
+}
+
+func accountOnline(bots []rayleabot.Bot, protocol, id string) bool {
+	return id != "" && slices.ContainsFunc(bots, func(bot rayleabot.Bot) bool {
+		return bot.SourceProtocol == protocol && bot.ID == id
+	})
+}
+
 type Role struct {
 	Ref      string `json:"ref"`
 	Game     string `json:"game"`

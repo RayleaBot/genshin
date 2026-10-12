@@ -175,6 +175,11 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		h.deleted = append(h.deleted, id)
 		return map[string]any{"task_id": id, "deleted": exists}, ""
 	case "message.send":
+		if scheduled {
+			if _, hasAdapter := data["source_adapter"]; hasAdapter || asText(data["bot_id"]) == "" || asText(data["source_protocol"]) == "" {
+				h.t.Errorf("scheduled send did not use an account address: %v", data)
+			}
+		}
 		var request rayleabot.MessageSendRequest
 		if decodeObject(data, &request) != nil {
 			h.t.Fatal("invalid message.send")
@@ -210,7 +215,7 @@ func (h *sdkHost) chat(target map[string]any, role, text, command string, args .
 	if target["type"] == "group" {
 		eventType = "message.group"
 	}
-	event := map[string]any{"event_id": id, "event_type": eventType, "source_protocol": "onebot11", "source_adapter": "a", "timestamp": time.Now().Unix(), "actor": map[string]any{"id": "u", "role": role}, "target": target, "message": map[string]any{"plain_text": text, "segments": []any{map[string]any{"type": "text", "data": map[string]any{"text": text}}}}}
+	event := map[string]any{"event_id": id, "event_type": eventType, "source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "timestamp": time.Now().Unix(), "actor": map[string]any{"id": "u", "role": role}, "target": target, "message": map[string]any{"plain_text": text, "segments": []any{map[string]any{"type": "text", "data": map[string]any{"text": text}}}}}
 	if command != "" {
 		event["payload"] = map[string]any{"command": command, "args": args}
 	}

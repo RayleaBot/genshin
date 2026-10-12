@@ -341,8 +341,7 @@ func (a *App) rankRefresh(ctx context.Context, event *rayleabot.EventContext, sc
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	_, _ = event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: scope.Protocol, SourceAdapter: scope.Adapter, TargetType: "group", TargetID: scope.GroupID,
-		Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text("面板数据刷新中，等待时间可能较长，请耐心等待...")}}})
+	_, _ = event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: scope.Protocol, BotID: scope.BotID, TargetType: "group", TargetID: scope.GroupID}, rayleabot.Text("面板数据刷新中，等待时间可能较长，请耐心等待..."))
 	refreshed := make([]RankEntry, len(data.Rank))
 	var group sync.WaitGroup
 	slots := make(chan struct{}, 4)

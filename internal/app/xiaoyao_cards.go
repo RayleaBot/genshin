@@ -171,7 +171,7 @@ func (a *App) xiaoyaoFile(pattern, name, msg string) (xiaoyaoReply, bool) {
 const xiaoyaoCardTTL = 3 * time.Hour
 
 func xiaoyaoCardKey(event *rayleabot.EventContext, messageID string) string {
-	return "xiaoyao-basic:" + event.Event.SourceAdapter + ":" + messageID
+	return accountMessageKey("xiaoyao-basic:", event, messageID)
 }
 
 // sendXiaoyaoCard sends a card reply and remembers the video of a sent card
@@ -201,7 +201,7 @@ func (a *App) xiaoyaoQuote(ctx context.Context, event *rayleabot.EventContext) (
 	if id == "" {
 		return false, nil
 	}
-	quoted, err := event.Actions().MessageGet(ctx, id)
+	quoted, err := event.Actions().ForOneBotAccount(event.Event.BotID).MessageGet(ctx, id)
 	if err != nil {
 		return false, nil
 	}
@@ -210,7 +210,7 @@ func (a *App) xiaoyaoQuote(ctx context.Context, event *rayleabot.EventContext) (
 		return false, nil
 	}
 	var video artworkFile
-	if remembered, err := event.Actions().KVGet(ctx, xiaoyaoCardKey(event, id)); err != nil || remembered["exists"] != true || decodeObject(remembered["value"], &video) != nil {
+	if remembered, err := accountMessageCache(ctx, event, "xiaoyao-basic:", id); err != nil || remembered["exists"] != true || decodeObject(remembered["value"], &video) != nil {
 		video = artworkFile{}
 	}
 	_, err = post(ctx, event, a.quoteReply(video, sent, time.Now()))

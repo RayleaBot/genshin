@@ -267,17 +267,14 @@ func (a *App) checkPushes(ctx context.Context, event *rayleabot.EventContext, re
 		if ref != "" && item.Ref != ref {
 			continue
 		}
-		code, online := "checked", false
-		for _, bot := range event.Bots {
-			online = online || bot.ID == item.Owner.BotID && bot.SourceAdapter == item.Owner.SourceAdapter && bot.SourceProtocol == item.Owner.SourceProtocol
-		}
-		if !online {
+		code := "checked"
+		if !accountOnline(event.Bots, item.Owner.SourceProtocol, item.Owner.BotID) {
 			code = "bot_missing"
-		} else if config, err := a.Groups.Config(GroupScope{item.Owner.SourceProtocol, item.Owner.SourceAdapter, item.Owner.BotID, item.GroupID}); err != nil || config.Enabled != nil && !*config.Enabled {
+		} else if config, err := a.Groups.Config(GroupScope{Protocol: item.Owner.SourceProtocol, BotID: item.Owner.BotID, GroupID: item.GroupID}); err != nil || config.Enabled != nil && !*config.Enabled {
 			code = "group_disabled"
 		} else {
 			send := func(segments ...rayleabot.Segment) error {
-				_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: item.Owner.SourceProtocol, SourceAdapter: item.Owner.SourceAdapter, TargetType: "group", TargetID: item.GroupID, Message: rayleabot.MessageOut{Segments: segments}})
+				_, err := event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: item.Owner.SourceProtocol, BotID: item.Owner.BotID, TargetType: "group", TargetID: item.GroupID}, segments...)
 				return err
 			}
 			if err := a.pushGroup(ctx, event, &item, time.Now(), send); err != nil {
@@ -349,12 +346,19 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 		kind = pushKinds[0]
 	}
 	on := command == "subscribe"
-	owner := Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}
-	identity := strings.Join([]string{owner.SourceProtocol, owner.SourceAdapter, owner.BotID, event.Event.Target.ID}, "\x00")
+	owner := Subject{SourceProtocol: event.Event.SourceProtocol, BotID: event.Event.BotID, ActorID: event.Event.Actor.ID}
+	identity := strings.Join([]string{owner.SourceProtocol, owner.BotID, event.Event.Target.ID}, "\x00")
 	sum := sha256.Sum256([]byte(identity))
 	ref := "game.content." + a.Game.ID + "." + hex.EncodeToString(sum[:16])
 	created, emptied := false, false
 	err := a.Subscriptions.edit(ref, func(items *[]ContentSubscription, i int) error {
+		// Existing scheduler IDs are opaque handles, not account identities.
+		i = slices.IndexFunc(*items, func(v ContentSubscription) bool {
+			return v.Owner.SourceProtocol == owner.SourceProtocol && v.Owner.BotID == owner.BotID && v.GroupID == event.Event.Target.ID
+		})
+		if i >= 0 {
+			ref = (*items)[i].Ref
+		}
 		if i < 0 {
 			if !on {
 				return nil

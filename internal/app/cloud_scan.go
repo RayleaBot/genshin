@@ -44,7 +44,7 @@ func messageImages(ctx context.Context, event *rayleabot.EventContext) []string 
 		}
 	}
 	if id := quotedMessage(event); id != "" {
-		if quoted, err := event.Actions().MessageGet(ctx, id); err == nil {
+		if quoted, err := event.Actions().ForOneBotAccount(event.Event.BotID).MessageGet(ctx, id); err == nil {
 			list, _ := quoted["message"].([]any)
 			for _, item := range list {
 				add(asText(asObject(item)["type"]), asObject(asObject(item)["data"]))

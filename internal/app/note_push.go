@@ -84,7 +84,7 @@ type XiaoyaoSettings struct {
 }
 
 func notePushRef(game string, owner Subject) string {
-	sum := sha256.Sum256([]byte(owner.SourceProtocol + "\x00" + owner.SourceAdapter + "\x00" + owner.BotID + "\x00" + owner.ActorID))
+	sum := sha256.Sum256([]byte(owner.SourceProtocol + "\x00" + owner.BotID + "\x00" + owner.ActorID))
 	return notePushTask + game + "." + hex.EncodeToString(sum[:])
 }
 
@@ -117,6 +117,18 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 	}
 	owner := chatOwner(event)
 	ref := notePushRef(a.Game.ID, owner)
+	// Delegations are bound to scheduler IDs; keep the old handle when an
+	// adapter was replaced, but find that handle only by the account subject.
+	tasks, err := a.Reminders.List()
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	for _, task := range tasks {
+		if task.Kind == notePushKind && task.Owner.same(owner) {
+			ref = task.Ref
+			break
+		}
+	}
 	if len(args) > 0 && args[0] == "关闭" {
 		if group.NotePush.Off {
 			return event.SendText("群体力推送关闭了~\n请联系管理员开启功能~")
@@ -126,11 +138,11 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 		var task Reminder
 		left := false
 		err = a.Reminders.edit(ref, func(items *[]Reminder, i int) error {
-			if i < 0 || !slices.Contains((*items)[i].Groups, scope) {
+			if i < 0 || !slices.ContainsFunc((*items)[i].Groups, scope.same) {
 				return nil
 			}
 			left = true
-			(*items)[i].Groups = slices.DeleteFunc((*items)[i].Groups, func(g GroupScope) bool { return g == scope })
+			(*items)[i].Groups = slices.DeleteFunc((*items)[i].Groups, scope.same)
 			if task = (*items)[i]; len(task.Groups) == 0 {
 				*items = slices.Delete(*items, i, i+1)
 			}
@@ -176,7 +188,7 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 		}
 		task.Selection, task.Role, task.Provider = player.Choice, player.Role, client.Provider
 		task.DelegationRef, task.ExpiresAtMS, task.Enabled = grant.Delegation.Ref, grant.Delegation.ExpiresAtMS, true
-		if !slices.Contains(task.Groups, scope) {
+		if !slices.ContainsFunc(task.Groups, scope.same) {
 			task.Groups = append(task.Groups, scope)
 		}
 		if i >= 0 {
@@ -232,9 +244,7 @@ func (a *App) checkNotePush(ctx context.Context, event *rayleabot.EventContext, 
 		_ = a.Reminders.save(task)
 		return nil, true
 	}
-	if !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
-		return bot.ID == task.Owner.BotID && bot.SourceProtocol == task.Owner.SourceProtocol && bot.SourceAdapter == task.Owner.SourceAdapter
-	}) {
+	if !accountOnline(event.Bots, task.Owner.SourceProtocol, task.Owner.BotID) {
 		return nil, false
 	}
 	client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
@@ -288,7 +298,6 @@ func (a *App) checkNotePush(ctx context.Context, event *rayleabot.EventContext, 
 		if image := a.renderView(ctx, event, view); image != "" {
 			page = rayleabot.Image(image)
 		}
-		_, _ = event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: scope.Protocol, SourceAdapter: scope.Adapter, TargetType: "group", TargetID: scope.GroupID,
-			Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.At(task.Owner.ActorID), rayleabot.Text("哥哥（姐姐）你的体力快满了哦~"), page}}})
+		_, _ = event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: scope.Protocol, BotID: scope.BotID, TargetType: "group", TargetID: scope.GroupID}, rayleabot.At(task.Owner.ActorID), rayleabot.Text("哥哥（姐姐）你的体力快满了哦~"), page)
 	}, true
 }

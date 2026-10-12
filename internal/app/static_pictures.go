@@ -58,6 +58,6 @@ func (a *App) forward(ctx context.Context, event *rayleabot.EventContext, parts 
 		}
 		messages = append(messages, rayleabot.ForwardMessage{"type": "node", "data": map[string]any{"user_id": event.Bot.ID, "nickname": cmp.Or(event.Bot.Nickname, a.Game.Name), "content": content}})
 	}
-	_, err := event.Actions().MessageForwardSend(ctx, rayleabot.MessageForwardSendRequest{TargetType: rayleabot.ConversationType(event.Event.Target.Type), TargetID: event.Event.Target.ID, Messages: messages})
+	_, err := event.Actions().ForOneBotAccount(event.Event.BotID).MessageForwardSend(ctx, rayleabot.MessageForwardSendRequest{TargetType: rayleabot.ConversationType(event.Event.Target.Type), TargetID: event.Event.Target.ID, Messages: messages})
 	return err == nil
 }
