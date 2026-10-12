@@ -168,7 +168,7 @@ func (a *App) cloudTransferAction(ctx context.Context, client AccountsClient, ac
 		for i, id := range t.IDs {
 			avatars[id] = t.Items[i]
 		}
-		if err = a.CloudArchive.Update(t.Provider, t.Selection, t.Revision, role, avatars, false, client.owner); err != nil {
+		if err = a.CloudArchive.Update(t.Provider, t.Selection, t.Revision, role, avatars, false); err != nil {
 			return nil, err
 		}
 		t.Timer.Stop()

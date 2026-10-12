@@ -141,7 +141,7 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 		return nil, gameError("input_invalid", "请明确确认交换档案操作。")
 	}
 	if action == "cloud.archive.remove" {
-		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, nil, true, client.owner)
+		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, nil, true)
 		if err == nil {
 			a.CloudTransfers.mu.Lock()
 			for ref, t := range a.CloudTransfers.items {
@@ -172,7 +172,7 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 		if err != nil {
 			return nil, err
 		}
-		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, avatars, false, client.owner)
+		err = a.CloudArchive.Update(client.Provider, choice, q.Revision, role, avatars, false)
 		return map[string]any{"received": len(avatars)}, err
 	}
 	return nil, gameError("operation_denied", "交换档案操作不存在。")

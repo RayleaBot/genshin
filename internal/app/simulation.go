@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -71,7 +70,6 @@ type SimulationBatch struct {
 	Draws      []SimulationDraw    `json:"draws"`
 }
 type SimulationState struct {
-	Scope      string                         `json:"scope,omitempty"`
 	Version    int                            `json:"version"`
 	Active     string                         `json:"active"`
 	Selections map[string]SimulationSelection `json:"selections"`
@@ -374,7 +372,6 @@ func (s *SimulationStore) Action(scope, action string, input map[string]any, now
 	if err != nil {
 		return nil, err
 	}
-	state.Scope = scope
 	limit, err := s.limit()
 	if err != nil {
 		return nil, err
@@ -477,86 +474,9 @@ func (a *App) simulationAction(event *rayleabot.EventContext, action string, inp
 	if action == "simulation.configure" && event.Event.EventType != "management.action" {
 		return nil, gameError("source_invalid", "每日额度由机器人管理员设置。")
 	}
-	if event.Event.EventType != "management.action" {
-		if err := a.Simulation.migrateScope(scope, event); err != nil {
-			return nil, err
-		}
-	}
 	return a.Simulation.Action(scope, action, input, time.Now())
 }
 
-// Old simulator files contain only a hash, not the source identity. Recover
-// candidates from the current account's known adapters on its first access.
-// Unidentifiable files remain intact; new files also save their account scope.
-func (s *SimulationStore) migrateScope(scope string, event *rayleabot.EventContext) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	target := s.filename(scope)
-	if _, err := os.Stat(target); err == nil {
-		return nil
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	adapters := []string{event.Event.SourceAdapter}
-	for _, bot := range event.Bots {
-		if bot.SourceProtocol == event.Event.SourceProtocol && bot.ID == event.Event.BotID && !slices.Contains(adapters, bot.SourceAdapter) {
-			adapters = append(adapters, bot.SourceAdapter)
-		}
-	}
-	var chosen SimulationState
-	var paths []string
-	for _, adapter := range adapters {
-		raw, _ := json.Marshal([]string{event.Event.SourceProtocol, adapter, event.Event.BotID, event.Event.Target.Type, event.Event.Target.ID, event.Event.Actor.ID})
-		path := s.filename(string(raw))
-		var state SimulationState
-		if err := localdata.Read(path, &state); err != nil {
-			return err
-		}
-		if state.Version == 0 {
-			continue
-		}
-		paths = append(paths, path)
-		if chosen.Version == 0 || state.Total > chosen.Total {
-			chosen = state
-		}
-	}
-	if len(paths) == 0 {
-		return nil
-	}
-	chosen.Scope = scope
-	if err := localdata.Write(target, chosen); err != nil {
-		return err
-	}
-	for _, path := range paths {
-		if err := os.Rename(path, path+".migrated"); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *SimulationStore) legacyFiles() (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	files, err := addressFiles(s.Directory)
-	if err != nil {
-		return 0, err
-	}
-	count := 0
-	for _, file := range files {
-		if file.Name() == "config.json" {
-			continue
-		}
-		var state SimulationState
-		if err := localdata.Read(filepath.Join(s.Directory, file.Name()), &state); err != nil {
-			return count, err
-		}
-		if state.Version != 0 && state.Scope == "" {
-			count++
-		}
-	}
-	return count, nil
-}
 func simulationView(game Game, result map[string]any) View {
 	v := View{Title: game.Name + "模拟抽卡", Rows: []Row{}, Note: "固定参考娱乐模型，不代表官方概率或当前卡池；模拟数据独立于真实抽卡档案，不消耗真实货币。"}
 	if batch, _ := result["batch"].(*SimulationBatch); batch != nil {

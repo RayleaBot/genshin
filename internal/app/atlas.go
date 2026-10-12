@@ -317,7 +317,6 @@ type atlasMenu struct {
 // stay until their sender moves on, so all are dropped once 4096 senders
 // have one.
 func (m *atlasMenus) open(owner Subject, entries []string) {
-	owner = owner.account()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if menu := m.items[owner]; menu != nil {
@@ -334,7 +333,6 @@ func (m *atlasMenus) open(owner Subject, entries []string) {
 // message, drops the list at the fourth, and returns the entry a number in
 // the message names.
 func (m *atlasMenus) pick(owner Subject, msg string) (string, bool) {
-	owner = owner.account()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	menu := m.items[owner]
@@ -356,7 +354,6 @@ func (m *atlasMenus) pick(owner Subject, msg string) (string, bool) {
 
 // answered resets a sender's count after a pick that answered.
 func (m *atlasMenus) answered(owner Subject) {
-	owner = owner.account()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if menu := m.items[owner]; menu != nil {

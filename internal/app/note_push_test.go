@@ -28,7 +28,7 @@ func TestNotePushGroupSettingsFollowXiaoyao(t *testing.T) {
 func TestNotePushGoesToTheFirstGroupReached(t *testing.T) {
 	s := &GroupStore{Directory: t.TempDir()}
 	scope := func(id string) GroupScope {
-		return GroupScope{Protocol: "onebot11", Adapter: "napcat", BotID: "bot", GroupID: id}
+		return GroupScope{Protocol: "onebot11", BotID: "bot", GroupID: id}
 	}
 	off, high, low := scope("off"), scope("high"), scope("low")
 	disabled := false

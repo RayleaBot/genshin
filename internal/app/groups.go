@@ -17,37 +17,11 @@ import (
 
 type GroupScope struct {
 	Protocol string `json:"source_protocol"`
-	// Adapter is only a recovery hint for old records without BotID.
-	Adapter string `json:"source_adapter,omitempty"`
-	BotID   string `json:"bot_id"`
-	GroupID string `json:"group_id"`
+	BotID    string `json:"bot_id"`
+	GroupID  string `json:"group_id"`
 }
 
-func (s GroupScope) account() GroupScope {
-	s.Adapter = ""
-	return s
-}
-
-func (s GroupScope) same(other GroupScope) bool { return s.account() == other.account() }
-
-func (s *GroupScope) UnmarshalJSON(raw []byte) error {
-	type stored GroupScope
-	if err := json.Unmarshal(raw, (*stored)(s)); err != nil {
-		return err
-	}
-	if s.BotID != "" {
-		s.Adapter = ""
-	}
-	return nil
-}
-
-func (s GroupScope) MarshalJSON() ([]byte, error) {
-	type stored GroupScope
-	if s.BotID != "" {
-		s.Adapter = ""
-	}
-	return json.Marshal(stored(s))
-}
+func (s GroupScope) same(other GroupScope) bool { return s == other }
 
 func (s GroupScope) valid() bool {
 	for _, v := range []string{s.Protocol, s.BotID, s.GroupID} {
@@ -93,12 +67,11 @@ type GroupStore struct {
 }
 
 func (s *GroupStore) file(scope GroupScope) string {
-	raw, _ := json.Marshal(scope.account())
+	raw, _ := json.Marshal(scope)
 	sum := sha256.Sum256(raw)
 	return filepath.Join(s.Directory, hex.EncodeToString(sum[:])+".json")
 }
 func (s *GroupStore) read(scope GroupScope) (GroupData, error) {
-	scope = scope.account()
 	if !scope.valid() {
 		return GroupData{}, gameError("source_invalid", "群身份不完整。")
 	}
@@ -117,7 +90,6 @@ func (s *GroupStore) Read(scope GroupScope) (GroupData, error) {
 
 // Config is a group's settings.
 func (s *GroupStore) Config(scope GroupScope) (GroupConfig, error) {
-	scope = scope.account()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if config, ok := s.configs[scope]; ok {
@@ -139,7 +111,6 @@ func (s *GroupStore) remember(scope GroupScope, config GroupConfig) {
 }
 
 func (s *GroupStore) Update(scope GroupScope, fn func(*GroupData) error) error {
-	scope = scope.account()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data, err := s.read(scope)
@@ -193,9 +164,6 @@ func (s *GroupStore) list(page int, bot *rayleabot.BotAccount) ([]map[string]any
 			return out, &next, nil
 		}
 		item := map[string]any{"scope": data.Scope, "config": data.Config, "rank_entries": len(data.Rank), "challenge_entries": len(data.Challenges), "revision": data.Revision}
-		if data.Scope.BotID == "" {
-			item["legacy_ref"] = strings.TrimSuffix(f.Name(), ".json")
-		}
 		out = append(out, item)
 	}
 	return out, nil, nil
@@ -314,10 +282,9 @@ func (a *App) manageGroups(action string, input map[string]any) (map[string]any,
 	}
 	if action == "groups.clear" || action == "groups.set" {
 		var value struct {
-			Scope     GroupScope  `json:"scope"`
-			LegacyRef string      `json:"legacy_ref"`
-			Revision  uint64      `json:"revision"`
-			Config    GroupConfig `json:"config"`
+			Scope    GroupScope  `json:"scope"`
+			Revision uint64      `json:"revision"`
+			Config   GroupConfig `json:"config"`
 		}
 		if decodeObject(input, &value) != nil || !value.Scope.valid() {
 			return nil, gameError("input_invalid", "请提供完整群身份。")
@@ -362,12 +329,7 @@ func (a *App) manageGroups(action string, input map[string]any) (map[string]any,
 			d.Challenges = nil
 			return nil
 		}
-		var err error
-		if value.LegacyRef != "" && action == "groups.set" {
-			err = a.Groups.recover(value.LegacyRef, value.Scope, update)
-		} else {
-			err = a.Groups.Update(value.Scope, update)
-		}
+		err := a.Groups.Update(value.Scope, update)
 		return map[string]any{"updated": err == nil}, err
 	}
 	return nil, gameError("operation_denied", "群管理操作不存在。")

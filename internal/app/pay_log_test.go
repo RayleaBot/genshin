@@ -173,7 +173,7 @@ func TestPayLogByLinkReadsInItsBackgroundEvent(t *testing.T) {
 	if len(host.sent) != 2 || sentText(host.sent[0].Message) != "正在获取消费数据,可能需要30s~~" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
 		t.Fatalf("answered %+v", host.sent)
 	}
-	owner := Subject{"onebot11", "a", "bot", "u"}
+	owner := Subject{"onebot11", "bot", "u"}
 	if logs, err := a.PayLogs.Get(owner); err != nil || len(logs) != 1 || logs[0].UID != "100000001" || logs[0].Crystal != 25*60 {
 		t.Fatalf("kept %+v, %v", logs, err)
 	}
@@ -226,7 +226,7 @@ func TestPayLogByAccountReadsInItsBackgroundEvent(t *testing.T) {
 	if len(host.sent) != 2 || sentText(host.sent[0].Message) != "充值记录获取中请稍等..." || host.sent[1].TargetID != "u" || !strings.Contains(sentText(host.sent[1].Message), "充值统计") {
 		t.Fatalf("answered %+v", host.sent)
 	}
-	if logs, err := a.PayLogs.Get(Subject{"onebot11", "a", "bot", "u"}); err != nil || len(logs) != 1 || logs[0].UID != "100000001" {
+	if logs, err := a.PayLogs.Get(Subject{"onebot11", "bot", "u"}); err != nil || len(logs) != 1 || logs[0].UID != "100000001" {
 		t.Fatalf("kept %+v, %v", logs, err)
 	}
 }
@@ -240,7 +240,7 @@ func TestPayLogRefreshReadsTheAccountDespiteAKeptLink(t *testing.T) {
 	a.clock = clock
 	reads := []map[string]any{}
 	host := newSDKHost(t, a, nil, billingService(t, clock, &reads, ""))
-	a.PayKeys.put(Subject{"onebot11", "a", "bot", "u"}, "100000001", "abcdefghij")
+	a.PayKeys.put(Subject{"onebot11", "bot", "u"}, "100000001", "abcdefghij")
 	host.message("#更新充值记录", "更新充值记录")
 	if len(reads) != 0 || len(host.sent) != 2 || sentText(host.sent[0].Message) != "正在获取数据,可能需要30s" {
 		t.Fatalf("更新充值记录 read %d account pages and answered %+v", len(reads), host.sent)
@@ -263,7 +263,7 @@ func TestPayLogFailedReadAnswersTheFailure(t *testing.T) {
 	if len(host.sent) != 2 || sentText(host.sent[1].Message) != "plugin.upstream_auth_invalid" || len(reads) != 1 {
 		t.Fatalf("answered %+v after %d reads", host.sent, len(reads))
 	}
-	if logs, _ := a.PayLogs.Get(Subject{"onebot11", "a", "bot", "u"}); len(logs) != 0 {
+	if logs, _ := a.PayLogs.Get(Subject{"onebot11", "bot", "u"}); len(logs) != 0 {
 		t.Fatalf("kept %+v", logs)
 	}
 }

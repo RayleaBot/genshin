@@ -117,7 +117,6 @@ type payKey struct {
 }
 
 func (k *payKeys) put(owner Subject, uid, key string) {
-	owner = owner.account()
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	if k.keys == nil {
@@ -127,7 +126,6 @@ func (k *payKeys) put(owner Subject, uid, key string) {
 }
 
 func (k *payKeys) get(owner Subject) (payKey, bool) {
-	owner = owner.account()
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	kept, ok := k.keys[owner]

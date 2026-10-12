@@ -210,7 +210,7 @@ func (a *App) xiaoyaoQuote(ctx context.Context, event *rayleabot.EventContext) (
 		return false, nil
 	}
 	var video artworkFile
-	if remembered, err := accountMessageCache(ctx, event, "xiaoyao-basic:", id); err != nil || remembered["exists"] != true || decodeObject(remembered["value"], &video) != nil {
+	if remembered, err := event.Actions().KVGet(ctx, xiaoyaoCardKey(event, id)); err != nil || remembered["exists"] != true || decodeObject(remembered["value"], &video) != nil {
 		video = artworkFile{}
 	}
 	_, err = post(ctx, event, a.quoteReply(video, sent, time.Now()))

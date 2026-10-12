@@ -25,7 +25,6 @@ type BillingRow struct {
 	Item   string `json:"item,omitempty"`
 }
 type BillingArchive struct {
-	Owner     Subject      `json:"owner"`
 	Revision  uint64       `json:"revision"`
 	UID       string       `json:"uid"`
 	Region    string       `json:"region"`
@@ -228,7 +227,7 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 			if err != nil {
 				return nil, err
 			}
-			archive = BillingArchive{UID: role.UID, Region: role.Region, Category: j.Category, Direction: j.Direction, Rows: combined, Owner: client.owner}
+			archive = BillingArchive{UID: role.UID, Region: role.Region, Category: j.Category, Direction: j.Direction, Rows: combined}
 			if err = a.Billing.Write(j.Provider, j.Selection, j.revision, archive); err != nil {
 				return nil, err
 			}

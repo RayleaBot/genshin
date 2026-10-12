@@ -19,7 +19,6 @@ import (
 var cloudTalentPattern = regexp.MustCompile(`^[a-z][a-z0-9_]{0,15}$`)
 
 type CloudArchive struct {
-	Owner    Subject                    `json:"owner"`
 	Revision uint64                     `json:"revision"`
 	UID      string                     `json:"uid"`
 	Region   string                     `json:"region"`
@@ -43,7 +42,7 @@ func (s *CloudArchiveStore) Read(provider string, choice Selection) (CloudArchiv
 	err := localdata.Read(s.file(provider, choice), &out)
 	return out, err
 }
-func (s *CloudArchiveStore) Update(provider string, choice Selection, revision uint64, role Role, avatars map[string]json.RawMessage, remove bool, owner Subject) error {
+func (s *CloudArchiveStore) Update(provider string, choice Selection, revision uint64, role Role, avatars map[string]json.RawMessage, remove bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	file := s.file(provider, choice)
@@ -71,7 +70,6 @@ func (s *CloudArchiveStore) Update(provider string, choice Selection, revision u
 		return gameError("history_limit", "交换档案最多保存 250 个角色。")
 	}
 	out.Revision++
-	out.Owner = owner
 	out.UID = role.UID
 	out.Region = role.Region
 	out.SavedMS = time.Now().UnixMilli()

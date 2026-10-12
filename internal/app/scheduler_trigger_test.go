@@ -41,7 +41,7 @@ func (s *fakeAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 	params := request.Params
 	switch request.Method {
 	case "list":
-		owner := map[string]any{"source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "actor_id": "u"}
+		owner := map[string]any{"source_protocol": "onebot11", "bot_id": "bot", "actor_id": "u"}
 		return map[string]any{"items": []any{map[string]any{"ref": "account", "owner": owner, "account_label": "旅行者", "roles": []any{testRole}, "status": "valid", "cloud_configured": []any{"genshin"}}}, "default_roles": map[string]any{}, "uid_bindings": map[string]any{}}, ""
 	case "roles":
 		return map[string]any{"roles": []any{testRole}}, ""

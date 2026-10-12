@@ -356,13 +356,6 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 	ref := "game.content." + a.Game.ID + "." + hex.EncodeToString(sum[:16])
 	created, emptied := false, false
 	err := a.Subscriptions.edit(ref, func(items *[]ContentSubscription, i int) error {
-		// Existing scheduler IDs are opaque handles, not account identities.
-		i = slices.IndexFunc(*items, func(v ContentSubscription) bool {
-			return v.Owner.SourceProtocol == owner.SourceProtocol && v.Owner.BotID == owner.BotID && v.GroupID == event.Event.Target.ID
-		})
-		if i >= 0 {
-			ref = (*items)[i].Ref
-		}
 		if i < 0 {
 			if !on {
 				return nil

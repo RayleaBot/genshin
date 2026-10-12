@@ -8,7 +8,7 @@ import (
 
 func TestRankKeepsOneEntryPerUIDAndCharacter(t *testing.T) {
 	store := &GroupStore{Directory: t.TempDir()}
-	scope := GroupScope{Protocol: "onebot11", Adapter: "adapter", BotID: "bot", GroupID: "group"}
+	scope := GroupScope{Protocol: "onebot11", BotID: "bot", GroupID: "group"}
 	base := RankEntry{ActorID: "user1", UID: "100000001", CharacterID: "10000046", Score: 100, Panel: &CharacterPanel{ID: "10000046"}, UpdatedAtMS: 5}
 	var wg sync.WaitGroup
 	for range 6 {

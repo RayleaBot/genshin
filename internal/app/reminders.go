@@ -338,7 +338,7 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 			if err = client.call(ctx, "execute", params, &result); err != nil {
 				return result, err
 			}
-			_, err = a.Monthly.Save(task.Provider, task.Selection, archive.Revision, result.Data, time.Now(), task.Owner)
+			_, err = a.Monthly.Save(task.Provider, task.Selection, archive.Revision, result.Data, time.Now())
 			return result, err
 		}
 		err := client.call(ctx, "execute", params, &result)

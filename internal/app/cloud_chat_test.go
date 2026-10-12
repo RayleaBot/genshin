@@ -93,7 +93,7 @@ func TestPanelDataRefusalFollowsArkPermission(t *testing.T) {
 // ark绑定 sends ark only the UID; ark验证 adds the sender's QQ, which only a
 // OneBot11 QQ user has. The replies are ark-plugin's.
 func TestArkVerifyFollowsArkPlugin(t *testing.T) {
-	qq := Subject{SourceProtocol: "onebot11", SourceAdapter: "fixture", BotID: "10000", ActorID: "10001"}
+	qq := Subject{SourceProtocol: "onebot11", BotID: "10000", ActorID: "10001"}
 	route, body, refusal := arkVerifyRequest("cloud-bind", "100000001", Subject{SourceProtocol: "qq_official", ActorID: "open-id"})
 	if route != "verify/code" || refusal != "" || body["uid"] != "100000001" || body["type"] != arkGame || body["qq"] != nil {
 		t.Fatalf("bind: %s %v %q", route, body, refusal)

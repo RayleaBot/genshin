@@ -32,7 +32,6 @@ import InteractionSettings from './InteractionSettings.vue'
 import GuidesPanel from './GuidesPanel.vue'
 import EnemyCalculator from './EnemyCalculator.vue'
 import BlueprintCalculator from './BlueprintCalculator.vue'
-import HistoricalRecords from './HistoricalRecords.vue'
 import ContentSubscriptions from './ContentSubscriptions.vue'
 
 interface Operation { name: string; label: string; command: string; input: string }
@@ -86,7 +85,6 @@ const regions = [{ id: 'cn_gf01', name: '国服天空岛' }, { id: 'cn_qd01', na
 const selectedImport = computed(() => imported.value[importIndex.value])
 
 async function invoke<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> { return await host.client.invokeAction(action, payload) as unknown as T }
-async function apiRequest<T>(path: string): Promise<T> { return host.client.apiRequest<T>('GET', path) }
 async function run(work: () => Promise<void>, success = '') {
   if (busy.value) return
   busy.value = true; error.value = ''; notice.value = ''
@@ -235,7 +233,6 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
     <p v-if="notice" class="feedback" role="status">{{ notice }}</p>
     <p v-if="!game" class="empty">正在读取插件资料… <button :disabled="busy" @click="run(load)">重新连接</button></p>
     <template v-else>
-      <p v-if="host.bot.value" class="hint">当前机器人：{{ host.bot.value.nickname || host.bot.value.bot_id }} · {{ host.bot.value.bot_id }} · {{ host.bot.value.state === 'online' ? '在线' : host.bot.value.state === 'offline' ? '离线' : '无连接' }}</p>
       <p v-if="accountIssue && !['overview','signin','growth','history','reminders'].includes(page)" class="feedback attention" role="alert">{{ accountIssue }}</p>
       <template v-if="page === 'overview'">
         <section aria-labelledby="query-heading"><div class="section-heading"><h2 id="query-heading">游戏查询</h2><button :disabled="busy" @click="run(() => loadAccounts())">刷新账号</button></div>
@@ -264,7 +261,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
       <template v-else-if="page === 'content'"><p class="hint">群推送在“群设置与排行”中。</p><PublicContent :prefix="game.prefix" :invoke="invoke"/></template>
       <template v-else-if="page === 'collections'"><CollectionsPanel :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'statistics'"><p class="hint">本人配队在“游戏查询”中。</p><PublicStatistics :roles="[]" :invoke="invoke"/></template>
-      <template v-else-if="page === 'help'"><HelpPanel :invoke="invoke"/><HistoricalRecords :invoke="invoke" :api-request="apiRequest"/></template>
+      <template v-else-if="page === 'help'"><HelpPanel :invoke="invoke"/></template>
       <template v-else-if="page === 'media'"><p class="hint">互动偏好在“提醒与收集”中。</p><ArtworkPanel :prefix="game.prefix" :invoke="invoke"/><MediaLibrary :prefix="game.prefix" :invoke="invoke"/></template>
       <template v-else-if="page === 'guides'"><p class="hint">尘歌壶材料计算在“养成计算”中。</p><GuidesPanel :invoke="invoke"/><EnemyCalculator :invoke="invoke"/></template>
       <template v-else-if="page === 'assets'"><CodesPanel :roles="roleOptions" :invoke="invoke"/><BillingRecords :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>

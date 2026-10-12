@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 	"sync"
 	"testing"
@@ -40,7 +39,6 @@ func TestManagementGroupsFilterBeforePaginationAndMergeAccountWrites(t *testing.
 			}
 		}
 	}
-	writeLegacyGroup(t, a.Groups, "gone", "", GroupData{})
 	for page, want := range []int{50, 2} {
 		out, err := a.Manage(t.Context(), managementEvent("onebot11", "a"), "groups.list", map[string]any{"page": page})
 		if err != nil {
@@ -86,7 +84,7 @@ func TestManagementOwnedListsAndMutations(t *testing.T) {
 	a := pluginApp(t)
 	owner := func(id string) Subject { return Subject{SourceProtocol: "onebot11", BotID: id, ActorID: "u"} }
 	reminders := []Reminder{}
-	for _, id := range []string{"a", "b", ""} {
+	for _, id := range []string{"a", "b"} {
 		for _, kind := range []string{"", "signin", "monthly", "challenge", "community", "cloudgame"} {
 			reminders = append(reminders, Reminder{Ref: id + ":" + kind, Kind: kind, Owner: owner(id)})
 		}
@@ -107,13 +105,13 @@ func TestManagementOwnedListsAndMutations(t *testing.T) {
 	if _, err := a.Manage(t.Context(), managementEvent("onebot11", "a"), "reminder.remove", map[string]any{"ref": "b:"}); err == nil {
 		t.Fatal("removed another account's reminder")
 	}
-	if err := localdata.Write(a.Subscriptions.Path, []ContentSubscription{{Ref: "a", Owner: owner("a")}, {Ref: "b", Owner: owner("b")}, {Ref: "legacy", Owner: owner("")}}); err != nil {
+	if err := localdata.Write(a.Subscriptions.Path, []ContentSubscription{{Ref: "a", Owner: owner("a")}, {Ref: "b", Owner: owner("b")}}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := a.Manage(t.Context(), managementEvent("onebot11", "a"), "content.subscription.remove", map[string]any{"ref": "b", "confirm": true}); err == nil {
 		t.Fatal("removed another account's subscription")
 	}
-	profiles := []InteractionProfile{{Ref: "a", Owner: owner("a")}, {Ref: "b", Owner: owner("b")}, {Ref: "legacy", Owner: owner("")}}
+	profiles := []InteractionProfile{{Ref: "a", Owner: owner("a")}, {Ref: "b", Owner: owner("b")}}
 	if err := localdata.Write(a.Interactions.Path, profiles); err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +122,7 @@ func TestManagementOwnedListsAndMutations(t *testing.T) {
 		t.Fatal(err)
 	}
 	kept, _ := a.Interactions.List()
-	if len(kept) != 2 || kept[0].Ref != "b" || kept[1].Ref != "legacy" {
+	if len(kept) != 1 || kept[0].Ref != "b" {
 		t.Fatal("other preferences lost", kept)
 	}
 	if err := a.SyncTasks.edit("b", func(items *[]SyncTask, _ int) error {
@@ -148,59 +146,6 @@ func TestManagementOwnedListsAndMutations(t *testing.T) {
 	}
 	if a.BackgroundSyncs.list()[0].State != "running" {
 		t.Fatal("round changed")
-	}
-}
-
-func TestHistoricalRecordsKeepOtherAccountsAndRejectReassignment(t *testing.T) {
-	a := pluginApp(t)
-	path := writeLegacyGroup(t, a.Groups, "deleted", "", GroupData{Config: GroupConfig{Aliases: map[string]string{"old": "1001"}}})
-	source := a.historicalSources()[0]
-	rows, err := source.records()
-	if err != nil || len(rows) != 1 {
-		t.Fatal(rows, err)
-	}
-	row := rows[0]
-	if !row.Assignable || row.BotID != "" {
-		t.Fatal(row)
-	}
-	other := GroupScope{Protocol: "onebot11", BotID: "other", GroupID: "group"}
-	if err := a.Groups.Update(other, func(g *GroupData) error { g.Config.Aliases["keep"] = "1002"; return nil }); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = a.editHistoricalRecord(source, row.Ref, row.Revision, rayleabot.BotAccount{SourceProtocol: "onebot11", BotID: "a"}); err != nil {
-		t.Fatal(err)
-	}
-	current, _ := a.Groups.Read(GroupScope{Protocol: "onebot11", BotID: "a", GroupID: "group"})
-	untouched, _ := a.Groups.Read(other)
-	if current.Config.Aliases["old"] != "1001" || untouched.Config.Aliases["keep"] != "1002" {
-		t.Fatal(current, untouched)
-	}
-	if _, err = a.editHistoricalRecord(source, row.Ref, row.Revision, rayleabot.BotAccount{}); err == nil {
-		t.Fatal("stale ref accepted")
-	}
-	rows, _ = source.records()
-	for _, row := range rows {
-		if row.Assignable {
-			t.Fatal("complete account can be reassigned")
-		}
-		if _, err = a.editHistoricalRecord(source, row.Ref, row.Revision, rayleabot.BotAccount{SourceProtocol: "onebot11", BotID: "changed"}); err == nil {
-			t.Fatal("reassigned a complete account")
-		}
-	}
-	var old any
-	if err := localdata.Read(path+".migrated", &old); err != nil {
-		t.Fatal(err)
-	}
-	legacyQQ := map[string]any{"scope": map[string]any{"source_protocol": "qqofficial", "bot_id": "", "group_id": "opaque"}, "config": map[string]any{}}
-	qqRef := historicalRevision(legacyQQ)
-	if err := localdata.Write(filepath.Join(a.Groups.Directory, qqRef+".json"), legacyQQ); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = a.editHistoricalRecord(source, qqRef, historicalRevision(legacyQQ), rayleabot.BotAccount{SourceProtocol: "onebot11", BotID: "a"}); err == nil {
-		t.Fatal("QQ official record was reassigned")
-	}
-	if _, err = a.editHistoricalRecord(source, qqRef, historicalRevision(legacyQQ), rayleabot.BotAccount{}); err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -264,47 +209,5 @@ func TestManagementServiceDenialIsReturnedWithoutUnscopedRetry(t *testing.T) {
 	result, _ = h.manage("billing.sync.cancel", map[string]any{"ref": "billing"})
 	if result["code"] != "plugin.account_subject_denied" || a.BillingJobs.items["billing"] == nil {
 		t.Fatal("denied cancellation changed billing job", result)
-	}
-}
-
-func TestHistoricalAccountArchivesAndQQRecovery(t *testing.T) {
-	a := pluginApp(t)
-	owner := Subject{SourceProtocol: "qqofficial", BotID: "opaque-bot"}
-	choice := Selection{AccountRef: "account", RoleRef: "role"}
-	if _, err := a.PanelHistory.Save("provider", choice, "v1", CharacterPanel{ID: "1", Name: "character"}, owner); err != nil {
-		t.Fatal(err)
-	}
-	if err := a.CloudArchive.Update("provider", choice, 0, Role{UID: "100000001", Region: "cn_gf01"}, nil, false, owner); err != nil {
-		t.Fatal(err)
-	}
-	if err := a.Billing.Write("provider", choice, 0, BillingArchive{Category: "crystal", Direction: "all", Owner: owner}); err != nil {
-		t.Fatal(err)
-	}
-	if err := localdata.Write(a.Monthly.file("provider", choice), MonthlyArchive{Owner: owner}); err != nil {
-		t.Fatal(err)
-	}
-	for _, source := range a.historicalSources() {
-		if !slices.Contains([]string{"panel_history", "monthly", "billing", "cloud_archive"}, source.kind) {
-			continue
-		}
-		rows, err := source.records()
-		if err != nil || len(rows) != 1 || rows[0].BotID != owner.BotID || rows[0].SourceProtocol != owner.SourceProtocol || rows[0].Assignable {
-			t.Fatal(source.kind, rows, err)
-		}
-		row := rows[0]
-		if _, err = source.view(map[string]any{"ref": row.Ref, "revision": row.Revision}); err != nil {
-			t.Fatal(err)
-		}
-		if _, err = a.editHistoricalRecord(source, row.Ref, row.Revision, rayleabot.BotAccount{}); err != nil {
-			t.Fatal(err)
-		}
-		if rows, err = source.records(); err != nil || len(rows) != 0 {
-			t.Fatal(rows, err)
-		}
-	}
-	legacy := map[string]any{"source_protocol": "qqofficial", "source_adapter": "relogged", "bot_id": "", "actor_id": "openid"}
-	changed, pending := recoverAddresses(legacy, []rayleabot.Bot{{SourceProtocol: "qqofficial", SourceAdapter: "relogged", ID: "new-bot"}})
-	if changed || pending != 1 || legacy["bot_id"] != "" {
-		t.Fatal("QQ openid rebound by adapter", legacy)
 	}
 }

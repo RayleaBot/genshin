@@ -117,18 +117,6 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 	}
 	owner := chatOwner(event)
 	ref := notePushRef(a.Game.ID, owner)
-	// Delegations are bound to scheduler IDs; keep the old handle when an
-	// adapter was replaced, but find that handle only by the account subject.
-	tasks, err := a.Reminders.List()
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	for _, task := range tasks {
-		if task.Kind == notePushKind && task.Owner.same(owner) {
-			ref = task.Ref
-			break
-		}
-	}
 	if len(args) > 0 && args[0] == "关闭" {
 		if group.NotePush.Off {
 			return event.SendText("群体力推送关闭了~\n请联系管理员开启功能~")

@@ -251,7 +251,6 @@ type fullLinks struct {
 }
 
 func (f *fullLinks) set(owner Subject, on bool) {
-	owner = owner.account()
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.until == nil {
@@ -264,7 +263,6 @@ func (f *fullLinks) set(owner Subject, on bool) {
 }
 
 func (f *fullLinks) active(owner Subject) bool {
-	owner = owner.account()
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return time.Now().Before(f.until[owner])

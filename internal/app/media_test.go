@@ -118,7 +118,7 @@ func TestWebPDimensionsAndInvalidContainer(t *testing.T) {
 
 func TestPokeClaimHonorsReplayAndCooldown(t *testing.T) {
 	s := &InteractionStore{Path: filepath.Join(t.TempDir(), "interaction.json")}
-	owner := Subject{"onebot11", "adapter", "bot", "actor"}
+	owner := Subject{"onebot11", "bot", "actor"}
 	now := time.Now().UnixMilli()
 	yes, err := s.claimPoke(owner, "event", now)
 	if err != nil || !yes {

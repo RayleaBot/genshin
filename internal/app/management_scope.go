@@ -76,10 +76,10 @@ func managementInput(event *rayleabot.EventContext, action string, input map[str
 	}
 	if strings.HasPrefix(action, "groups.") && action != "groups.list" || action == "challenge.list" || action == "challenge.clear" || strings.HasPrefix(action, "cards.group.") {
 		var scope GroupScope
-		if decodeObject(input["scope"], &scope) != nil || scope.GroupID == "" || input["legacy_ref"] != nil {
-			return nil, managementInvalid("请提供群 ID；历史记录请在历史数据与归属中处理。")
+		if decodeObject(input["scope"], &scope) != nil || scope.GroupID == "" {
+			return nil, managementInvalid("请提供群 ID。")
 		}
-		scope.Protocol, scope.BotID, scope.Adapter = bot.SourceProtocol, bot.BotID, ""
+		scope.Protocol, scope.BotID = bot.SourceProtocol, bot.BotID
 		input["scope"] = scope
 	}
 	return input, nil

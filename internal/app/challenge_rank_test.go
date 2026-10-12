@@ -50,7 +50,7 @@ func TestChallengeScoresSeparatePeriodsAndMissingMetrics(t *testing.T) {
 func TestChallengeGroupPaginationRestartWithdrawalAndRevision(t *testing.T) {
 	dir := t.TempDir()
 	s := &GroupStore{Directory: filepath.Join(dir, "groups")}
-	scope := GroupScope{"onebot11", "a", "bot", "group"}
+	scope := GroupScope{"onebot11", "bot", "group"}
 	now := time.Now().UnixMilli()
 	for i := 0; i < 23; i++ {
 		e := ChallengeEntry{Kind: "abyss", Season: "12", Region: "cn_gf01", ActorID: fmt.Sprint(i), UID: fmt.Sprint(10000000 + i), Metrics: map[string]float64{"floor": 12, "star": float64(i)}, FirstMS: now, UpdatedMS: now}

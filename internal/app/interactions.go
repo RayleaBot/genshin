@@ -36,7 +36,7 @@ type InteractionStore struct {
 }
 
 func interactionRef(owner Subject) string {
-	raw, _ := json.Marshal(owner.account())
+	raw, _ := json.Marshal(owner)
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }

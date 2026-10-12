@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"slices"
 
@@ -11,37 +10,11 @@ import (
 
 type Subject struct {
 	SourceProtocol string `json:"source_protocol"`
-	// SourceAdapter is retained only while an old record lacks BotID.
-	SourceAdapter string `json:"source_adapter,omitempty"`
-	BotID         string `json:"bot_id"`
-	ActorID       string `json:"actor_id"`
+	BotID          string `json:"bot_id"`
+	ActorID        string `json:"actor_id"`
 }
 
-func (s Subject) account() Subject {
-	s.SourceAdapter = ""
-	return s
-}
-
-func (s Subject) same(other Subject) bool { return s.account() == other.account() }
-
-func (s *Subject) UnmarshalJSON(raw []byte) error {
-	type stored Subject
-	if err := json.Unmarshal(raw, (*stored)(s)); err != nil {
-		return err
-	}
-	if s.BotID != "" {
-		s.SourceAdapter = ""
-	}
-	return nil
-}
-
-func (s Subject) MarshalJSON() ([]byte, error) {
-	type stored Subject
-	if s.BotID != "" {
-		s.SourceAdapter = ""
-	}
-	return json.Marshal(stored(s))
-}
+func (s Subject) same(other Subject) bool { return s == other }
 
 func accountOnline(bots []rayleabot.Bot, protocol, id string) bool {
 	return id != "" && slices.ContainsFunc(bots, func(bot rayleabot.Bot) bool {
@@ -90,7 +63,7 @@ type AccountsClient struct {
 	Caller   ServiceCaller
 	Provider string
 	Game     string
-	owner    Subject // Local archive provenance; never included in plugin.call params.
+	owner    Subject // Cloud job ownership checks; never included in plugin.call params.
 }
 
 func (c AccountsClient) call(ctx context.Context, method string, params map[string]any, out any) error {
