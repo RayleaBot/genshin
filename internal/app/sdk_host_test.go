@@ -40,6 +40,8 @@ type sdkHost struct {
 	// busy refuses event.detach as the host does while the plugin holds its
 	// limit of background events.
 	busy bool
+	// renderFailure overrides the default render.image failure code.
+	renderFailure string
 	// deadline is how long an event may take, the host's default when zero;
 	// due is when the last event sent is due.
 	deadline time.Duration
@@ -197,6 +199,9 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		// The host's default background deadline is 900 seconds.
 		return map[string]any{"deadline_at_ms": time.Now().Add(15 * time.Minute).UnixMilli()}, ""
 	case "render.image":
+		if h.renderFailure != "" {
+			return nil, h.renderFailure
+		}
 		return nil, "platform.render_unavailable"
 	case "logger.write":
 		return map[string]any{}, ""

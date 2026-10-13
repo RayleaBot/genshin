@@ -1134,8 +1134,8 @@ func friendlyError(err error) string {
 }
 
 // sendView replies with the view's own template when it has one, then with
-// the generic summary card, and with text when image replies are off or both
-// renders fail.
+// the generic summary card, and with text when image replies are off or
+// rendering fails or stops.
 func (a *App) sendView(ctx context.Context, event *rayleabot.EventContext, view View) error {
 	if path := a.renderView(ctx, event, view); path != "" {
 		return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image(path))
@@ -1179,10 +1179,18 @@ func renderImage(ctx context.Context, host imageRenderer, images bool, view View
 	_ = decodeObject(view, &data)
 	requests = append(requests, rayleabot.RenderImageRequest{Template: "summary", Output: "png", FallbackText: text, Data: data})
 	for _, request := range requests {
-		if result, err := host.RenderImage(ctx, request); err == nil {
+		result, err := host.RenderImage(ctx, request)
+		if err == nil {
 			if path := asText(result["image_path"]); path != "" {
 				return path
 			}
+			continue
+		}
+		// A render out of time or turned away by a full queue leaves no time
+		// for the fallback template; the caller replies with text instead.
+		var failure *rayleabot.ActionError
+		if ctx.Err() != nil || errors.As(err, &failure) && (failure.Code == "platform.render_timeout" || failure.Code == "platform.render_queue_full") {
+			return ""
 		}
 	}
 	return ""
