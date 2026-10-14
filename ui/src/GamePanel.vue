@@ -265,7 +265,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
       <template v-else-if="page === 'media'"><p class="hint">互动偏好在“提醒与收集”中。</p><ArtworkPanel :prefix="game.prefix" :invoke="invoke"/><MediaLibrary :prefix="game.prefix" :invoke="invoke"/></template>
       <template v-else-if="page === 'guides'"><p class="hint">尘歌壶材料计算在“养成计算”中。</p><GuidesPanel :invoke="invoke"/><EnemyCalculator :invoke="invoke"/></template>
       <template v-else-if="page === 'assets'"><CodesPanel :roles="roleOptions" :invoke="invoke"/><BillingRecords :roles="roleOptions" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
-      <template v-else-if="page === 'community'"><CommunityPanel :accounts="accounts" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多社区账号</button></template>
+      <template v-else-if="page === 'community'"><CommunityPanel :accounts="accounts" :invoke="invoke"/><button v-if="nextAccountPage!==null" :disabled="busy" @click="run(()=>loadAccounts(nextAccountPage!))">更多账号</button></template>
       <template v-else-if="page === 'cloud'">
         <CloudQueries :invoke="invoke" :prefix="game.prefix" />
       </template>

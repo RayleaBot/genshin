@@ -411,7 +411,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "cloud-game-stop" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "cloud-game-progress" && command != "cloud-game-stop" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -462,11 +462,11 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.challengeCommand(ctx, event, command, args)
 	case "gacha-background":
 		return a.syncTaskCommand(ctx, event, args)
-	case "community-progress":
-		return a.communityProgress(ctx, event)
-	case "community-task", "community-stop", "cloud-game-task", "cloud-game-stop":
-		return a.accountTaskCommand(ctx, event, command, args)
-	case "community-status", "community-sign", "cloud-game-status", "cloud-game-sign":
+	case "cloud-game-progress":
+		return a.cloudGameProgress(ctx, event)
+	case "cloud-game-task", "cloud-game-stop":
+		return a.cloudGameTaskCommand(ctx, event, command, args)
+	case "community-sign", "cloud-game-status", "cloud-game-sign":
 		return a.communityCommand(ctx, event, command, args)
 	case "signin-task":
 		return a.signinTaskCommand(ctx, event, args)
@@ -978,10 +978,10 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		if strings.HasPrefix(action, "artwork.") {
 			return a.artworkAction(action, input)
 		}
-		if strings.HasPrefix(action, "community.task.") || strings.HasPrefix(action, "cloudgame.task.") {
+		if strings.HasPrefix(action, "cloudgame.task.") {
 			return a.signinTask(ctx, event, action, input)
 		}
-		if strings.HasPrefix(action, "community.") || strings.HasPrefix(action, "cloudgame.") {
+		if action == "community.sign" || strings.HasPrefix(action, "cloudgame.") {
 			return a.communityAction(ctx, a.accountClient(event), action, input)
 		}
 		if strings.HasPrefix(action, "simulation.") {

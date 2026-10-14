@@ -100,9 +100,6 @@ func TestSchedulerTriggersReachTheirAccountTasks(t *testing.T) {
 		{"每日月报收集", "game.monthly.", "genshin.monthly", func(h *sdkHost) {
 			h.manage("monthly.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 20, "confirm": true})
 		}, true},
-		{"米游社任务", "game.community.", "genshin.community_run", func(h *sdkHost) {
-			h.manage("community.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "read": true, "confirm": true})
-		}, false},
 		{"云游戏签到", "game.cloudgame.", "genshin.cloud_sign", func(h *sdkHost) {
 			h.manage("cloudgame.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "confirm": true})
 		}, false},
@@ -196,9 +193,6 @@ func TestRemovingATaskDeletesItsJob(t *testing.T) {
 		{"每日月报收集", "game.monthly.", func(h *sdkHost) {
 			h.manage("monthly.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 20, "confirm": true})
 		}, func(h *sdkHost) { h.manage("monthly.task.remove", ref(h, "game.monthly.")) }},
-		{"米游社任务", "game.community.", func(h *sdkHost) {
-			h.manage("community.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "read": true, "confirm": true})
-		}, func(h *sdkHost) { h.manage("community.task.remove", ref(h, "game.community.")) }},
 		{"云游戏签到", "game.cloudgame.", func(h *sdkHost) {
 			h.manage("cloudgame.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "confirm": true})
 		}, func(h *sdkHost) { h.manage("cloudgame.task.remove", ref(h, "game.cloudgame.")) }},

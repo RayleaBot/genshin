@@ -14,16 +14,15 @@ import (
 )
 
 type Reminder struct {
-	Once          bool          `json:"once,omitempty"`
-	Community     CommunityPlan `json:"community,omitempty"`
-	ChallengeKind string        `json:"challenge_kind,omitempty"`
-	Metric        string        `json:"metric,omitempty"`
-	Minute        int           `json:"minute,omitempty"`
-	Weekday       int           `json:"weekday,omitempty"`
-	Kind          string        `json:"kind,omitempty"`
-	Hour          int           `json:"hour,omitempty"`
-	Notify        bool          `json:"notify,omitempty"`
-	LastSignDay   string        `json:"last_sign_day,omitempty"`
+	Once          bool   `json:"once,omitempty"`
+	ChallengeKind string `json:"challenge_kind,omitempty"`
+	Metric        string `json:"metric,omitempty"`
+	Minute        int    `json:"minute,omitempty"`
+	Weekday       int    `json:"weekday,omitempty"`
+	Kind          string `json:"kind,omitempty"`
+	Hour          int    `json:"hour,omitempty"`
+	Notify        bool   `json:"notify,omitempty"`
+	LastSignDay   string `json:"last_sign_day,omitempty"`
 	// Groups are the groups a 体力推送 task pushes to, in the order entered.
 	Groups []GroupScope `json:"groups,omitempty"`
 	Ref    string       `json:"ref"`
@@ -161,14 +160,14 @@ func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext,
 
 // reminderLabels name the reminders and account tasks by kind; a job's log
 // label is the game's name and its task's.
-var reminderLabels = map[string]string{"": "体力提醒", notePushKind: "体力推送", "signin": "每日签到", "monthly": "每日月报收集", "community": "米游社任务", "cloudgame": "云游戏签到"}
+var reminderLabels = map[string]string{"": "体力提醒", notePushKind: "体力推送", "signin": "每日签到", "monthly": "每日月报收集", "cloudgame": "云游戏签到"}
 
 // reminderJob is the scheduler job of a saved reminder or account task: the
 // schedule of its kind and its log label.
 func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
 	cron, label := "*/10 * * * *", reminderLabels[task.Kind]
 	switch task.Kind {
-	case "community", "cloudgame":
+	case "cloudgame":
 		cron = "* * * * *"
 	case "challenge":
 		challenge, _ := challengeKind(task.ChallengeKind)
@@ -239,8 +238,6 @@ func (s *ReminderStore) run(task *Reminder, now int64, query func(Reminder) (Que
 		return s.save(*task)
 	}
 	switch task.Kind {
-	case "community":
-		return s.tickCommunity(task, now, query, send, game)
 	case "cloudgame":
 		return s.tickCloudGame(task, now, query, send, game)
 	case "monthly":
@@ -314,16 +311,6 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) er
 				return result, gameError("input_invalid", "挑战任务玩法无效。")
 			}
 			params["operation"] = kind.Operation
-		}
-		if task.Kind == "community" {
-			params["operation"] = a.Game.ID + ".community_run"
-			params["write_confirmed"] = true
-			step := task.Community.Steps[task.Community.Cursor]
-			value := map[string]any{"action": step.Action}
-			if step.PostID != "" {
-				value["post_id"] = step.PostID
-			}
-			params["input"] = value
 		}
 		if task.Kind == "cloudgame" {
 			params["operation"] = a.Game.ID + ".cloud_sign"

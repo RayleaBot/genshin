@@ -18,7 +18,7 @@ func managementEvent(protocol, id string) *rayleabot.EventContext {
 
 func TestManagementRequiresHostAccount(t *testing.T) {
 	a := &App{}
-	for _, action := range []string{"accounts.list", "accounts.select", "query", "groups.list", "groups.set", "challenge.clear", "cards.group.remove", "reminder.list", "reminder.create", "signin.task.remove", "monthly.list", "community.task.create", "cloudgame.status", "content.subscription.remove", "interaction.remove", "gacha.task.list", "gacha.sync.cancel", "panel.history.get", "billing.sync.cancel", "cloud.archive.export.close", "cloud.poll", "statistics.teams", "blueprint.compute", "growth.prepare"} {
+	for _, action := range []string{"accounts.list", "accounts.select", "query", "groups.list", "groups.set", "challenge.clear", "cards.group.remove", "reminder.list", "reminder.create", "signin.task.remove", "monthly.list", "community.sign", "cloudgame.status", "content.subscription.remove", "interaction.remove", "gacha.task.list", "gacha.sync.cancel", "panel.history.get", "billing.sync.cancel", "cloud.archive.export.close", "cloud.poll", "statistics.teams", "blueprint.compute", "growth.prepare"} {
 		t.Run(action, func(t *testing.T) {
 			event := managementEvent("onebot11", "")
 			delete(event.Event.Payload, "bot")
@@ -85,14 +85,14 @@ func TestManagementOwnedListsAndMutations(t *testing.T) {
 	owner := func(id string) Subject { return Subject{SourceProtocol: "onebot11", BotID: id, ActorID: "u"} }
 	reminders := []Reminder{}
 	for _, id := range []string{"a", "b"} {
-		for _, kind := range []string{"", "signin", "monthly", "challenge", "community", "cloudgame"} {
+		for _, kind := range []string{"", "signin", "monthly", "challenge", "cloudgame"} {
 			reminders = append(reminders, Reminder{Ref: id + ":" + kind, Kind: kind, Owner: owner(id)})
 		}
 	}
 	if err := seedReminders(a.Reminders, reminders); err != nil {
 		t.Fatal(err)
 	}
-	for _, action := range []string{"reminder.list", "signin.task.list", "monthly.task.list", "challenge.reminder.list", "community.task.list", "cloudgame.task.list"} {
+	for _, action := range []string{"reminder.list", "signin.task.list", "monthly.task.list", "challenge.reminder.list", "cloudgame.task.list"} {
 		out, err := a.Manage(t.Context(), managementEvent("onebot11", "a"), action, map[string]any{})
 		if err != nil {
 			t.Fatal(err)

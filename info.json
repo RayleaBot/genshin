@@ -712,33 +712,17 @@
       }
     },
     {
-      "id": "community-status",
-      "name": "米游币查询",
-      "description": "查询社区米游币与任务",
-      "usage": "#米游币查询",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "米游币查询",
-          "米币查询",
-          "米游币"
-        ]
-      }
-    },
-    {
       "id": "community-sign",
       "name": "米游社原神签到",
-      "description": "显式为所选账号在本游戏社区签到",
-      "usage": "#米游社原神签到",
+      "description": "为所选账号在米游社原神版块签到，不写账号序号时用第 1 个账号",
+      "usage": "#米游社原神签到 [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
           "米游社原神签到",
           "mys原神签到",
-          "社区原神签到",
-          "社区签到"
+          "社区原神签到"
         ]
       }
     },
@@ -746,7 +730,7 @@
       "id": "cloud-game-status",
       "name": "云原神查询",
       "description": "查看最近云钱包快照",
-      "usage": "#云原神查询",
+      "usage": "#云原神查询 [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -760,7 +744,7 @@
       "id": "cloud-game-sign",
       "name": "云原神签到",
       "description": "显式查询钱包并领取可能发放的时长",
-      "usage": "#云原神签到",
+      "usage": "#云原神签到 [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -771,50 +755,10 @@
       }
     },
     {
-      "id": "community-task",
-      "name": "社区任务",
-      "description": "开启米游社签到与米游币任务（一次或每天）",
-      "usage": "#社区任务 一次/每天 签到/全部 [账号序号]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "社区任务"
-        ]
-      }
-    },
-    {
-      "id": "community-stop",
-      "name": "关闭社区任务",
-      "description": "关闭本人的米游社任务",
-      "usage": "#关闭社区任务 ",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "关闭社区任务"
-        ]
-      }
-    },
-    {
-      "id": "community-progress",
-      "name": "社区任务进度",
-      "description": "查看本人社区与云游戏任务的进度",
-      "usage": "#社区任务进度",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "社区任务进度",
-          "米游币任务进度"
-        ]
-      }
-    },
-    {
       "id": "cloud-game-task",
       "name": "云游戏任务",
       "description": "开启云游戏签到任务（一次或每天）",
-      "usage": "#云游戏任务 一次/每天 [账号序号]",
+      "usage": "#云游戏任务 <一次|每天> [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -827,12 +771,25 @@
       "id": "cloud-game-stop",
       "name": "关闭云游戏任务",
       "description": "关闭本人的云游戏任务",
-      "usage": "#关闭云游戏任务 ",
+      "usage": "#关闭云游戏任务",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
           "关闭云游戏任务"
+        ]
+      }
+    },
+    {
+      "id": "cloud-game-progress",
+      "name": "云游戏任务进度",
+      "description": "查看本人云游戏任务的账号、执行时间、上次结果、下次执行与到期时间",
+      "usage": "#云游戏任务进度",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "云游戏任务进度"
         ]
       }
     },
@@ -1988,22 +1945,12 @@
     },
     {
       "id": "signin",
-      "title": "游戏签到",
+      "title": "签到",
       "commands": [
         "signin",
         "signin-status",
-        "signin-task"
-      ]
-    },
-    {
-      "id": "community",
-      "title": "米游社任务",
-      "commands": [
-        "community-status",
-        "community-sign",
-        "community-task",
-        "community-stop",
-        "community-progress"
+        "signin-task",
+        "community-sign"
       ]
     },
     {
@@ -2013,7 +1960,8 @@
         "cloud-game-status",
         "cloud-game-sign",
         "cloud-game-task",
-        "cloud-game-stop"
+        "cloud-game-stop",
+        "cloud-game-progress"
       ]
     },
     {

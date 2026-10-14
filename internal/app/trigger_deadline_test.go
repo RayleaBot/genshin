@@ -49,9 +49,6 @@ func TestAccountTaskCutByItsEventIsReadAgain(t *testing.T) {
 		{"每日月报收集", "game.monthly.", "genshin.monthly", func(h *sdkHost) {
 			h.manage("monthly.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "days": 30, "hour": 20, "confirm": true})
 		}, true},
-		{"米游社任务", "game.community.", "genshin.community_run", func(h *sdkHost) {
-			h.manage("community.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "read": true, "confirm": true})
-		}, false},
 		{"云游戏签到", "game.cloudgame.", "genshin.cloud_sign", func(h *sdkHost) {
 			h.manage("cloudgame.task.create", map[string]any{"account_ref": "account", "days": 30, "once": true, "confirm": true})
 		}, false},
@@ -64,7 +61,7 @@ func TestAccountTaskCutByItsEventIsReadAgain(t *testing.T) {
 			start := time.Unix(1_800_000_000, 0)
 			clock := &fakeClock{at: start}
 			a.clock = clock
-			accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}, "genshin.sign": {"signed": true, "outcome": "signed"}, "genshin.community_run": {"can_get_points": "0"}}}
+			accounts := &fakeAccounts{t: t, data: map[string]map[string]any{"genshin.note": {"current_resin": 160, "max_resin": 200}, "genshin.sign": {"signed": true, "outcome": "signed"}}}
 			var host *sdkHost
 			host = newSDKHost(t, a, nil, cutFirstRead(&host, accounts))
 			c.create(host)
@@ -78,7 +75,7 @@ func TestAccountTaskCutByItsEventIsReadAgain(t *testing.T) {
 				t.Fatalf("the cut trigger ended with %v", end)
 			}
 			tasks, _ := a.Reminders.List()
-			if len(tasks) != 1 || !tasks[0].Enabled || tasks[0].LastCode != "" && tasks[0].LastCode != "plugin.game_task_unfinished" || tasks[0].Community.State == "failed" {
+			if len(tasks) != 1 || !tasks[0].Enabled || tasks[0].LastCode != "" && tasks[0].LastCode != "plugin.game_task_unfinished" {
 				t.Fatalf("after the cut trigger: %+v", tasks)
 			}
 			clock.set(start.Add(3 * time.Minute))

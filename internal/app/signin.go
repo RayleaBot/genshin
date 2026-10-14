@@ -27,7 +27,7 @@ func (a *App) signinAction(ctx context.Context, client AccountsClient, action st
 	if err != nil {
 		return nil, err
 	}
-	view := View{Title: a.Game.Name + "游戏签到", Subtitle: result.Role.Nickname + " · " + result.Role.UID, Rows: []Row{}, Note: "来源：米游社官方游戏签到；不包含社区米游币和云游戏任务。"}
+	view := View{Title: a.Game.Name + "游戏签到", Subtitle: result.Role.Nickname + " · " + result.Role.UID, Rows: []Row{}, Note: "来源：米游社官方游戏签到；不包含米游社版块签到、米游币与云游戏任务。"}
 	if action == "signin.rewards" {
 		for i, raw := range asList(result.Data["awards"]) {
 			award := asObject(raw)
