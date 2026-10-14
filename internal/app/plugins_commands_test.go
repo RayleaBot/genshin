@@ -151,6 +151,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"喵喵别名删除", "alias-remove", nil},
 			{"喵喵别名列表", "alias-list", nil},
 			{"设置胡桃别名", "alias-add", []string{"胡桃"}},
+			{"删除别名", "alias-remove", nil},
 			{"删除别名堂主", "alias-remove", []string{"堂主"}},
 			{"胡桃别名", "aliases", []string{"胡桃"}},
 			{"角色命座", "stat-cons", nil},
@@ -343,6 +344,7 @@ func TestTrailingWordsFollowUpstreamRules(t *testing.T) {
 		id   string
 		args []string
 	}{
+		{"删除别名", []string{"堂主"}, "alias-remove", []string{"堂主"}},
 		{"深渊", []string{"2"}, "abyss-summary", nil},
 		{"深渊", []string{"2", "100000001"}, "abyss-summary", []string{"100000001"}},
 		{"深渊", []string{"100000001", "数据"}, "abyss-summary", []string{"100000001"}},

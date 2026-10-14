@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -202,6 +203,8 @@ func groupAdministrator(event *rayleabot.EventContext) bool {
 	return event.Event.Actor.Role == "admin" || event.Event.Actor.Role == "owner" || slices.Contains(event.SuperAdmins, event.Event.Actor.ID)
 }
 func (a *App) groupSettings(event *rayleabot.EventContext) error {
+	p := a.Game.Prefix
+	forms := p + "群设置 <开启|关闭|图片|文本|默认>\n" + p + "群设置 别名 <名称> <角色或武器>\n" + p + "群设置 删除别名 <名称>"
 	scope := groupScope(event)
 	args := event.Event.Args()
 	if len(args) == 0 {
@@ -220,8 +223,9 @@ func (a *App) groupSettings(event *rayleabot.EventContext) error {
 				mode = "图片"
 			}
 		}
-		return event.SendText(fmt.Sprintf("本群%s：%s · 回复%s · 群别名 %d 个\n群设置 开启/关闭/图片/文本/默认\n群设置 别名 名称 角色或装备ID\n群设置 删除别名 名称", a.Game.Name, enabled, mode, len(data.Config.Aliases)))
+		return event.SendText(fmt.Sprintf("本群%s：%s · 回复%s · 群别名 %d 个\n%s", a.Game.Name, enabled, mode, len(data.Config.Aliases), forms))
 	}
+	var target Entry
 	err := a.Groups.Update(scope, func(data *GroupData) error {
 		switch args[0] {
 		case "开启", "关闭":
@@ -234,18 +238,22 @@ func (a *App) groupSettings(event *rayleabot.EventContext) error {
 			data.Config = GroupConfig{Aliases: map[string]string{}}
 		case "别名":
 			if len(args) != 3 || len(args[1]) > 64 || strings.TrimSpace(args[1]) == "" {
-				return gameError("input_invalid", "别名格式：群设置 别名 名称 角色或装备ID。")
+				return gameError("input_invalid", "格式："+p+"群设置 别名 <名称> <角色或武器>")
 			}
-			if _, ok := a.Catalog.Get(args[2]); !ok {
-				return gameError("entry_missing", "未找到目标资料 ID。")
+			aliases := a.aliasMap(event)
+			maps.Copy(aliases, data.Config.Aliases)
+			entry, ok := a.Catalog.Resolve(args[2], "", aliases)
+			if !ok {
+				return gameError("entry_missing", "未找到角色或武器“"+args[2]+"”，请写全名、别名或资料 ID。")
 			}
+			target = entry
 			if data.Config.Aliases == nil {
 				data.Config.Aliases = map[string]string{}
 			}
 			if _, exists := data.Config.Aliases[strings.ToLower(args[1])]; !exists && len(data.Config.Aliases) >= 64 {
 				return gameError("input_invalid", "每群最多 64 个自定义别名。")
 			}
-			data.Config.Aliases[strings.ToLower(args[1])] = args[2]
+			data.Config.Aliases[strings.ToLower(args[1])] = entry.ID
 			normalized, _, err := a.Catalog.validateAliases(data.Config.Aliases, 64)
 			if err != nil {
 				return err
@@ -253,16 +261,19 @@ func (a *App) groupSettings(event *rayleabot.EventContext) error {
 			data.Config.Aliases = normalized
 		case "删除别名":
 			if len(args) != 2 {
-				return gameError("input_invalid", "请提供要删除的群别名。")
+				return gameError("input_invalid", "格式："+p+"群设置 删除别名 <名称>")
 			}
 			delete(data.Config.Aliases, strings.ToLower(args[1]))
 		default:
-			return gameError("input_invalid", "支持开启、关闭、图片、文本、默认、别名和删除别名。")
+			return gameError("input_invalid", "可用写法：\n"+forms)
 		}
 		return nil
 	})
 	if err != nil {
 		return event.SendText(friendlyError(err))
+	}
+	if target.ID != "" {
+		return event.SendText("本群别名“" + args[1] + "”已指向" + target.Name + "。")
 	}
 	return event.SendText("本群" + a.Game.Name + "设置已保存。")
 }

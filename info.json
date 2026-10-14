@@ -407,8 +407,8 @@
     {
       "id": "group-settings",
       "name": "群设置",
-      "description": "调整当前群的游戏设置",
-      "usage": "#群设置 [开启|关闭|图片|文本|默认|别名|删除别名]",
+      "description": "查看或调整本群的游戏开关、图片或文字回复与本群别名，别名目标可写角色或武器的名称、别名或资料 ID",
+      "usage": "#群设置 [开启|关闭|图片|文本|默认] / #群设置 别名 <名称> <角色或武器> / #群设置 删除别名 <名称>",
       "permission": "group_admin",
       "trigger": {
         "type": "exact",
@@ -432,7 +432,7 @@
       "id": "alias-set",
       "name": "设置别名",
       "description": "给角色添加对所有群生效的自定义别名",
-      "usage": "#喵喵别名设置 角色名 别名",
+      "usage": "#喵喵别名设置 <角色> <别名>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -443,11 +443,11 @@
       "id": "alias-remove",
       "name": "删除别名",
       "description": "删除自定义别名，预设别名不能删除",
-      "usage": "#喵喵别名删除 别名 / #删除别名 别名",
+      "usage": "#删除别名 <别名>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:喵喵别名(?:原神)?删除|删除(?:别名|昵称)(?P<alias>.+))$"
+        "pattern": "^(?:喵喵别名(?:原神)?删除|删除(?:别名|昵称)(?P<alias>.*))$"
       }
     },
     {

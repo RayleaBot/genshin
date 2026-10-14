@@ -227,7 +227,7 @@ func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, c
 		return nil
 	case command == "alias-set":
 		if len(args) != 2 {
-			return event.SendText("命令格式：" + a.Game.Prefix + "喵喵别名设置 角色名 别名")
+			return event.SendText("命令格式：" + a.Game.Prefix + "喵喵别名设置 <角色> <别名>")
 		}
 		name, alias := args[0], args[1]
 		if miaoAliasInvalid.MatchString(alias) || !validAlias(alias) {
@@ -253,7 +253,10 @@ func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, c
 	case command == "alias-remove":
 		alias := strings.Join(args, "")
 		if miao && len(args) != 1 {
-			return event.SendText("命令格式：" + a.Game.Prefix + "喵喵别名删除 别名")
+			return event.SendText("命令格式：" + a.Game.Prefix + "喵喵别名删除 <别名>")
+		}
+		if alias == "" {
+			return event.SendText("命令格式：" + a.Game.Prefix + "删除别名 <别名>")
 		}
 		return reply(a.changeAliases(ctx, event, func(aliases map[string]string) (string, bool) {
 			entry, custom, ok := a.aliasOwner(alias, aliases)

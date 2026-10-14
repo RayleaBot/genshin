@@ -1,6 +1,8 @@
 package app
 
 import (
+	"maps"
+	"strings"
 	"testing"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -104,5 +106,23 @@ func TestAliasChangesFollowYunzaiPermission(t *testing.T) {
 		if denied := aliasDenied(event(c.target, c.role, c.permission, c.super)); (denied == "") != c.ok {
 			t.Errorf("%+v: %q", c, denied)
 		}
+	}
+}
+
+func TestGroupAliasTargetResolvesByName(t *testing.T) {
+	a := pluginApp(t)
+	host := newSDKHost(t, a, nil, nil)
+	for _, tc := range []struct{ alias, target, want string }{
+		{"老婆", "胡桃", "已指向胡桃"}, {"老婆", "往生堂堂主", "已指向胡桃"},
+		{"专武", "护摩之杖", "已指向护摩之杖"}, {"甲", "不存在的名字", "未找到角色或武器"},
+	} {
+		end, _ := host.groupMessage("#群设置 别名 "+tc.alias+" "+tc.target, "群设置", "别名", tc.alias, tc.target)
+		if text := terminalText(end); !strings.Contains(text, tc.want) {
+			t.Fatal(text)
+		}
+	}
+	data, err := a.Groups.Read(GroupScope{"onebot11", "bot", "g"})
+	if err != nil || !maps.Equal(data.Config.Aliases, map[string]string{"老婆": "10000046", "专武": "13501"}) {
+		t.Fatal(data.Config.Aliases, err)
 	}
 }
