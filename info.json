@@ -398,7 +398,7 @@
       "name": "群体力推送设置",
       "description": "按逍遥插件开启或关闭本群的体力推送，或设置推送阈值（20–160，默认 120）",
       "usage": "#体力设置群推送<开启|关闭> / #体力设置群阈值[数值]",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^体力设置群(?:推送(?P<switch>开启|关闭)|(?:阈值|上限)(?P<resin>[0-9]*))$"
@@ -651,7 +651,7 @@
       "name": "清空挑战",
       "description": "群管理员清空挑战群榜",
       "usage": "#清空挑战 [玩法]",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "exact",
         "names": [
@@ -1081,7 +1081,7 @@
       "name": "开启公告推送",
       "description": "群管理员为本群开启米游社公告、资讯推送或活动到期预警",
       "usage": "#开启<公告|资讯>推送 / #原神开启到期活动推送",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:(?:原神)?开启(?P<kind>公告|资讯)推送|原神开启(?P<expiry>到期)活动(?:预警)?(?:推送)?)$"
@@ -1092,7 +1092,7 @@
       "name": "关闭公告推送",
       "description": "群管理员关闭本群的米游社公告、资讯推送或活动到期预警",
       "usage": "#关闭<公告|资讯>推送 / #原神关闭到期活动推送",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:(?:原神)?关闭(?P<kind>公告|资讯)推送|原神关闭(?P<expiry>到期)活动(?:预警)?(?:推送)?)$"
@@ -1501,7 +1501,7 @@
       "name": "重置排名",
       "description": "机器人超级管理员清空本群排名或某个角色的排名",
       "usage": "#重置排名 / #重置<角色>排名",
-      "permission": "everyone",
+      "permission": "super_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:重置|重设).*(?:排名|排行)$"
@@ -1512,7 +1512,7 @@
       "name": "刷新排名",
       "description": "群管理员按当前规则重新计算本群记录的面板",
       "usage": "#刷新排名",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:刷新|更新|重新加载)(?:群内|群|全部)*(?:排名|排行)$"
@@ -1523,7 +1523,7 @@
       "name": "开启排名",
       "description": "群管理员开启或关闭本群排名的查询",
       "usage": "#<开启|关闭>排名",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:开启|打开|启用|关闭|禁用)(?:群内|群|全部)*(?:排名|排行)$"

@@ -96,10 +96,7 @@ func (a *App) notePushCommand(ctx context.Context, event *rayleabot.EventContext
 	}
 	scope := groupScope(event)
 	if command == "note-push-group" {
-		switch {
-		case settings(event).Xiaoyao.NoteSetAuth == 1 && !groupAdministrator(event):
-			return event.SendText("只有管理员才能操作。")
-		case settings(event).Xiaoyao.NoteSetAuth != 1 && !slices.Contains(event.SuperAdmins, event.Event.Actor.ID):
+		if settings(event).Xiaoyao.NoteSetAuth != 1 && !slices.Contains(event.SuperAdmins, event.Event.Actor.ID) {
 			return event.SendText("只有主人才能操作。")
 		}
 		err := a.Groups.Update(scope, func(g *GroupData) error {

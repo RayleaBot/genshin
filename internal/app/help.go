@@ -24,18 +24,14 @@ func (a *App) help(event *rayleabot.EventContext, query string) (map[string]any,
 	}
 	commands := []pluginmeta.Command{}
 	for _, c := range m.Commands {
-		if event.Event.Target.Type == "group" && slices.Contains([]string{"group-settings", "challenge-clear"}, c.ID) && !groupAdministrator(event) {
+		if disabled && !slices.Contains([]string{"help", "version", "group-settings", "unsubscribe", "challenge-withdraw", "challenge-stop", "challenge-status", "cloud-game-stop", "cloud-game-progress"}, c.ID) {
 			continue
 		}
-		if disabled && !slices.Contains([]string{"help", "version", "group-settings", "unsubscribe", "poke"}, c.ID) {
+		if !mayRun(event, c) {
 			continue
-		}
-		allowed := event.Event.EventType == "management.action" || c.Permission == "everyone" || c.Permission == "" || slices.Contains(event.SuperAdmins, event.Event.Actor.ID)
-		if !allowed && slices.Contains([]string{"admin", "group_admin"}, c.Permission) {
-			allowed = groupAdministrator(event)
 		}
 		c.Usage = a.usage(c.Usage)
-		if !allowed || query != "" && !strings.Contains(c.Name+c.Description+c.Usage, query) {
+		if query != "" && !strings.Contains(c.Name+c.Description+c.Usage, query) {
 			continue
 		}
 		commands = append(commands, c)
@@ -82,6 +78,39 @@ func (a *App) help(event *rayleabot.EventContext, query string) (map[string]any,
 	add("other", "其他", rest)
 	return map[string]any{"plugin": m, "commands": commands, "catalog_version": a.Catalog.Version, "resource_version": resourceVersion(a.Game), "group_enabled": !disabled, "view": view}, image, nil
 }
+
+// mayRun follows the host's permission levels, then the settings that choose
+// who may change aliases or exchange panel data. The management page lists
+// every command; help does not query accounts to check panel data access.
+func mayRun(event *rayleabot.EventContext, c pluginmeta.Command) bool {
+	if event.Event.EventType == "management.action" {
+		return true
+	}
+	super := event.Event.SourceProtocol == "onebot11" && slices.Contains(event.SuperAdmins, event.Event.Actor.ID)
+	rank := 1
+	if super {
+		rank = 3
+	} else if role := event.Event.Actor.Role; role == "owner" || role == "admin" {
+		rank = 2
+	}
+	if rank < map[string]int{"group_admin": 2, "super_admin": 3}[c.Permission] {
+		return false
+	}
+	switch c.ID {
+	case "alias-set", "alias-add", "alias-remove":
+		return aliasDenied(event) == ""
+	case "note-push-group":
+		return event.Event.Target.Type == "group" && (super || settings(event).Xiaoyao.NoteSetAuth == 1 && rank >= 2)
+	case "panel-export":
+		return settings(event).Ark.ExportPanelRequire <= 2
+	case "cloud-export":
+		return panelDataRefusal(settings(event).Ark.ExportPanelData, true, super) == ""
+	case "cloud-import":
+		return panelDataRefusal(settings(event).Ark.ImportPanelData, true, super) == ""
+	}
+	return true
+}
+
 func (a *App) helpCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	// Upstream's rules end at the word: with more after it, as in the help
 	// another bot answers in the chat, the message is not the command.

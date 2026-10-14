@@ -318,9 +318,6 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	withdraw := command == "challenge-withdraw"
 	clear := command == "challenge-clear"
 	if (withdraw || clear) && (kindID == "" || ok) {
-		if clear && !groupAdministrator(event) {
-			return event.SendText("清空群榜需要群管理员身份。")
-		}
 		removed := 0
 		err := a.Groups.Update(scope, func(data *GroupData) error {
 			before := len(data.Challenges)

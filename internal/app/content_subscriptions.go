@@ -340,9 +340,6 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 	if event.Event.EventType != "message.group" {
 		return event.SendText("推送请在群聊中设置")
 	}
-	if !groupAdministrator(event) {
-		return event.SendText("暂无权限，只有管理员才能操作")
-	}
 	kind := pushKinds[2]
 	if len(args) > 0 && args[0] == "资讯" {
 		kind = pushKinds[1]

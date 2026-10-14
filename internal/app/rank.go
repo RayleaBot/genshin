@@ -287,9 +287,6 @@ func (a *App) hasDamageRule(id string) bool {
 // rankReset is miao's 重置排名: the bot's super administrators clear the
 // group's ranking, or one character's.
 func (a *App) rankReset(event *rayleabot.EventContext, scope GroupScope, word string) error {
-	if !slices.Contains(event.SuperAdmins, event.Event.Actor.ID) {
-		return event.SendText("只有管理员可重置排名")
-	}
 	name := strings.TrimSpace(rankResetStrip.ReplaceAllString(word, ""))
 	id, label := "", "全部角色"
 	if name != "" {
@@ -315,13 +312,6 @@ func (a *App) rankReset(event *rayleabot.EventContext, scope GroupScope, word st
 // rankSwitch is miao's 开启排名 and 关闭排名 for group administrators.
 func (a *App) rankSwitch(event *rayleabot.EventContext, scope GroupScope, word string) error {
 	closing := strings.Contains(word, "关闭") || strings.Contains(word, "禁用")
-	if !groupAdministrator(event) {
-		action := "启用"
-		if closing {
-			action = "禁用"
-		}
-		return event.SendText("只有主人及群管理员可" + action + "排名...")
-	}
 	if err := a.Groups.Update(scope, func(data *GroupData) error { data.RankOff = closing; return nil }); err != nil {
 		return event.SendText(friendlyError(err))
 	}
@@ -334,9 +324,6 @@ func (a *App) rankSwitch(event *rayleabot.EventContext, scope GroupScope, word s
 // rankRefresh is miao's 刷新排名: every recorded panel is scored and
 // calculated again with the pinned rules, four at a time.
 func (a *App) rankRefresh(ctx context.Context, event *rayleabot.EventContext, scope GroupScope) error {
-	if !groupAdministrator(event) {
-		return event.SendText("只有主人及群管理员可刷新排名...")
-	}
 	data, err := a.Groups.Read(scope)
 	if err != nil {
 		return event.SendText(friendlyError(err))

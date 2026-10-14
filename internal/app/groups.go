@@ -202,9 +202,6 @@ func groupAdministrator(event *rayleabot.EventContext) bool {
 	return event.Event.Actor.Role == "admin" || event.Event.Actor.Role == "owner" || slices.Contains(event.SuperAdmins, event.Event.Actor.ID)
 }
 func (a *App) groupSettings(event *rayleabot.EventContext) error {
-	if !groupAdministrator(event) {
-		return event.SendText("只有群管理员、群主或机器人超级管理员可调整本群游戏设置。")
-	}
 	scope := groupScope(event)
 	args := event.Event.Args()
 	if len(args) == 0 {
