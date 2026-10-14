@@ -611,7 +611,7 @@
       "id": "challenge-submit",
       "name": "提交挑战",
       "description": "主动向当前群公开本人成绩",
-      "usage": "#提交挑战 玩法 [本期/上期] [UID]",
+      "usage": "#提交挑战 <玩法> [本期|上期] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -623,8 +623,8 @@
     {
       "id": "challenge-rank",
       "name": "挑战排行",
-      "description": "分期查看群挑战榜",
-      "usage": "#挑战排行 玩法 [期次] [指标] [页码]",
+      "description": "分期查看群挑战榜，玩法可写全名、指标可写中文名；参数按顺序填写，翻页时期次与指标不能省略（可写全部、综合）",
+      "usage": "#挑战排行 <玩法> [本期|上期|全部] [指标] [页码]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -663,7 +663,7 @@
       "id": "challenge-remind",
       "name": "挑战提醒",
       "description": "显式开启本人挑战完成提醒",
-      "usage": "#挑战提醒 玩法 指标 阈值 [时间] [UID]",
+      "usage": "#挑战提醒 <玩法> <指标> <阈值> [时间] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",

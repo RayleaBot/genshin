@@ -33,6 +33,9 @@ type ChallengeEntry struct {
 	Metrics   map[string]float64 `json:"metrics"`
 	FirstMS   int64              `json:"first_ms"`
 	UpdatedMS int64              `json:"updated_ms"`
+	// Begin and End are the official period bounds, in Unix seconds.
+	Begin int64 `json:"begin,omitempty"`
+	End   int64 `json:"end,omitempty"`
 }
 
 func challengeKinds() []ChallengeKind {
@@ -49,9 +52,18 @@ func challengeKinds() []ChallengeKind {
 	}
 	return out
 }
+
+// challengeKindNames lists the full record names and their other chat forms.
+var challengeKindNames = map[string][]string{
+	"abyss":       {"深境螺旋", "螺旋深渊"},
+	"theater":     {"幻想真境剧诗", "幻想剧诗"},
+	"hard_single": {"幽境危战单人", "单人幽境危战", "幽境危战", "幽境"},
+	"hard_mp":     {"幽境危战多人", "多人幽境危战"},
+}
+
 func challengeKind(id string) (ChallengeKind, bool) {
 	for _, k := range challengeKinds() {
-		if strings.EqualFold(id, k.ID) || strings.EqualFold(id, k.Label) {
+		if strings.EqualFold(id, k.ID) || strings.EqualFold(id, k.Label) || slices.Contains(challengeKindNames[k.ID], id) {
 			return k, true
 		}
 	}
@@ -96,7 +108,20 @@ func challengeSeason(data map[string]any) string {
 	}
 	return ""
 }
-func challengeExtract(kind ChallengeKind, data map[string]any, period int) (ChallengeEntry, error) {
+
+// challengePeriodTime normalizes timestamps and the theater's regional clock.
+func challengePeriodTime(value any, region string) int64 {
+	if fields := asObject(value); fields != nil {
+		if number(fields["year"]) == 0 {
+			return 0
+		}
+		return time.Date(number(fields["year"]), time.Month(number(fields["month"])), number(fields["day"]), number(fields["hour"]), number(fields["minute"]), number(fields["second"]), 0, time.FixedZone("", regionTimezone(region)*3600)).Unix()
+	}
+	stamp, _ := strconv.ParseInt(asText(value), 10, 64)
+	return stamp
+}
+
+func challengeExtract(kind ChallengeKind, data map[string]any, period int, region string) (ChallengeEntry, error) {
 	out := ChallengeEntry{Kind: kind.ID, Metrics: map[string]float64{}}
 	put := func(key string, paths ...string) {
 		for _, p := range paths {
@@ -116,6 +141,7 @@ func challengeExtract(kind ChallengeKind, data map[string]any, period int) (Chal
 	out.Season = challengeSeason(data)
 	switch kind.ID {
 	case "abyss":
+		out.Begin, out.End = challengePeriodTime(data["start_time"], region), challengePeriodTime(data["end_time"], region)
 		parts := strings.Split(asText(data["max_floor"]), "-")
 		if len(parts) == 2 {
 			f, e := strconv.Atoi(parts[0])
@@ -139,6 +165,7 @@ func challengeExtract(kind ChallengeKind, data map[string]any, period int) (Chal
 		}
 		put("battle", "total_battle_times")
 	case "theater":
+		out.Begin, out.End = challengePeriodTime(fieldAt(data, "schedule.start_date_time"), region), challengePeriodTime(fieldAt(data, "schedule.end_date_time"), region)
 		put("mode", "stat.difficulty_id")
 		if rounds, ok := fieldAt(data, "detail.rounds_data").([]any); ok {
 			out.Metrics["floor"] = float64(len(rounds))
@@ -154,6 +181,7 @@ func challengeExtract(kind ChallengeKind, data map[string]any, period int) (Chal
 		put("time", "stat.total_use_time", "detail.fight_statisic.total_use_time")
 		put("borrow", "stat.rent_cnt")
 	case "hard_single", "hard_mp":
+		out.Begin, out.End = challengePeriodTime(fieldAt(data, "schedule.start_time"), region), challengePeriodTime(fieldAt(data, "schedule.end_time"), region)
 		mode := strings.TrimPrefix(kind.ID, "hard_")
 		put("difficulty", mode+".best.difficulty", mode+".difficulty")
 		put("time", mode+".best.second", mode+".second")
@@ -219,7 +247,26 @@ func (s *GroupStore) SubmitChallenge(scope GroupScope, entry ChallengeEntry) err
 		return nil
 	})
 }
-func (a *App) challengeList(scope GroupScope, kind ChallengeKind, season, dimension string, offset int) (map[string]any, error) {
+
+// challengePeriodSeasons uses each region's current or latest ended period.
+// Untimed entries match neither period.
+func challengePeriodSeasons(entries []ChallengeEntry, period int, now time.Time) map[string]string {
+	seasons, ends := map[string]string{}, map[string]int64{}
+	for _, v := range entries {
+		if v.Begin == 0 || v.End == 0 {
+			continue
+		}
+		switch {
+		case period == 1 && v.Begin <= now.Unix() && now.Unix() < v.End:
+			seasons[v.Region] = v.Season
+		case period == 2 && v.End <= now.Unix() && v.End > ends[v.Region]:
+			seasons[v.Region], ends[v.Region] = v.Season, v.End
+		}
+	}
+	return seasons
+}
+
+func (a *App) challengeList(scope GroupScope, kind ChallengeKind, season string, period int, dimension string, offset int) (map[string]any, error) {
 	if offset < 0 || offset > 2000 || len(season) > 128 {
 		return nil, gameError("input_invalid", "挑战榜筛选无效。")
 	}
@@ -230,12 +277,20 @@ func (a *App) challengeList(scope GroupScope, kind ChallengeKind, season, dimens
 	if err != nil {
 		return nil, err
 	}
-	groups := map[string][]ChallengeEntry{}
+	live := []ChallengeEntry{}
 	for _, v := range data.Challenges {
 		if v.Kind == kind.ID && (season == "" || v.Season == season) && v.UpdatedMS >= time.Now().AddDate(0, 0, -180).UnixMilli() {
-			key := v.Region + " · " + v.Season
-			groups[key] = append(groups[key], v)
+			live = append(live, v)
 		}
+	}
+	picked := challengePeriodSeasons(live, period, time.Now())
+	groups := map[string][]ChallengeEntry{}
+	for _, v := range live {
+		if period > 0 && (v.Begin == 0 || v.End == 0 || v.Season != picked[v.Region]) {
+			continue
+		}
+		key := v.Region + " · " + v.Season
+		groups[key] = append(groups[key], v)
 	}
 	keys := []string{}
 	for k := range groups {
@@ -289,7 +344,7 @@ func (a *App) manageChallenge(action string, input map[string]any) (map[string]a
 		return nil, gameError("input_invalid", "请选择本游戏支持的玩法。")
 	}
 	if action == "challenge.list" {
-		return a.challengeList(q.Scope, kind, q.Season, q.Dimension, q.Offset)
+		return a.challengeList(q.Scope, kind, q.Season, 0, q.Dimension, q.Offset)
 	}
 	if action != "challenge.clear" || !q.Confirmed {
 		return nil, gameError("input_invalid", "请明确确认要清空的群榜。")
@@ -335,21 +390,37 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	if !ok {
 		names := []string{}
 		for _, v := range challengeKinds() {
-			names = append(names, v.Label)
+			names = append(names, challengeKindNames[v.ID][0]+"（"+v.Label+"）")
 		}
-		return event.SendText("可选玩法：" + strings.Join(names, "、") + "。\n提交挑战 玩法 [本期/上期] [UID]：向本群公开自己的 UID、昵称及官方成绩。\n挑战排行 玩法 [期次] [指标] [页码]；退出挑战 [玩法]。")
+		return event.SendText("可选玩法：" + strings.Join(names, "、") + "。\n" + a.Game.Prefix + "提交挑战 <玩法> [本期|上期] [UID]：向本群公开自己的 UID、昵称及官方成绩。\n" + a.Game.Prefix + "挑战排行 <玩法> [本期|上期|全部] [指标] [页码]：参数按顺序填写，翻页时期次与指标不能省略（可写全部、综合）；" + a.Game.Prefix + "退出挑战 [玩法]。")
 	}
 	if command == "challenge-rank" {
 		season, dimension := "", ""
-		offset := 0
-		if len(args) > 1 && args[1] != "全部" {
-			season = args[1]
-		}
-		if len(args) > 2 {
-			dimension = args[2]
-			if dimension == "综合" {
-				dimension = ""
+		period, offset := 0, 0
+		if len(args) > 1 {
+			switch args[1] {
+			case "全部":
+			case "本期":
+				period = 1
+			case "上期":
+				period = 2
+			default:
+				if _, ok := challengeMetric(kind, args[1]); ok || args[1] == "综合" {
+					return event.SendText("参数顺序：玩法、期次、指标、页码；期次写本期、上期或全部，指标写在第三项。例如：" + a.Game.Prefix + "挑战排行 " + kind.Label + " 全部 " + args[1] + "。")
+				}
+				season = args[1]
 			}
+		}
+		if len(args) > 2 && args[2] != "综合" {
+			metric, ok := challengeMetric(kind, args[2])
+			if !ok {
+				labels := []string{}
+				for _, m := range kind.Metrics {
+					labels = append(labels, m.Label)
+				}
+				return event.SendText(kind.Label + "的指标：" + strings.Join(labels, "、") + "，或写综合。")
+			}
+			dimension = metric.Key
 		}
 		if len(args) > 3 {
 			page, e := strconv.Atoi(args[3])
@@ -358,11 +429,18 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 			}
 			offset = (page - 1) * 20
 		}
-		result, err := a.challengeList(scope, kind, season, dimension, offset)
+		result, err := a.challengeList(scope, kind, season, period, dimension, offset)
 		if err != nil {
 			return event.SendText(friendlyError(err))
 		}
-		return a.sendView(ctx, event, result["view"].(View))
+		view := result["view"].(View)
+		if len(view.Sections) == 0 {
+			if season != "" {
+				return event.SendText("未找到期次“" + season + "”；期次写本期、上期或全部，指标写在第三项。")
+			}
+			return event.SendText("本群还没有" + map[int]string{1: "本期", 2: "上期"}[period] + kind.Label + "成绩，发送“" + a.Game.Prefix + "提交挑战 " + kind.Label + "”提交本人成绩。")
+		}
+		return a.sendView(ctx, event, view)
 	}
 	period := 1
 	uid := ""
@@ -374,7 +452,7 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 			period = 2
 		default:
 			if uid != "" || !uidPattern.MatchString(arg) {
-				return event.SendText("格式：提交挑战 玩法 [本期/上期] [UID]。")
+				return event.SendText("格式：" + a.Game.Prefix + "提交挑战 <玩法> [本期|上期] [UID]。")
 			}
 			uid = arg
 		}
@@ -397,7 +475,7 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	entry, err := challengeExtract(kind, result.Data, period)
+	entry, err := challengeExtract(kind, result.Data, period, role.Region)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
