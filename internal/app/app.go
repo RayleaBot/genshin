@@ -514,7 +514,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.poolCommand(ctx, event, command, args)
 	case "materials":
 		if len(args) == 0 {
-			return event.SendText("使用“" + prefix + "材料 名称”查询固定参考资料。")
+			return event.SendText("使用“" + prefix + "<名称>材料”查询角色或武器的养成材料。")
 		}
 		if answered, err := a.materialCommand(ctx, event, args); answered {
 			return err
@@ -545,7 +545,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			}
 		}
 		if len(args) < 1 || bad {
-			return event.SendText("使用“" + prefix + "角色名养成[目标等级…] [UID]”（如“" + prefix + "刻晴养成”或“" + prefix + "刻晴养成81 90 9 9 9”）计算升到目标等级的材料，不写目标时算到上限。")
+			return event.SendText("使用“" + prefix + "<角色>养成[目标等级…] [UID]”（如“" + prefix + "刻晴养成”或“" + prefix + "刻晴养成81 90 9 9 9”）计算升到目标等级的材料，不写目标时算到上限。")
 		}
 		input, _, parseErr := a.commandInput(Operation{Input: "characters"}, args[:1], a.aliasMap(event))
 		if parseErr != nil {
@@ -620,7 +620,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			rest = append(rest, arg)
 		}
 		if len(rest) < 1 || len(rest) > 2 {
-			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "胡桃伤害”）查看固定参考情境下的角色伤害。")
+			return event.SendText("使用“" + prefix + "<角色>伤害[序号] [UID]”（如“" + prefix + "胡桃伤害”）查看固定参考情境下的角色伤害。")
 		}
 		panel, uid, panelErr := a.commandPanel(ctx, event, rest)
 		if panelErr != nil {
@@ -635,7 +635,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = a.panelView(ctx, event, panel, uid, true, "", &built)
 	case "score":
 		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + prefix + "评分 角色 [UID]”，或按上游写法在角色名后接圣遗物。")
+			return event.SendText("使用“" + prefix + "评分 <角色> [UID]”或“" + prefix + "<角色>圣遗物 [UID]”。")
 		}
 		panel, uid, panelErr := a.commandPanel(ctx, event, args)
 		if panelErr != nil {

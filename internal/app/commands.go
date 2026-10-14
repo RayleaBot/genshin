@@ -144,11 +144,13 @@ func upstreamArgs(id, word string, leading, args []string) (out []string, taken 
 	return leading, true
 }
 
-// usage writes a declared usage with the prefix replies use. Manifests start
-// usages with the placeholder "#", which the host help menu also replaces.
+// usage writes every declared form with the prefix replies use.
 func (a *App) usage(text string) string {
-	if strings.HasPrefix(text, "#") {
-		return a.Game.Prefix + text[1:]
+	forms := strings.Split(text, " / ")
+	for i, form := range forms {
+		if rest, ok := strings.CutPrefix(form, "#"); ok {
+			forms[i] = a.Game.Prefix + rest
+		}
 	}
-	return text
+	return strings.Join(forms, " / ")
 }

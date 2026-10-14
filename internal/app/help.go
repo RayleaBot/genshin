@@ -34,6 +34,7 @@ func (a *App) help(event *rayleabot.EventContext, query string) (map[string]any,
 		if !allowed && slices.Contains([]string{"admin", "group_admin"}, c.Permission) {
 			allowed = groupAdministrator(event)
 		}
+		c.Usage = a.usage(c.Usage)
 		if !allowed || query != "" && !strings.Contains(c.Name+c.Description+c.Usage, query) {
 			continue
 		}
@@ -54,8 +55,8 @@ func (a *App) help(event *rayleabot.EventContext, query string) (map[string]any,
 	add := func(id, title string, list []pluginmeta.Command) {
 		section, group := Section{Title: title, Rows: []Row{}}, HelpGroup{ID: id, Title: title}
 		for _, c := range list {
-			section.Rows = append(section.Rows, Row{a.usage(c.Usage), c.Description})
-			group.Commands = append(group.Commands, HelpCommand{ID: c.ID, Name: c.Name, Usage: a.usage(c.Usage), Description: c.Description})
+			section.Rows = append(section.Rows, Row{c.Usage, c.Description})
+			group.Commands = append(group.Commands, HelpCommand{ID: c.ID, Name: c.Name, Usage: c.Usage, Description: c.Description})
 		}
 		if len(section.Rows) > 0 {
 			view.Sections = append(view.Sections, section)
@@ -104,7 +105,7 @@ func (a *App) helpCommand(ctx context.Context, event *rayleabot.EventContext, co
 }
 
 // HelpImage is the help menu the requester may use, grouped as the manifest
-// declares, for plugins that draw it the way their upstream help page does.
+// declares, for the plugin's help image.
 type HelpImage struct {
 	Title, Subtitle, Note string
 	Groups                []HelpGroup

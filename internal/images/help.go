@@ -34,6 +34,8 @@ var helpArtwork = [][2]string{
 	{"help-theme-main", "resources/help/theme/default/main.png"},
 }
 
+const helpLegend = "< > 换成实际内容 · [ ] 可省略 · | 任选其一"
+
 // Help draws the help menu the way miao's help/index does: the title bar, then
 // each group as a table of three columns, each command with its icon, usage
 // and description, on miao's default theme.
@@ -68,5 +70,5 @@ func Help(context app.ImageContext, help app.HelpImage) (app.Image, bool) {
 		}
 		groups = append(groups, map[string]any{"title": group.Title, "rows": rows})
 	}
-	return app.Image{Template: "help", Data: map[string]any{"title": help.Title, "subtitle": help.Subtitle, "groups": groups}, Resources: resources.List}, true
+	return app.Image{Template: "help", Data: map[string]any{"title": help.Title, "subtitle": help.Subtitle + " · " + helpLegend, "groups": groups}, Resources: resources.List}, true
 }

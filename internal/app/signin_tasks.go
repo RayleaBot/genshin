@@ -190,7 +190,7 @@ func (s *ReminderStore) tickSignin(task *Reminder, now int64, query func(Reminde
 }
 func (a *App) signinTaskCommand(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	if len(args) < 1 || len(args) > 2 || (args[0] != "开启" && args[0] != "关闭") {
-		return event.SendText("使用“" + a.Game.Prefix + "自动签到 开启/关闭 [UID]”。默认每天北京时间 08:00 后检查，有效 30 天，不发送私聊结果。")
+		return event.SendText("使用“" + a.Game.Prefix + "自动签到 <开启|关闭> [UID]”。默认每天北京时间 08:00 后检查，有效 30 天，不发送私聊结果。")
 	}
 	uid := ""
 	if len(args) == 2 {

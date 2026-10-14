@@ -18,7 +18,7 @@ func (a *App) resourceToolsCommand(ctx context.Context, event *rayleabot.EventCo
 		}
 	case "blueprint":
 		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + a.Game.Prefix + "摹本 分享码 [UID]”。")
+			return event.SendText("使用“" + a.Game.Prefix + "摹本 <分享码> [UID]”。")
 		}
 		uid := ""
 		if len(args) == 2 {

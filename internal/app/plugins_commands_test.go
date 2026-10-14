@@ -5,6 +5,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/RayleaBot/genshin/internal/pluginmeta"
@@ -421,6 +422,21 @@ func TestShippedHintsNameManifestCommands(t *testing.T) {
 	for _, id := range ids {
 		if !slices.ContainsFunc(manifest.Commands, func(command pluginmeta.Command) bool { return command.ID == id }) {
 			t.Errorf("answer %s names no command", id)
+		}
+	}
+}
+
+func TestManifestUsagesStartEveryFormWithThePlaceholder(t *testing.T) {
+	a := pluginApp(t)
+	for _, c := range a.Manifest.Commands {
+		forms := strings.Split(c.Usage, " / ")
+		if len(forms) > 3 {
+			t.Errorf("%s has too many forms", c.ID)
+		}
+		for _, form := range forms {
+			if !strings.HasPrefix(form, "#") || strings.TrimSpace(form) != form {
+				t.Errorf("%s: %q", c.ID, form)
+			}
 		}
 	}
 }

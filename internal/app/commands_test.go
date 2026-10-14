@@ -39,3 +39,10 @@ func TestCommandSetFollowsHostMatchingOrder(t *testing.T) {
 		t.Fatal("undeclared word resolved")
 	}
 }
+
+func TestUsageWritesThePrefixBeforeEveryForm(t *testing.T) {
+	a := &App{Game: Game{Prefix: "/"}}
+	if got := a.usage("#公告[序号] / #公告列表"); got != "/公告[序号] / /公告列表" {
+		t.Fatal(got)
+	}
+}

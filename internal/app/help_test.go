@@ -3,6 +3,9 @@ package app
 import (
 	"strings"
 	"testing"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/genshin/internal/pluginmeta"
 )
 
 // The help word alone answers the menu. With more after it, which the host
@@ -19,5 +22,21 @@ func TestHelpAnswersTheWordAlone(t *testing.T) {
 	end, _ = host.groupMessage("原神帮助\r>下图为指令集，点击查看原图", "原神帮助", ">下图为指令集，点击查看原图")
 	if asObject(end["data"])["handled"] != false || len(host.sent) != 0 {
 		t.Fatalf("answered the other bot's help with %+v and %+v", end, host.sent)
+	}
+}
+
+func TestHelpWritesUsagesWithThePrefix(t *testing.T) {
+	a := pluginApp(t)
+	a.Game.Prefix = "/"
+	out, _, err := a.help(&rayleabot.EventContext{Event: rayleabot.Event{EventType: "management.action"}}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range out["commands"].([]pluginmeta.Command) {
+		for _, form := range strings.Split(c.Usage, " / ") {
+			if !strings.HasPrefix(form, "/") {
+				t.Errorf("%s: %q", c.ID, form)
+			}
+		}
 	}
 }
