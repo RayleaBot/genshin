@@ -2,11 +2,18 @@ const scoreRule=(()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = default_1;
-function default_1({ attr, weapon, rule, def }) {
-    if (attr.mastery < 50 && attr.cpct * 2 + attr.cdmg > 320) {
-        return rule('可莉-纯火', { atk: 85, cpct: 100, cdmg: 100, dmg: 100, recharge: 55 });
+function default_1({ attr, def }) {
+    let title = [];
+    let particularAttr = { ...usefulAttr['可莉'] };
+    if (attr.mastery < 50) {
+        title.push('纯火');
+        particularAttr.atk = 85;
+        particularAttr.mastery = 0;
     }
-    return def({ atk: 75, cpct: 100, cdmg: 100, mastery: 75, dmg: 100, recharge: 30 });
+    if (title.length > 0) {
+        return def(particularAttr, title);
+    }
+    return def(usefulAttr['可莉']);
 }
 
 return exports;})();

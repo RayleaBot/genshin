@@ -2,15 +2,22 @@ const scoreRule=(()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = default_1;
-function default_1({ attr, weapon, rule, def }) {
-    // 辅助精通雷神，具体数值待定
+function default_1({ attr, def }) {
+    let title = [];
+    let particularAttr = { ...usefulAttr['雷电将军'] };
     if (attr.mastery > 500) {
-        return rule('雷神-精通', { atk: 75, cpct: 90, cdmg: 90, mastery: 100, dmg: 75, recharge: 90 });
+        title.push('精通');
+        particularAttr.atk = 50;
+        particularAttr.cpct = 50;
+        particularAttr.cdmg = 50;
+        particularAttr.mastery = 100;
+        particularAttr.dmg = 50;
+        particularAttr.recharge = 50;
     }
-    if (weapon.name === '薙草之稻光' && weapon.affix >= 3) {
-        return rule('雷神-高精', { atk: 90, cpct: 100, cdmg: 100, dmg: 90, recharge: 90 });
+    if (title.length > 0) {
+        return def(particularAttr, title);
     }
-    return def({ atk: 75, cpct: 100, cdmg: 100, mastery: 0, dmg: 75, recharge: 90 });
+    return def(usefulAttr['雷电将军']);
 }
 
 return exports;})();

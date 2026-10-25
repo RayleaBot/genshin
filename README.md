@@ -7,7 +7,7 @@
 - 通过 `accounts` v1 共用一次米游社登录，读取已授权角色并选择默认 UID；游戏插件不持有 CK。
 - 基础信息、实时便笺、角色列表、已装备武器列表与基础角色详情；当前主要挑战的摘要和已适配队伍记录。
 - Yunzai 与 miao 写法重叠的命令按 Miao-Yunzai 处理：miao 的“Yunzai 功能使用喵喵版”开关视为全部开启，miao 的规则先于 Yunzai，Yunzai 抽卡记录在匹配前把 `#角色统计`、`#武器统计` 改写为 `#角色池统计`、`#武器池统计`。`#角色`（`#五星角色`、`#喵喵查询`、`#uid<UID>` 等）按 miao 的角色列表出图，合并该 UID 已保存的面板；`#练度统计` 与 miao 接管的 `#五星列表`、`#武器汇总`、`#火角色统计` 等按 miao 的练度统计出图，同样合并该 UID 已保存的面板，写星级或元素时只列这些角色。`#深渊`（`#喵喵深渊`、`#上传深渊`、`#深渊数据` 等）按 miao 的深渊页出本期战绩，`#上期深渊`、`#往期深渊`、`#深渊上期`、`#深渊本期` 与 `#深渊12层`（`#深渊上期第12层` 等）仍按 Yunzai 的页面；`#剧诗`（`#上期剧诗`、`#幻想`、`#喵喵剧诗` 等）全部由 miao 接管，按 miao 的剧诗页出图。
-- 按固定参考版本提供 376 条离线角色、装备等资料，支持查询和自定义别名。
+- 按固定参考版本提供 384 条离线角色、装备等资料，支持查询和自定义别名。
 - 没有 CK 也可 `#绑定uid<UID>` 绑定 UID，`#uid` 列出、`#uid<序号>` 切换、`#删除uid<序号>` 删除。
 - 命令中 @ 他人时读取对方当前使用的 UID，如 `#抽卡分析@某人`、`#胡桃面板@某人`；只读取已保存的记录、面板与展柜，不使用对方账号。
 - 面板按 UID 保存在本地：`#更新面板 [UID]` 读取 Enka 展柜，`#米游社更新面板` 读取本人账号的全部角色，`#面板列表` 按 miao profile-list 出图，`#删除面板<UID>` 删除本人 UID 的面板，`#圣遗物列表` 按 miao artis-list 列出评分最高的 28 件，`#雷神换90级5精护摩换绝缘4` 等按 miao 的写法换装后重新计算面板，`#今日素材 [UID]`（或明天、周三，也可按 miao 写作 `#每日天赋` 等）按 miao today-material 列出当天可升天赋的角色与可突破的武器；`#胡桃面板` 等先读保存的面板，没有时读取本人账号或展柜。
@@ -115,7 +115,7 @@ $env:RAYLEA_PLUGIN_BUILD_USE_WORKSPACE='1'
 go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/genshin --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md --include .rayleabot/source.zip=ui/source.zip
 ```
 
-打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-09-15>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发），再运行 `python scripts/source-bundle.py` 生成管理页提供下载的源码包。源码包含本插件与相邻 RayleaBot 的 SDK 源码及 `go.work`，可按上述命令构建；SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
+打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-10-24>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发），再运行 `python scripts/source-bundle.py` 生成管理页提供下载的源码包。源码包含本插件与相邻 RayleaBot 的 SDK 源码及 `go.work`，可按上述命令构建；SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
 
 另支持 `linux-x64` 和 `macos-arm64`。数据文件位于宿主提供的本插件数据目录内；抽卡记录属于非凭据业务数据，使用原子文件替换保存。
 

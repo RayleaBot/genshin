@@ -4,7 +4,7 @@ the top-level assets/ directory, and the artwork store serves these files until
 an administrator downloads a newer copy of the source. assets/<source>.json
 records the upstream commit and the totals the status shows.
 
-Usage: python scripts/bundle-artwork.py --references <参考项目/2026-09-15>
+Usage: python scripts/bundle-artwork.py --references <参考项目/2026-10-24>
 
 Run it before building a package. Official images are fetched file by file at
 render time, and the Atlas and xiaoyao 图鉴 libraries are downloaded on request,

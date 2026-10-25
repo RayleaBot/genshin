@@ -2,7 +2,7 @@
 // banners are advertised as the current official rules. Python and PyYAML
 // are needed only to regenerate.
 //
-// Usage: node scripts/import-simulation-data.mjs <参考项目/2026-09-15>
+// Usage: node scripts/import-simulation-data.mjs <参考项目/2026-10-24>
 // Reads internal/assets/data/resources.json for the banners and writes
 // internal/assets/data/simulation.json.
 import fs from 'node:fs/promises'
@@ -12,6 +12,7 @@ import { spawnSync } from 'node:child_process'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const refs = path.resolve(process.argv[2])
+const { commit } = JSON.parse(await fs.readFile(path.join(refs, 'Miao-Yunzai.source.json'), 'utf8'))
 const dataDir = path.join(root, 'internal/assets/data')
 
 const parsed = spawnSync('python', ['-X', 'utf8', '-c',
@@ -30,7 +31,7 @@ const banners = resources.pools
   .reverse()
 
 const deck = {
-  version: 'entertainment-reference-20260915-v1',
+  version: 'entertainment-' + resources.version + '-yunzai-' + commit.slice(0, 12),
   five_characters: gacha.role5,
   five_weapons: gacha.weapon5,
   four_characters: gacha.role4,

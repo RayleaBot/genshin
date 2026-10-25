@@ -2,11 +2,18 @@ const scoreRule=(()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = default_1;
-function default_1({ artis, rule, def }) {
+function default_1({ artis, def }) {
+    let title = [];
+    let particularAttr = { ...usefulAttr['甘雨'] };
     if (artis.is('冰套4')) {
-        return rule('甘雨-永冻', { atk: 75, cpct: 100, cdmg: 100, dmg: 100, recharge: 55 });
+        title.push('永冻');
+        particularAttr.mastery = 0;
+        particularAttr.recharge = 55;
     }
-    return def({ atk: 75, cpct: 100, cdmg: 100, mastery: 75, dmg: 100 });
+    if (title.length > 0) {
+        return def(particularAttr, title);
+    }
+    return def(usefulAttr['甘雨']);
 }
 
 return exports;})();

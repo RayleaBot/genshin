@@ -1,6 +1,6 @@
 """Convert pinned local miao-plugin JSON into internal/assets/catalog.json.
 
-Usage: python scripts/import-reference-data.py --references <参考项目/2026-09-15>
+Usage: python scripts/import-reference-data.py --references <参考项目/2026-10-24>
 
 This reads data only. It never evaluates reference JavaScript or installs its
 dependencies. Generated catalogs carry their source version and attribution.
@@ -71,7 +71,8 @@ for kind in ("character", "weapon"):
             "stats": raw.get("baseAttr", {}),
             "talents": talents,
         }
-source = "https://github.com/yoimiya-kokomi/miao-plugin/tree/7f6f1c84c89102bc6b1c58c8e1b06c61f4642161/resources/meta-gs"
-dump(root / "internal/assets/catalog.json", {"version": "miao-7f6f1c84c891", "source": source, "entries": sorted(entries.values(), key=lambda item: item["id"])})
+commit = load(refs / "miao-plugin.source.json")["commit"]
+source = f"https://github.com/yoimiya-kokomi/miao-plugin/tree/{commit}/resources/meta-gs"
+dump(root / "internal/assets/catalog.json", {"version": f"miao-{commit[:12]}", "source": source, "entries": sorted(entries.values(), key=lambda item: item["id"])})
 shutil.copyfile(refs / "miao-plugin/LICENSE", root / "LICENSES/miao-plugin-MIT.txt")
 print(json.dumps({"entries": len(entries)}, ensure_ascii=True))

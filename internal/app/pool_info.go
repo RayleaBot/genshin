@@ -1,8 +1,10 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"slices"
+	"strconv"
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -54,6 +56,7 @@ func (a *App) poolCommand(ctx context.Context, event *rayleabot.EventContext, co
 			}
 		}
 	}
+	sortPoolsDesc(page.Pools)
 	if len(page.Pools) == 0 {
 		return event.SendText("未找到 " + label + " 的卡池信息")
 	}
@@ -71,4 +74,28 @@ func (a *App) poolCommand(ctx context.Context, event *rayleabot.EventContext, co
 		}
 	}
 	return a.sendView(ctx, event, view)
+}
+
+// miao orders versions descending, then the second half before other periods.
+func sortPoolsDesc(pools []PoolInfo) {
+	version := func(s string) int {
+		value := 0
+		for _, part := range strings.Split(s, ".") {
+			n, _ := strconv.Atoi(part)
+			value = value*1000 + n
+		}
+		return value
+	}
+	slices.SortStableFunc(pools, func(a, b PoolInfo) int {
+		if order := cmp.Compare(version(b.Version), version(a.Version)); order != 0 {
+			return order
+		}
+		if (a.Half == "下半") != (b.Half == "下半") {
+			if a.Half == "下半" {
+				return -1
+			}
+			return 1
+		}
+		return 0
+	})
 }

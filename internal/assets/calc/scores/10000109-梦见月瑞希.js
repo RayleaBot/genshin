@@ -5,7 +5,7 @@ exports.default = default_1;
 function default_1({ artis, attr, cons, def }) {
     let title = [];
     let particularAttr = { ...usefulAttr['梦见月瑞希'] };
-    if (attr.cpct * 2 + attr.cdmg >= 200 || artis.names.includes('血红之证')) {
+    if (attr.cpct * 2 + attr.cdmg >= 200 || artis.is('血红之证4')) {
         title.push('星扩散');
         particularAttr.cpct = 100;
         particularAttr.cdmg = 100;

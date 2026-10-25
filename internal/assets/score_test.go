@@ -13,8 +13,8 @@ import (
 )
 
 // score-vectors.json holds three shared panels and the expected per-slot marks
-// for every character. The marks were checked against the pinned miao
-// ArtisMark rules when scoring moved to the script engine; "$dmg" stands for
+// for every character. generate-reference-score-vectors.mjs compares the
+// packaged scorer with the pinned upstream ArtisMark rules; "$dmg" stands for
 // the damage-slot main stat named by each vector.
 type scoreFixture struct {
 	Contexts []map[string]any `json:"contexts"`
@@ -64,6 +64,9 @@ func TestScoreVectors(t *testing.T) {
 	for _, c := range engine.Metadata().Characters {
 		records[c.Key] = c
 	}
+	if len(fixture.Vectors) != len(records)*len(fixture.Contexts) {
+		t.Fatal("score fixtures do not cover the current catalog")
+	}
 	var wg sync.WaitGroup
 	failures := make(chan string, len(fixture.Vectors))
 	limit := make(chan struct{}, 8)
@@ -96,6 +99,10 @@ func TestScoreVectors(t *testing.T) {
 				return
 			}
 			for _, piece := range output.Pieces {
+				if piece.Score > 70 {
+					failures <- name + ": score exceeds the upstream cap"
+					return
+				}
 				if expected, ok := v.Pieces[strconv.Itoa(piece.Slot)]; !ok || !equal(piece.Score, expected) {
 					failures <- name + ": slot " + strconv.Itoa(piece.Slot) + " differs"
 					return

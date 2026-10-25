@@ -2,7 +2,7 @@
 // numerical modules are transpiled; nothing here starts Yunzai, reads
 // configuration, fetches resources or loads user code.
 //
-// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-09-15>
+// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-10-24>
 //
 // Writes the miao runtime to internal/reference/miao/common.js and the calc
 // directory internal/assets/calc: catalog.json, game.js (weapon and set
@@ -22,6 +22,7 @@ if (!references) throw new Error('Usage: bundle-reference-calculation.mjs <refer
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const typescript = createRequire(path.join(root, 'ui/package.json'))('typescript')
 const miao = path.join(references, 'miao-plugin')
+const { commit } = JSON.parse(await fs.readFile(path.join(references, 'miao-plugin.source.json'), 'utf8'))
 const game = 'gs'
 
 const allowedImports = ['lodash', '#miao', './DmgCalcMeta.js', './DmgMastery.js', './AttrItem.js', '../Base.js', '../index.js', '#miao.models', './AttrData.js', './common/Elem.js', './ArtisMark.js', './ArtisMarkCfg.js', '../../artifact/artis-mark.js']
@@ -31,7 +32,8 @@ async function module(file, provided) {
   return transpile(typescript, file, source, allowedImports)
 }
 
-let common = '// Fixed miao-plugin 7f6f1c84; MIT, see LICENSES. Generated numeric modules.\n'
+let common = `// Fixed miao-plugin ${commit.slice(0, 8)}; MIT, see LICENSES. Generated numeric modules.\n`
+common += `const referenceVersion=${JSON.stringify('miao-' + commit.slice(0, 8) + '-reference-v1')};\n`
 common += `const Elem=${await module('components/common/Elem.js')}.default;\nFormat=${await module('components/Format.js')}.default;\n`
 for (const [name, file] of [['AttrItem', 'dmg/AttrItem'], ['DmgMastery', 'dmg/DmgMastery'], ['DmgAttr', 'dmg/DmgAttr'], ['DmgCalc', 'dmg/DmgCalc'], ['AttrData', 'attr/AttrData'], ['Attr', 'attr/Attr']]) {
   if (name === 'DmgMastery') common += `const {erType,erTitle,eleBaseDmg,breakBaseDmg,cryBaseDmg,elationBaseDmg}=${await module('models/dmg/DmgCalcMeta.js')};\n`
@@ -46,7 +48,7 @@ for (const directory of ['characters', 'scores']) {
   await fs.rm(path.join(calc, directory), { recursive: true, force: true })
   await fs.mkdir(path.join(calc, directory), { recursive: true })
 }
-const catalog = { version: 'miao-7f6f1c84-reference-v1', characters: [], weapons: [], coverage: [] }
+const catalog = { version: 'miao-' + commit.slice(0, 8) + '-reference-v1', characters: [], weapons: [], coverage: [] }
 
 const sets = JSON.parse(await fs.readFile(path.join(resources, 'artifact/data.json'), 'utf8'))
 const setNames = {}

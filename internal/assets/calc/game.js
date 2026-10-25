@@ -1029,19 +1029,19 @@ exports.setAlias = {
     黄金剧团: '黄金,剧团',
     昔时之歌: '昔时',
     回声之林夜话: '回声,回声夜话,夜话',
-    谐律异想断章: '谐律,断章',
-    未竟的遐思: '遐思',
+    谐律异想断章: '谐律,断章,生命之契套',
+    未竟的遐思: '遐思,燃烧套',
     烬城勇者绘卷: '烬城,勇者',
-    黑曜秘典: '秘典',
-    长夜之誓: '长夜',
+    黑曜秘典: '秘典,黑曜',
+    长夜之誓: '长夜,下落套',
     深廊终曲: '深廊,终曲',
     穹境示现之夜: '穹境',
     纺月的夜歌: '纺月,夜歌',
     晨星与月的晓歌: '晨星,晓歌',
-    风起之日: '风起',
+    风起之日: '风起,魔导套',
     天之美赐: "美赐,天之套,美赐套,天之美次,天赐,天赐套",
-    影中沉凝的幻灭: "幻灭套,幻灭,影中沉凝,影中套,沉凝套,超导套",
-    血红之证: "血红,血红之征,血红套,血红之正",
+    影中沉凝的幻灭: "幻灭套,幻灭,影中沉凝,影中套,沉凝套,星超导套",
+    血红之证: "血红,血红之征,血红套,血红之正,星扩散套",
     炉火融炼之心: "炉火,炉火套,融炼之心,融炼套,融炼",
 };
 
@@ -1065,10 +1065,10 @@ exports.usefulAttr = {
     五郎: { hp: 0, atk: 0, def: 75, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 0 },
     班尼特: { hp: 100, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 100 },
     枫原万叶: { hp: 0, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 100, dmg: 0, phy: 0, recharge: 75, heal: 0 },
-    行秋: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 75, heal: 0 },
+    行秋: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 100, heal: 0 },
     钟离: { hp: 100, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 55, heal: 0 },
-    神里绫华: { hp: 0, atk: 85, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 45, heal: 0 },
-    香菱: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 75, dmg: 100, phy: 0, recharge: 75, heal: 0 },
+    神里绫华: { hp: 0, atk: 85, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 55, heal: 0 },
+    香菱: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 75, dmg: 100, phy: 0, recharge: 100, heal: 0 },
     胡桃: { hp: 80, atk: 50, def: 0, cpct: 100, cdmg: 100, mastery: 75, dmg: 100, phy: 0, recharge: 0, heal: 0 },
     温迪: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 45, heal: 0 },
     珊瑚宫心海: { hp: 100, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 75, dmg: 100, phy: 0, recharge: 55, heal: 100 },
@@ -1127,7 +1127,7 @@ exports.usefulAttr = {
     菲米尼: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 100, recharge: 55, heal: 0 },
     那维莱特: { hp: 100, atk: 0, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 55, heal: 0 },
     莱欧斯利: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 75, dmg: 100, phy: 0, recharge: 45, heal: 0 },
-    芙宁娜: { hp: 100, atk: 0, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 95, phy: 0, recharge: 75, heal: 95 },
+    芙宁娜: { hp: 100, atk: 0, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 95, phy: 0, recharge: 100, heal: 95 },
     夏洛蒂: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 100 },
     娜维娅: { hp: 0, atk: 75, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 55, heal: 0 },
     夏沃蕾: { hp: 100, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 55, heal: 55 },
@@ -1167,12 +1167,16 @@ exports.usefulAttr = {
     叶洛亚: { hp: 0, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 100, dmg: 0, phy: 0, recharge: 100, heal: 0 },
     法尔伽: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 99, phy: 0, recharge: 20, heal: 0 },
     莉奈娅: { hp: 0, atk: 0, def: 100, cpct: 100, cdmg: 100, mastery: 50, dmg: 0, phy: 0, recharge: 50, heal: 99 },
-    尼可: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 50, heal: 0 },
+    尼可: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 0, heal: 0 },
     布伦妮: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 0 },
     洛恩: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 0, dmg: 100, phy: 0, recharge: 30, heal: 0 },
     桑多涅: { hp: 0, atk: 85, def: 0, cpct: 100, cdmg: 100, mastery: 60, dmg: 0, phy: 0, recharge: 50, heal: 0 },
-    奥黛塔: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 75, dmg: 0, phy: 0, recharge: 50, heal: 0 },
-    阿罗夏: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 99 }
+    奥黛塔: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 75, dmg: 0, phy: 0, recharge: 20, heal: 0 },
+    阿罗夏: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 99 },
+    沃雅妮莎: { hp: 100, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 0, heal: 75 },
+    薇斯纳: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 100, dmg: 0, phy: 0, recharge: 50, heal: 0 },
+    米提亚: { hp: 0, atk: 0, def: 0, cpct: 100, cdmg: 100, mastery: 100, dmg: 0, phy: 0, recharge: 40, heal: 0 },
+    瓦列里: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 50, heal: 0 }
 };
 
 return exports;})();return {mainAttr:attrs.mainAttr,subAttr:attrs.subAttr,attrMap:attrs.attrMap,usefulAttr:mark.usefulAttr,setAbbr:alias.setAbbr}})();
@@ -1488,7 +1492,15 @@ function default_1(step, staticStep) {
             refine: {
                 mastery: step(120)
             }
-        }
+        },
+        柔风游弦: [staticStep('recharge', 20), {
+                title: '元素战技或元素爆发命中敌人时，获得一层「纯净者的圣咏」，该效果至多叠加3层，满层后队伍中附近的所有角色造成的星烁反应伤害提升[stellarConduct]%',
+                refine: {
+                    stellarConduct: step(24),
+                    stellarSwirl: step(24),
+                    stellarVortex: step(24)
+                }
+            }]
     };
 }
 
@@ -1796,6 +1808,30 @@ function default_1(step, staticStep) {
                     stellarConduct: step(16),
                     stellarSwirl: step(16),
                     stellarVortex: step(16)
+                }
+            }],
+        漩流颂歌: {
+            title: '治疗加成提升[heal]%，进行治疗时，生命值上限提升[hpPct]%',
+            refine: {
+                heal: step(4),
+                hpPct: step(4 * 3 * 1.75)
+            }
+        },
+        凝雪沉心: [{
+                check: ({ element }) => !['冰', '雷'].includes(element),
+                title: '(队友2冰1雷)获得「银染的血契」效果，元素精通提升[mastery]点，攻击力提升[atkPct]%',
+                refine: {
+                    mastery: step(24 * 2),
+                    atkPct: step(4.8),
+                }
+            }, {
+                check: ({ element }) => ['冰', '雷'].includes(element),
+                title: '(队友3冰雷)辉映·星烁下，获得「银染的血契」效果，元素精通提升[mastery]点，星烁反应伤害提升[stellarConduct]%',
+                refine: {
+                    mastery: step(20 * 4),
+                    stellarConduct: step(6 * 4),
+                    stellarSwirl: step(6 * 4),
+                    stellarVortex: step(6 * 4)
                 }
             }]
     };
@@ -2653,7 +2689,7 @@ function default_1(step, staticStep) {
             }],
         熔猎异端之刃: {
             title: '施放元素战技后，每秒都将基于上一秒记录的移动距离，获得最高[atkPct]%的攻击力加成',
-            data: {
+            refine: {
                 atkPct: step(36)
             }
         },
@@ -2686,9 +2722,41 @@ function default_1(step, staticStep) {
         星锋剑: {
             check: ({ attr }) => ['空', '荧'].includes(attr.characterName),
             title: '旅行者装备时，命中敌人后，攻击力提升[atkPct]%；与7种元素共鸣过，旅行者的暴击伤害就会总共提升[cdmg]%',
-            refine: {
-                atkPct: step(16),
+            data: {
+                atkPct: ({ refine }) => step(16)[refine],
                 cdmg: 42
+            }
+        },
+        新枝: [{
+                check: ({ element }) => !['冰', '雷', '风'].includes(element),
+                title: '命中敌人时，会获得「蓊郁」，攻击力提升[atkPct]%，元素精通提升[mastery]点',
+                refine: {
+                    atkPct: step(4 * 3),
+                    mastery: step(20 * 3),
+                }
+            }, {
+                check: ({ element }) => ['冰', '雷', '风'].includes(element),
+                title: '辉映·星烁下，装备者的攻击命中敌人时，会获得「蓊郁」，攻击力提升[atkPct]%，且装备者造成的星烁反应伤害提升[stellarConduct]%',
+                refine: {
+                    atkPct: step(6 * 3),
+                    stellarConduct: step(8 * 3),
+                    stellarSwirl: step(8 * 3),
+                    stellarVortex: step(8 * 3)
+                }
+            }],
+        银釭: {
+            title: '施放元素战技后的12秒内，元素精通最多提升[mastery]点',
+            refine: {
+                mastery: step(52 * 2)
+            }
+        },
+        蝶变: {
+            title: '施放元素战技或元素爆发共2次后，暴击伤害提升[cdmg]%，星扩散反应伤害提升[stellarConduct]%',
+            refine: {
+                cdmg: step(56, 16),
+                stellarConduct: step(36),
+                stellarSwirl: step(36),
+                stellarVortex: step(36)
             }
         }
     };

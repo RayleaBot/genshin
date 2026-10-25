@@ -1,5 +1,5 @@
 // Package miao is the Genshin Impact calculation runtime. common.js bundles the
-// damage and attribute models of miao-plugin 7f6f1c84 (MIT); bootstrap.js and
+// damage and attribute models of the pinned miao-plugin (MIT); bootstrap.js and
 // runner.js adapt them to the engine's entry points.
 package miao
 

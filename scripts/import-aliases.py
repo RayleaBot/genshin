@@ -1,6 +1,6 @@
 """Import miao-plugin's alias tables into internal/assets/catalog.json.
 
-Usage: python scripts/import-aliases.py <参考项目/2026-09-15>
+Usage: python scripts/import-aliases.py <参考项目/2026-10-24>
 
 Takes character and weapon aliases from miao-plugin (character/alias.js,
 weapon/alias.js `alias` and `abbr`, the abbreviation also kept as `abbr`), the

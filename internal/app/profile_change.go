@@ -51,9 +51,9 @@ type PanelChange struct {
 }
 
 var (
-	changeWord    = regexp.MustCompile(`[变改换]`)
+	changeWord    = regexp.MustCompile(`换`)
 	changeUID     = regexp.MustCompile(`uid ?:? ?`)
-	changeMain    = regexp.MustCompile(`^#*(\d{9,10})?(.+?)(详细|详情|面板|面版|圣遗物|伤害[1-7]?)?\s*(\d{9,10})?[变换改](.+)`)
+	changeMain    = regexp.MustCompile(`^#*(\d{9,10})?(.+?)(详细|详情|面板|面版|圣遗物|伤害[1-7]?)?\s*(\d{9,10})?换(.+)`)
 	changeUIDs    = regexp.MustCompile(`\d{9,10}`)
 	changeWeapon  = regexp.MustCompile(`^(?:等?级?([1-9][0-9])?级?)?\s*(?:([1-5一二三四五满])(精炼?|叠影?)|(精炼?|叠影?)([1-5一二三四五]))?\s*(?:等?级?([1-9][0-9])?级?)?\s*(.*)$`)
 	changeCons    = regexp.MustCompile(`([0-6零一二三四五六满])(命|魂|星魂)`)
@@ -124,7 +124,7 @@ func parsePanelChange(catalog Catalog, aliases map[string]string, text string) (
 	setGroup := "(" + strings.Join(setWords, "|") + ")"
 	setWord := regexp.MustCompile(`^` + setGroup + `套?[2,4]?\+?` + setGroup + `?套?[2,4]?\+?` + setGroup + `?套?[2,4]?$`)
 	changed := false
-	for _, txt := range strings.Split(strings.NewReplacer("变", "换", "改", "换").Replace(main[5]), "换") {
+	for _, txt := range strings.Split(main[5], "换") {
 		txt = strings.TrimSpace(txt)
 		if txt == "" {
 			continue

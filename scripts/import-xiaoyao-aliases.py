@@ -2,7 +2,7 @@
 (resources/Atlas_alias Basic_Event, wuqi_tujian and yuanmo_tujian); the plugin
 reads only the JSON.
 
-Usage: python scripts/import-xiaoyao-aliases.py <参考项目/2026-09-15>
+Usage: python scripts/import-xiaoyao-aliases.py <参考项目/2026-10-24>
 Writes internal/assets/data/xiaoyao-aliases.json.
 """
 import json

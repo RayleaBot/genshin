@@ -14,6 +14,11 @@ func TestPanelChangeReadsMiaoWording(t *testing.T) {
 		t.Fatal(err)
 	}
 	gs := Game{ID: "genshin"}
+	for _, text := range []string{"雷神变满命", "雷神改80级"} {
+		if _, ok := parsePanelChange(catalog, nil, text); ok {
+			t.Fatalf("retired change wording accepted: %s", text)
+		}
+	}
 	change, ok := parsePanelChange(catalog, nil, "雷神换90级5精护摩换绝缘4换天赋10 10 10")
 	if !ok || change.CharacterID != "10000052" || change.Weapon == nil || change.Weapon.ID != "13501" || change.Weapon.Level != 90 || change.Weapon.Refinement != 5 {
 		t.Fatalf("weapon: %+v", change)

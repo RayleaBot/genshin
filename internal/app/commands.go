@@ -112,7 +112,7 @@ var upstreamTails = map[string][]*regexp.Regexp{
 	"talent-stat":    {regexp.MustCompile(`^#*(我的)?(今日|今天|明日|明天|周.*)?([五四54]星)?(技能|天赋)+(汇总|统计|列表)?[ 0-9]*$`)},
 	"daily-material": {regexp.MustCompile(`^#(今日|今天|每日|我的|明天|明日|周([1-7]|一|二|三|四|五|六|日))*(素材|材料|天赋)[ 0-9]*$`)},
 	"theater":        {regexp.MustCompile(`^#*(喵喵)*(本期|上期)?(幻想|幻境|剧诗|幻想真境剧诗)[ 0-9]*(数据)?$`)},
-	"role-cards":     {regexp.MustCompile(`^#*(喵喵)*(月谕|越狱|幻想|幻境|剧诗|幻想真境剧诗)(圣牌|卡片|卡牌|塔罗牌|card|tarot)(收藏|收集)?[ 0-9]*(数据)?$`)},
+	"role-cards":     {regexp.MustCompile(`^#*(喵喵)*(月谕|月喻|越狱|幻想|幻境|剧诗|幻想真境剧诗)(圣牌|卡片|卡牌|塔罗牌|card|tarot)(收藏|收集)?[ 0-9]*(数据)?$`)},
 	"hard_challenge": {regexp.MustCompile(`^#*(喵喵)*(本期|上期)?(幽境|危战|幽境危战)(单人|单挑|组队|多人|合作|最佳)?[ 0-9]*(数据)?$`)},
 }
 

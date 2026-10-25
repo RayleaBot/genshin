@@ -1,7 +1,7 @@
 // Converts miao-plugin's material, banner and birthday data. Only the
 // data-only modules are evaluated; no plugin code is loaded.
 //
-// Usage: node scripts/import-resource-data.mjs <参考项目/2026-09-15>
+// Usage: node scripts/import-resource-data.mjs <参考项目/2026-10-24>
 // Writes internal/assets/data/resources.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -9,7 +9,9 @@ import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const meta = path.join(path.resolve(process.argv[2]), 'miao-plugin/resources/meta-gs')
+const refs = path.resolve(process.argv[2])
+const meta = path.join(refs, 'miao-plugin/resources/meta-gs')
+const { commit } = JSON.parse(await fs.readFile(path.join(refs, 'miao-plugin.source.json'), 'utf8'))
 
 // dataModule evaluates a module without imports and returns expression.
 async function dataModule(file, expression) {
@@ -64,7 +66,7 @@ for (const name of await fs.readdir(path.join(meta, 'character'))) {
 }
 
 const out = {
-  version: 'miao-7f6f1c84c891',
+  version: 'miao-' + commit.slice(0, 12),
   materials: [...materials.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh')),
   pools: pools.map(p => ({ version: p.version, half: p.half, from: p.from, to: p.to, kind: p.kind, characters5: p.char5 ?? [], characters4: p.char4 ?? [], weapons5: p.weapon5 ?? [], weapons4: p.weapon4 ?? [] })),
   birthdays,

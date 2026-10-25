@@ -45,6 +45,7 @@ func TestReferenceProfiles(t *testing.T) {
 				t.Fatal(err)
 			}
 			var output struct {
+				Version  string `json:"version"`
 				Baseline struct {
 					Results []struct {
 						ID       string   `json:"id"`
@@ -57,6 +58,9 @@ func TestReferenceProfiles(t *testing.T) {
 			}
 			if json.Unmarshal(result, &output) != nil || len(output.Baseline.Results) != len(v.Results) {
 				t.Fatal("result shape changed")
+			}
+			if output.Version != metadata.Version {
+				t.Fatalf("result version %q differs from catalog %q", output.Version, metadata.Version)
 			}
 			// Group ranks use one detail: 神里绫华 names the third with defDmgIdx.
 			defaults := []string{}

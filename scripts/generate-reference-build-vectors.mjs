@@ -2,7 +2,7 @@
 // synthetic profiles and records the results as regression vectors. No
 // account, application or external API is used.
 //
-// Usage: node scripts/generate-reference-build-vectors.mjs <参考项目/2026-09-15>
+// Usage: node scripts/generate-reference-build-vectors.mjs <参考项目/2026-10-24>
 // Writes internal/assets/testdata/calc-vectors.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'

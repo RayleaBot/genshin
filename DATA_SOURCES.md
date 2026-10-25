@@ -2,7 +2,13 @@
 
 本插件的固定资料由 `scripts/import-reference-data.py` 从已下载参考 JSON 转换，源提交记录在 `internal/assets/catalog.json`。转换保留角色、装备名称、属性、技能文字与材料，不包含素材图片；伤害与评分由打包的上游脚本计算，见下文。
 
-原神资料来自 miao-plugin，固定提交 7f6f1c84c89102bc6b1c58c8e1b06c61f4642161；保留 LICENSES/miao-plugin-MIT.txt。
+原神资料来自 miao-plugin，固定提交 90c790b556dc34e0cf0c7274127ea9d68e9b2dd9；保留 LICENSES/miao-plugin-MIT.txt。
+
+固定快照目录为 `<参考项目/2026-10-24>`，各来源的提交记录在对应 `*.source.json`。图鉴含 384 项角色与武器，计算目录含 131 个角色形态和 257 把武器；129 个角色形态有伤害规则，其余仅用于评分。卡池资料收录至 7.1 下半。原神评分按实际主词条计算上限，单件封顶 70。
+
+同步范围为已有资料、公式及命令兼容：面板换装只接受“换”，月谕圣牌兼容“月喻”写法，卡池查询按版本倒序、同版本下半在前。抽卡页保留现有模板和统计能力；不引入上游新增的欧皇度、独立样式切换、全记录分页或新的养成计算入口，也不引入多图库、锅巴配置与宿主重启功能。
+
+评分向量由 `scripts/generate-reference-score-vectors.mjs` 读取同一快照的原始 `ArtisMark` 与 `ArtisMarkCfg` 生成，并逐项与打包运行时比较；三个固定合成面板覆盖全部 131 个角色形态。再生成时先依次执行 `import-reference-data.py`、`import-aliases.py`、`import-resource-data.mjs`、`import-cloud-panel-data.mjs`、`import-simulation-data.mjs`、`bundle-reference-calculation.mjs`，然后执行伤害与评分向量生成器；所有脚本接收同一快照目录，`import-reference-data.py` 使用 `--references` 参数。
 
 没有账号时的面板来自 [Enka.Network](https://github.com/EnkaNetwork/API-docs/blob/master/api.md)（miao-plugin 海外服的默认面板服务，国服默认的 MiniGG 为 HTTP 地址，不使用），按响应 TTL 缓存；解析同 miao 的 EnkaData，圣遗物部件名由 bundle-reference-calculation.mjs 从 miao `meta-gs/artifact/data.json` 写入资料目录的 `artifact_pieces`。`templates/panel-list/`、`templates/artifact-list/` 与 `templates/daily-material/` 按 miao-plugin 的 `character/profile-list`、`character/artis-list` 与 `wiki/today-material` 改写（MIT；今日素材的材料周期同 `meta-gs/material/daily.js`，材料各级图标按 miao 素材来源的 `meta-gs/material/data.json` 读取，页尾提示中上游的“刷新天赋”换成本插件对应的“米游社更新面板”）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
 
@@ -10,7 +16,7 @@
 
 ## 装备评分
 
-评分运行 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、命座、武器与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
+评分运行 miao 提交 `90c790b556dc34e0cf0c7274127ea9d68e9b2dd9` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、命座、武器与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
 
 ## 自动参考计算
 
@@ -18,7 +24,7 @@
 
 ## 模拟与固定资料
 
-材料、卡池与固定生日从同一 miao 固定快照的 material/info 数据转换，不联网补造日程。娱乐模拟的默认曲线来自 [Miao-Yunzai 固定提交](https://github.com/yoimiya-kokomi/Miao-Yunzai/tree/40cc2103efba1fbb279b768e3f5345d45372d357)，转换为 Go，不在运行时加载原插件；不声明为当前官方概率。
+材料、卡池与固定生日从同一 miao 固定快照的 material/info 数据转换，不联网补造日程。娱乐模拟的默认曲线来自 [Miao-Yunzai 固定提交](https://github.com/yoimiya-kokomi/Miao-Yunzai/tree/354b806102f43cb5a216e8e2418b57278246fdb2)，转换为 Go，不在运行时加载原插件；不声明为当前官方概率。
 
 GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器、数据和原生实现随源码分发。转换模拟数据需要已有 Python/PyYAML，正常构建使用已生成数据，无需该再生成步骤。
 
