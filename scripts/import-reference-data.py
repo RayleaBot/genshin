@@ -1,6 +1,6 @@
 """Convert pinned local miao-plugin JSON into internal/assets/catalog.json.
 
-Usage: python scripts/import-reference-data.py --references <参考项目/2026-10-24>
+Usage: python scripts/import-reference-data.py --references <参考项目/2026-11-11>
 
 This reads data only. It never evaluates reference JavaScript or installs its
 dependencies. Generated catalogs carry their source version and attribution.

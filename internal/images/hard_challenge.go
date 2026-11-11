@@ -1,6 +1,7 @@
 package images
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -118,7 +119,12 @@ func HardChallenge(context app.ImageContext, result app.QueryResult) (app.Image,
 			if !seen {
 				face = app.Text(cards.base(id)["face"])
 			}
-			best = append(best, map[string]any{"face": face, "dps": app.Text(avatar["dps"])})
+			amount := app.Int(avatar["dps"])
+			value, unit := app.Text(avatar["dps"]), ""
+			if amount >= 10000 {
+				value, unit = fmt.Sprintf("%.1f", float64(amount)/10000), "W"
+			}
+			best = append(best, map[string]any{"face": face, "portrait": cards.base(id)["gacha"], "dps": app.Text(avatar["dps"]), "value": value, "unit": unit})
 		}
 		monster, _ := challenge["monster"].(map[string]any)
 		traits := []any{}
@@ -137,8 +143,19 @@ func HardChallenge(context app.ImageContext, result app.QueryResult) (app.Image,
 		return time.Unix(int64(app.Int(value)), 0).In(chinaTime).Format("01-02 15:04:05")
 	}
 	difficulty := app.Int(stat["difficulty"])
+	version := ""
+	started := time.Unix(int64(app.Int(schedule["start_time"])), 0).In(chinaTime).Format(time.DateTime)
+	if context.Game.Data != nil {
+		for _, pool := range context.Game.Data.Resources.Pools {
+			if started >= pool.From && started <= pool.To {
+				version = pool.Version
+				break
+			}
+		}
+	}
 	return app.Image{Template: "hard-challenge", Data: map[string]any{
-		"uid": result.Role.UID, "begin": moment(schedule["start_time"]), "end": moment(schedule["end_time"]),
+		"version": version,
+		"uid":     result.Role.UID, "begin": moment(schedule["start_time"]), "end": moment(schedule["end_time"]),
 		"difficulty": difficulty, "difficulty_name": hardDifficulties[difficulty], "second": app.Text(stat["second"]), "battles": battles,
 	}, Resources: resources.List}, true
 }
@@ -146,6 +163,7 @@ func HardChallenge(context app.ImageContext, result app.QueryResult) (app.Image,
 // hardTrait splits a monster trait into plain and coloured pieces; upstream
 // turns the official <color> tags into coloured spans.
 func hardTrait(text string) []any {
+	text = strings.ReplaceAll(text, `\n`, "\n")
 	pieces := []any{}
 	last := 0
 	for _, match := range hardColor.FindAllStringSubmatchIndex(text, -1) {

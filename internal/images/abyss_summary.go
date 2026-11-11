@@ -120,10 +120,6 @@ func AbyssSummary(context app.ImageContext, result app.QueryResult) (app.Image, 
 		if own, ok := cards.own(item.id); ok {
 			stat["name"], stat["banner"], stat["shown"] = own["name"], own["gacha"], true
 		}
-		// Without HuTao's upload miao has no percentiles to compare with.
-		if item.title == "最强一击" || item.title == "最高承伤" {
-			stat["notes"] = []string{"暂无统计信息"}
-		}
 		stats = append(stats, stat)
 	}
 	faces := func(ids []string) []any {

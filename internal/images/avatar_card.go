@@ -2,6 +2,7 @@ package images
 
 import (
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/RayleaBot/genshin/internal/app"
 	"github.com/RayleaBot/genshin/internal/reference"
@@ -60,7 +61,8 @@ func (c *avatarCards) base(id string) map[string]any {
 	folder, _ := app.CharacterFolders(id, record.Name, record.Element)
 	path := folder + "imgs/"
 	return map[string]any{"known": record.Name != "", "name": record.Name, "abbr": abbreviation(c.catalog, record), "elem": record.Element, "star": star,
-		"face": c.miao(path + "face.webp"), "gacha": c.miao(path + "gacha.webp")}
+		"name_length": max(1, utf8.RuneCountInString(abbreviation(c.catalog, record))),
+		"face":        c.miao(path + "face.webp"), "gacha": c.miao(path + "gacha.webp")}
 }
 
 // own is the card of the requester's character, or false when the query did
@@ -87,6 +89,7 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 	// miao shows each set worn as two or four pieces, by its flower (or its
 	// circlet when the set has no flower).
 	counts, order := map[string]int{}, []string{}
+	stars := map[string]int{}
 	for _, piece := range panel.Equipment {
 		if piece.SetName == "" {
 			continue
@@ -95,14 +98,22 @@ func (c *avatarCards) own(id string) (map[string]any, bool) {
 			order = append(order, piece.SetName)
 		}
 		counts[piece.SetName]++
+		star := app.Int(piece.Rarity)
+		if star == 0 {
+			star = 5
+		}
+		stars[piece.SetName] = max(stars[piece.SetName], star)
 	}
 	sets := []any{}
+	setStar := 0
 	for _, name := range order {
 		if counts[name] >= 2 {
 			sets = append(sets, c.setIcon(name))
+			setStar = max(setStar, stars[name])
 		}
 	}
 	card["artis"] = sets
+	card["artis_star"] = setStar
 	return card, true
 }
 

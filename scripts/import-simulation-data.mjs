@@ -2,7 +2,7 @@
 // banners are advertised as the current official rules. Python and PyYAML
 // are needed only to regenerate.
 //
-// Usage: node scripts/import-simulation-data.mjs <参考项目/2026-10-24>
+// Usage: node scripts/import-simulation-data.mjs <参考项目/2026-11-11>
 // Reads internal/assets/data/resources.json for the banners and writes
 // internal/assets/data/simulation.json.
 import fs from 'node:fs/promises'

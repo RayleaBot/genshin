@@ -1,6 +1,6 @@
 # 固定参考的计算兼容修正
 
-来源为 miao-plugin `90c790b556dc34e0cf0c7274127ea9d68e9b2dd9`，版权见 `LICENSES/miao-plugin-MIT.txt`。
+来源为 miao-plugin `9af2f324ac2a2457d41274c45a755fb91ca49685`，版权见 `LICENSES/miao-plugin-MIT.txt`。
 
 - 旅行者的元素资料均使用内部 ID 7；按实际角色 ID 与元素选择独立规则，避免不同元素的文件互相覆盖。
 - 执行环境提供不输出内容的日志函数，上游公式中的调试日志不会把战斗数值写进宿主日志。

@@ -1,5 +1,5 @@
-// Fixed miao-plugin 90c790b5; MIT, see LICENSES. Generated numeric modules.
-const referenceVersion="miao-90c790b5-reference-v1";
+// Fixed miao-plugin 9af2f324; MIT, see LICENSES. Generated numeric modules.
+const referenceVersion="miao-9af2f324-reference-v1";
 const Elem=(()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1439,6 +1439,7 @@ class Attr extends Base {
         const Characters = [
             { id: 10000119, attrs: { mastery: 200 } }, // 菈乌玛: +200 元素精通
             { id: 10000122, attrs: { mastery: 100 } }, // 奈芙尔: +100 元素精通
+            { id: 10000136, attrs: { mastery: 100 } }, // 米提亚: +100 元素精通
             { id: 10000005, attrs: { mastery: 15, hpBase: 50, atkBase: 7, cpct: 10, cdmg: 20, recharge: 20, hpPct: 20, atkPct: 20, defPct: 20 } },
             { id: 10000007, attrs: { mastery: 15, hpBase: 50, atkBase: 7, cpct: 10, cdmg: 20, recharge: 20, hpPct: 20, atkPct: 20, defPct: 20 } }
             // 在丝柯克传说任务磷星之章中，完成特训后，旅行者的元素精通永久增加15点

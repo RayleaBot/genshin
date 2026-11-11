@@ -2,9 +2,9 @@
 
 本插件的固定资料由 `scripts/import-reference-data.py` 从已下载参考 JSON 转换，源提交记录在 `internal/assets/catalog.json`。转换保留角色、装备名称、属性、技能文字与材料，不包含素材图片；伤害与评分由打包的上游脚本计算，见下文。
 
-原神资料来自 miao-plugin，固定提交 90c790b556dc34e0cf0c7274127ea9d68e9b2dd9；保留 LICENSES/miao-plugin-MIT.txt。
+原神资料来自 miao-plugin，固定提交 9af2f324ac2a2457d41274c45a755fb91ca49685；保留 LICENSES/miao-plugin-MIT.txt。
 
-固定快照目录为 `<参考项目/2026-10-24>`，各来源的提交记录在对应 `*.source.json`。图鉴含 384 项角色与武器，计算目录含 131 个角色形态和 257 把武器；129 个角色形态有伤害规则，其余仅用于评分。卡池资料收录至 7.1 下半。原神评分按实际主词条计算上限，单件封顶 70。
+固定快照目录为 `<参考项目/2026-11-11>`，各来源的提交记录在对应 `*.source.json`。图鉴含 384 项角色与武器，计算目录含 131 个角色形态和 257 把武器；130 个角色形态有伤害规则，其余仅用于评分。卡池资料收录至 7.2 上半。原神评分按实际主词条计算上限，单件封顶 70。米提亚计算包含固有的 100 点基础元素精通，奥黛塔、瓦列里及相关武器使用同一快照的规则。
 
 同步范围为已有资料、公式及命令兼容：面板换装只接受“换”，月谕圣牌兼容“月喻”写法，卡池查询按版本倒序、同版本下半在前。抽卡页保留现有模板和统计能力；不引入上游新增的欧皇度、独立样式切换、全记录分页或新的养成计算入口，也不引入多图库、锅巴配置与宿主重启功能。
 
@@ -16,7 +16,7 @@
 
 ## 装备评分
 
-评分运行 miao 提交 `90c790b556dc34e0cf0c7274127ea9d68e9b2dd9` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、命座、武器与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
+评分运行 miao 提交 `9af2f324ac2a2457d41274c45a755fb91ca49685` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、命座、武器与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
 
 ## 自动参考计算
 
@@ -34,6 +34,9 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 ## 图片模板
 
+剧诗与幽境战绩采用同一 miao 快照的概览、队伍及详情布局：剧诗按每幕的来源区分自有、试用与助演角色，后两类显示装备占位图标；幽境按期次开始时间显示版本，赋光之人以金色光晕标注。深渊统计在缺少百分位时省略统计说明。成套圣遗物底色采用实际部件的最高星级。
+
+
 `templates/note/`、`templates/gacha/`、`templates/abyss/`、`templates/abyss-floor/`、`templates/ledger/`、`templates/ledger-count/`、`templates/tcg-decks/`、`templates/role-card/` 与 `templates/role-explore/` 按 Miao-Yunzai 原神插件的 daily-note-gs、gacha-log、gacha-all-log（`templates/gacha-all/`；上游各卡池块共用第一个卡池的标签颜色、五星时间段与 UP 标记判断，这里照做）、html/abyss/abyss、html/abyss/abyss-floor、html/ledger/ledger-gs、html/ledger/ledger-count-gs 与 html/deckList、html/deck（两页共用 deck 的样式，deckList 未用到其余部分）、html/player/role-card 与 html/player/role-explore 改写（探索页的各项总数取自同一快照的 `defSet/role/index.yaml`；角色卡片按接口的元素给角色底色，上游按 `defSet/element/role.yaml` 的角色名查找）（札记与原石统计的图表上游用 G2Plot 绘制，这里按相同的内边距、刻度算法、起点、方向、内外半径与标签规则输出 SVG，不随插件分发该库；原石统计页头的闲云横幅取自 miao-plugin）（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），抽卡分析的统计、卡池选择与 UP 判定同上游 gachaLog；剧诗练度统计与 miao 默认数据源一样运行时读取 static.nanoka.cc 的 manifest 与 rolecombat 资料（只读，不带账号信息），月份换算、开幕角色补入、筛选与排序同上游 `apps/profile/ProfileStat.js`。`templates/character-card/` 按 miao-plugin 的 character/character-card 改写（MIT），横竖版的页面宽度与缩放同上游 `apps/character/AvatarCard.js`，触发写法同其 check。`templates/stat-character/`、`templates/stat-abyss-pct/` 与 `templates/stat-abyss-team/` 按 miao-plugin 的 stat/character、stat/abyss-pct 与 stat/abyss-team 改写（MIT），数据与上游 `apps/stat/HutaoApi.js` 一样读取 api.lelaer.com 与 api.yshelper.com 的公开统计（只读，不带账号信息，缓存一小时），排序、持有率换算与配队算法同 `apps/stat/AbyssStat.js`、`AbyssTeam.js`；页面沿用上游“数据来自提瓦特小助手API”的说明。`templates/pool-info/` 按 miao-plugin 的 gacha/gacha-info 改写（MIT），卡池的筛选、每行八个与精简显示同上游 `apps/gacha/GachaPool.js`；`templates/gacha-count/` 按同一上游的 html/gacha/log-count 改写（GPL-3.0），分池、计数与排序同 `model/logCount.js`；上游固定提交的 `defSet/pool` 只到 2025 年，活动祈愿的期次改用固定快照中的卡池资料，常驻、集录与新手沿用上游的单一卡池；`templates/gacha-detail/` 与 `templates/gacha-stat/` 按 miao-plugin 的 gacha/gacha-detail 与 gacha/gacha-stat 改写（MIT），出金、UP 判定与分期统计同上游 `apps/gacha/GachaData.js`，期次取自同一卡池资料，最后一期之后的“新版本”不设结束日期（上游写死的结束日期已过）；上游抽卡记录去掉的前缀不含“喵喵”，带“喵喵”的写法总是落到角色池，这里一并去掉；`templates/pay-log/` 按同一 Yunzai 插件的 html/payLog 改写（GPL-3.0），读取与档位统计同 `model/payLogData.js`（上游第一个月的计数会被该月后续记录清零，这里每条记录都计入），ECharts 的柱状图与饼图按其 5.x 默认样式输出为 SVG；五星简称取自 `defSet/role|weapon/other.yaml` 的 sortName（由 import-aliases.py 写入资料目录）。`templates/weapons/` 与 `templates/weapons-narrow/` 按同一上游的 html/avatar/weapon 改写（GPL-3.0；武器不超过 8 把时上游缩窄页面，这里以第二份模板取其宽度），排序规则与不计精炼的活动武器同上游 `model/weapon.js` 与 `defSet/weapon/other.yaml`；`templates/calendar/` 与 `templates/calendar-list/` 按 miao-plugin 的 `wiki/calendar` 改写（MIT；列表模式在上游缩窄页面，这里以同一页面的第二份模板取其宽度），公告时间、深渊与剧诗周期、合并排布与今日天赋书的算法同上游 `apps/wiki/Calendar.js`，天赋书的城市与周期取自同一快照的 `meta-gs/material/daily.js`；上游另从 miao 自有的 HTTP 服务读取修正后的活动时间，本插件的公开资料只访问官方 HTTPS 接口，因此不含这部分修正。`templates/character-talent/` 按 miao-plugin 的 `wiki/character-talent` 与 `common/tpl/talent-detail` 改写（MIT），天赋、被动与命之座资料读取 miao 素材来源的 `meta-gs/character/<角色>/data.json`（为此 miao 素材来源也保留 `.json` 文件），上游原样输出的描述 HTML 只保留标题、换行、斜体、加粗与颜色。`templates/character-wiki/` 按 miao-plugin 的 `wiki/character-wiki` 改写（MIT），资料读取同一 `data.json` 与 `meta-gs/material/data.json`，材料简称由 import-aliases.py 从 `meta-gs/material/abbr.js` 写入资料目录；平均等级、命座分布与武器、圣遗物使用率与上游一样运行时读取 api.lelaer.com，持有率读取 api.yshelper.com（均为第三方只读公开统计，请求不带账号信息，结果缓存一小时），七圣召唤卡牌页 `templates/tcg-cards/` 按 html/deckCard 改写。`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来，`templates/hard-challenge/`、`templates/characters/`、`templates/training/` 与 `templates/help/` 按 miao 的 `stat/hard-summary`、`character/avatar-list`、`character/profile-stat`（练度统计与天赋统计两种模式，天赋书的城市与周期取自 `meta-gs/material/daily.js`）、`help/index`（默认主题）与通用角色卡片改写（均为 MIT，角色列表的宝箱上限取自同一固定快照的 `meta-gs/info` chestInfo，帮助图标按 `config/help_default.js` 中列出该命令的条目选取，上游未列出的命令不显示图标），图片地址改为宿主渲染资源。幽境危战的角色卡片取自实时的角色详情查询，因此去掉了上游“先更新面板”的提示。`templates/stat-abyss-summary/` 按 miao 的 `stat/abyss-summary` 改写（MIT），战绩记录、楼层队伍与各间时间同上游 `apps/stat/AbyssSummary.js` 与 `models/Abyss.js`；上游已不再上传胡桃 API，最强一击与最高承伤因此同上游显示“暂无统计信息”，页面说明照录上游原文。`templates/stat-role-summary/` 按 miao 的 `stat/role-summary` 改写（MIT），期次、各幕、辉彩祝福数值与试用、助演角色同上游 `apps/stat/RoleCombatSummary.js` 与 `models/RoleCombat.js`；敌人、祝福与神秘收获的图标为官方图片。`templates/stat-role-card/` 与 `templates/stat-role-card-exchange/` 按 miao 的 `stat/role-card` 与 `stat/role-card-exchange` 改写（MIT），重复卡片、缺少卡片、匹配顺序、名称截断与回复措辞同上游 `apps/stat/RoleCard.js`，卡面为官方图片。模板用到的图片、字体与资料文件取自各上游的固定提交，由 `scripts/bundle-artwork.py` 复制到插件包的 `assets/` 随插件分发（许可同各上游，见 `LICENSES/`）；管理员可通过“素材更新”从上游仓库下载新版本，下载的文件优先使用。
 
 `templates/uid-list/` 按 Miao-Yunzai 原神插件的 html/user/uid-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），页面框架与样式沿用 miao-plugin 的 common/layout/elem 与 common/common.css（MIT，见 `LICENSES/miao-plugin-MIT.txt`），同 miao 的 1.4 倍缩放；图片地址改为宿主渲染资源。玩家的头像与名片按 miao 的 faceImgs 取该 UID 已保存面板中编号最小的角色，没有时用 miao 的通用头像与名片。
@@ -46,10 +49,12 @@ GPL-3.0 许可保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt`，对应的转换器�
 
 `templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，换装面板的伤害变化同其伤害表的写法（上游的内联样式改为同值的类）；渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）。
 
-七圣召唤卡牌图鉴按 [xiaoyao-cvs-plugin 固定提交](https://github.com/ctrlcvs/xiaoyao-cvs-plugin/tree/e7ab3e8b276a11680beb47d0c5517f6e0a4c2022) 的 `apps/xiaoyao_image.js` 移植，名称查找使用其 `resources/Atlas_alias/` 的 Basic_Event（453 张卡牌，保留分类）、wuqi_tujian 与 yuanmo_tujian，由 `scripts/import-xiaoyao-aliases.py` 转换为 `internal/assets/data/xiaoyao-aliases.json`（GPL-3.0，见 `LICENSES/xiaoyao-cvs-plugin-GPL-3.0.txt`）；卡牌图与视频取自管理员下载的逍遥图鉴库，引用其他图片时回复的 `resources/common/face/what.jpg` 取自 miao-plugin，随插件包分发。
+七圣召唤卡牌图鉴按 [xiaoyao-cvs-plugin 固定提交](https://github.com/ctrlcvs/xiaoyao-cvs-plugin/tree/a1f010b9e2441eb38371d9da99a715f791d304ed) 的 `apps/xiaoyao_image.js` 移植，名称查找使用其 `resources/Atlas_alias/` 的 Basic_Event（513 张卡牌，保留分类）、wuqi_tujian 与 yuanmo_tujian，由 `scripts/import-xiaoyao-aliases.py` 转换为 `internal/assets/data/xiaoyao-aliases.json`（GPL-3.0，见 `LICENSES/xiaoyao-cvs-plugin-GPL-3.0.txt`）；卡牌图与视频取自管理员下载的逍遥图鉴库，引用其他图片时回复的 `resources/common/face/what.jpg` 取自 miao-plugin，随插件包分发。
 
 `templates/atlas-index/` 按 Atlas 的 resource/massage/text.html 与 text.css 改写（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`），同上游的 1.5 倍缩放，数字字体取自 Yunzai 的 tttgbnumber；上游的 Source Han Sans CN Bold 字体超过宿主单个渲染资源 16 MiB 的上限，不随附，其余文字使用渲染器的字体。
 
 面板帮助同 miao-plugin 的 character/profile-detail 帮助，直接发送该仓库的 `resources/character/imgs/help.jpg`（MIT），取自 miao 素材来源。
 
 `templates/news/` 与 `templates/news-list/` 按 Yunzai 原神插件的 html/mysNews 与 html/mysNews-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），公告、资讯、活动、米游社搜索、帖子与预估按其 mysNews 的规则出图；米游社搜索同上游 mysSearch，消息含“签到”时不处理。详情页的样式去掉了米游社编辑器、加载、提示与回复控件等页面用不到的规则。米游社正文是任意 HTML，而渲染器可以联网，因此正文按页面样式用到的标签、类名与颜色字号等样式重建，图片只经渲染资源引用（官方图片缓存），链接与脚本不保留。与上游不同之处：正文中没有地址的超链图片按帖子的 structured_content 补上（上游显示为空白）；纯图片帖显示全部图片（上游只显示最后一张）；上游按 4000 像素分段截图，这里出一整张长图；二维码由 go-qrcode 生成（MIT，见 `LICENSES/go-qrcode-MIT.txt`），指向帖子所在游戏的米游社地址（上游固定为原神路径）。页面的米游社标志、图标字体、列表页背景与数字字体取自“原神插件图片”素材来源。
+
+逍遥别名快照只保存 `resources/Atlas_alias` 与许可证，范围记录在 `*.source.json`；当前收录 513 张卡牌、219 项武器别名和 396 项原魔别名。上游三项“超载祝佑”别名因末尾冒号被 YAML 解析为单项空值映射，转换器保留其键名作为文字别名，其余结构继续严格校验。

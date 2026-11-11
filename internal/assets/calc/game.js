@@ -1176,7 +1176,7 @@ exports.usefulAttr = {
     沃雅妮莎: { hp: 100, atk: 0, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 0, heal: 75 },
     薇斯纳: { hp: 0, atk: 100, def: 0, cpct: 100, cdmg: 100, mastery: 100, dmg: 0, phy: 0, recharge: 50, heal: 0 },
     米提亚: { hp: 0, atk: 0, def: 0, cpct: 100, cdmg: 100, mastery: 100, dmg: 0, phy: 0, recharge: 40, heal: 0 },
-    瓦列里: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 50, heal: 0 }
+    瓦列里: { hp: 0, atk: 100, def: 0, cpct: 0, cdmg: 0, mastery: 0, dmg: 0, phy: 0, recharge: 100, heal: 0 }
 };
 
 return exports;})();return {mainAttr:attrs.mainAttr,subAttr:attrs.subAttr,attrMap:attrs.attrMap,usefulAttr:mark.usefulAttr,setAbbr:alias.setAbbr}})();
@@ -1810,13 +1810,12 @@ function default_1(step, staticStep) {
                     stellarVortex: step(16)
                 }
             }],
-        漩流颂歌: {
-            title: '治疗加成提升[heal]%，进行治疗时，生命值上限提升[hpPct]%',
-            refine: {
-                heal: step(4),
-                hpPct: step(4 * 3 * 1.75)
-            }
-        },
+        漩流颂歌: [staticStep('heal', 4), {
+                title: '进行治疗时，生命值上限提升[hpPct]%',
+                refine: {
+                    hpPct: step(4 * 3 * 1.75)
+                }
+            }],
         凝雪沉心: [{
                 check: ({ element }) => !['冰', '雷'].includes(element),
                 title: '(队友2冰1雷)获得「银染的血契」效果，元素精通提升[mastery]点，攻击力提升[atkPct]%',
@@ -1833,7 +1832,19 @@ function default_1(step, staticStep) {
                     stellarSwirl: step(6 * 4),
                     stellarVortex: step(6 * 4)
                 }
-            }]
+            }],
+        秘星典谕: [staticStep('cdmg', 24), {
+                title: '满buff时，元素精通提升[mastery]点',
+                refine: {
+                    mastery: step(48 + 24 * 3)
+                }
+            }, {
+                check: ({ params }) => params.Starsealed_Edict === true,
+                title: '3层「炬中法度」还会使装备者造成的星超导反应伤害的暴击伤害提升[cdmg]%',
+                refine: {
+                    cdmg: step(12 * 3)
+                }
+            }],
     };
 }
 
@@ -2025,12 +2036,12 @@ function default_1(step, staticStep) {
                     eDmg: step(18 * 2)
                 }
             }],
-        '「究极霸王超级魔剑」': {
-            title: '攻击力提升[atkPct]%',
-            refine: {
-                atkPct: step(12 * 2)
-            }
-        },
+        '「究极霸王超级魔剑」': [staticStep('atkPct', 12), {
+                title: '攻击力进一步提升[atkPct]%',
+                refine: {
+                    atkPct: step(12)
+                }
+            }],
         山王长牙: [{
                 title: '满层时，元素战技与元素爆发伤害提升[eDmg]%',
                 refine: {

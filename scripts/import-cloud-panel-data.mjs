@@ -2,7 +2,7 @@
 // reader uses. Only the fixed metadata modules are read; no plugin runtime is
 // loaded.
 //
-// Usage: node scripts/import-cloud-panel-data.mjs <参考项目/2026-10-24>
+// Usage: node scripts/import-cloud-panel-data.mjs <参考项目/2026-11-11>
 // Writes internal/assets/data/cloud-panels.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'

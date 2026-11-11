@@ -1,18 +1,69 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["uid", "month", "difficulty", "medals", "time", "coins", "bonus", "rent", "acts"],
+  "required": [
+    "uid",
+    "month",
+    "difficulty",
+    "medals",
+    "time",
+    "coins",
+    "bonus",
+    "rent",
+    "acts"
+  ],
   "properties": {
-    "uid": { "type": "string" },
-    "month": { "type": "string" },
-    "difficulty": { "type": "string" },
-    "medals": { "type": "array" },
-    "time": { "type": "string" },
-    "coins": { "type": "string" },
-    "bonus": { "type": "string" },
-    "rent": { "type": "string" },
-    "acts": { "type": "array" },
-    "render_footer": { "type": "string" }
+    "uid": {
+      "type": "string"
+    },
+    "month": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string"
+    },
+    "medals": {
+      "type": "array"
+    },
+    "time": {
+      "type": "string"
+    },
+    "coins": {
+      "type": "string"
+    },
+    "bonus": {
+      "type": "string"
+    },
+    "rent": {
+      "type": "string"
+    },
+    "acts": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    },
+    "trophy": {
+      "type": "string"
+    },
+    "crown": {
+      "type": "string"
+    },
+    "max_round": {
+      "type": "string"
+    },
+    "tarot_count": {
+      "type": "string"
+    },
+    "tarot": {
+      "type": "boolean"
+    },
+    "medal_count": {
+      "type": "integer"
+    },
+    "medal_groups": {
+      "type": "array"
+    }
   },
   "additionalProperties": false
 }

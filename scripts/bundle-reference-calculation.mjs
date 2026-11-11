@@ -2,7 +2,7 @@
 // numerical modules are transpiled; nothing here starts Yunzai, reads
 // configuration, fetches resources or loads user code.
 //
-// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-10-24>
+// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-11-11>
 //
 // Writes the miao runtime to internal/reference/miao/common.js and the calc
 // directory internal/assets/calc: catalog.json, game.js (weapon and set

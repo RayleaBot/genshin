@@ -1,7 +1,7 @@
 // Records the Miao-Yunzai 模拟抽卡 five-star probability for every pull count,
 // by running its probability method on each case.
 //
-// Usage: node scripts/generate-simulation-vectors.mjs <参考项目/2026-10-24>
+// Usage: node scripts/generate-simulation-vectors.mjs <参考项目/2026-11-11>
 // Writes internal/app/testdata/simulation-probability-vectors.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'

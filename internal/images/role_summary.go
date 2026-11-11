@@ -40,14 +40,9 @@ func RoleSummary(context app.ImageContext, result app.QueryResult) (app.Image, b
 	schedule, _ := period["schedule"].(map[string]any)
 	rounds, _ := detail["rounds_data"].([]any)
 
-	// The player's own cast shows their current characters; miao lays the
-	// trial and support cast's level and label over the same card.
-	type cast struct {
-		level int
-		label string
-	}
+	// Only the player's own cast needs account details. Each act keeps its
+	// own source, so a trial/support character never replaces an owned one.
 	own := []string{}
-	others := map[string]cast{}
 	urls := []any{}
 	for _, rawRound := range rounds {
 		round, _ := rawRound.(map[string]any)
@@ -57,8 +52,6 @@ func RoleSummary(context app.ImageContext, result app.QueryResult) (app.Image, b
 			id := app.Text(avatar["avatar_id"])
 			if kind := app.Int(avatar["avatar_type"]); kind == 1 {
 				own = append(own, id)
-			} else {
-				others[id] = cast{app.Int(avatar["level"]), roleAvatarTypes[kind]}
 			}
 		}
 		enemies, _ := round["enemies"].([]any)
@@ -83,6 +76,12 @@ func RoleSummary(context app.ImageContext, result app.QueryResult) (app.Image, b
 	}
 	medal := resources.Artwork("stat-imgs-medal", "miao-plugin", "resources/stat/imgs/medal.png")
 	noMedal := resources.Artwork("stat-imgs-nomedal", "miao-plugin", "resources/stat/imgs/nomedal.png")
+	heraldry := app.Int(stat["heraldry"])
+	if heraldry < 0 || heraldry > 6 {
+		heraldry = 0
+	}
+	trophy := resources.Artwork("role-record-heraldry", "miao-plugin", "resources/stat/imgs/role-record-heraldry-"+app.Text(heraldry)+".png")
+	crown := resources.Artwork("role-splendour-crown", "miao-plugin", "resources/stat/imgs/role-splendour-crown.png")
 	medalOf := func(won bool) string {
 		if won {
 			return medal
@@ -92,18 +91,18 @@ func RoleSummary(context app.ImageContext, result app.QueryResult) (app.Image, b
 	resources.Prefetch("mihoyo", urls...)
 	slices.Sort(own)
 	cards := newAvatarCards(context, resources, slices.Compact(own))
-	card := func(id string) map[string]any {
-		entry, owned := cards.own(id)
-		other, lent := others[id]
-		switch {
-		case lent && owned:
-			entry["level"], entry["cons"] = other.level, other.label
-		case lent:
-			entry = cards.guest(id, other.level, 0)
-			entry["cons"] = other.label
-		case !owned:
-			// Characters the query does not return get miao's empty card.
-			entry = map[string]any{}
+	card := func(avatar map[string]any) map[string]any {
+		id, kind := app.Text(avatar["avatar_id"]), app.Int(avatar["avatar_type"])
+		if kind == 1 {
+			if entry, ok := cards.own(id); ok {
+				return entry
+			}
+			return map[string]any{}
+		}
+		entry := cards.guest(id, app.Int(avatar["level"]), 0)
+		entry["cons"], entry["equipment_unknown"] = roleAvatarTypes[kind], true
+		if weapon := strings.ToLower(cards.records[id].WeaponType); slices.Contains([]string{"sword", "claymore", "polearm", "bow", "catalyst"}, weapon) {
+			entry["weapon_placeholder"] = cards.miao("resources/common/item/atk-" + weapon + ".webp")
 		}
 		return entry
 	}
@@ -119,7 +118,7 @@ func RoleSummary(context app.ImageContext, result app.QueryResult) (app.Image, b
 		team := []any{}
 		for position, rawAvatar := range avatars {
 			avatar, _ := rawAvatar.(map[string]any)
-			member := card(app.Text(avatar["avatar_id"]))
+			member := card(avatar)
 			if types := statCardTypes[len(avatars)]; position < len(types) {
 				member["type"] = types[position]
 			}
@@ -146,18 +145,37 @@ func RoleSummary(context app.ImageContext, result app.QueryResult) (app.Image, b
 			gains = append(gains, resources.URL("mihoyo", choice["icon"]))
 		}
 		won, _ := round["is_get_medal"].(bool)
+		tarot, _ := round["is_tarot"].(bool)
 		acts = append(acts, map[string]any{"title": title, "medal": medalOf(won), "time": time.Unix(int64(app.Int(round["finish_time"])), 0).In(chinaTime).Format("01-02 15:04:05"),
+			"tarot": tarot, "blessing_columns": min(4, len(blessings)+1),
 			"team": team, "enemy": enemy, "level": level, "hp": level * 800, "atk": level * 50, "def": level * 50, "em": level * 20, "blessings": blessings, "gains": gains})
 	}
 	medals := []any{}
+	medalCount := 0
 	list, _ := stat["get_medal_round_list"].([]any)
 	for position, won := range list {
+		if app.Int(won) == 1 {
+			medalCount++
+		}
 		// miao starts a second row of medals at the eleventh act.
-		medals = append(medals, map[string]any{"medal": medalOf(app.Int(won) == 1), "line": position == 10})
+		medals = append(medals, map[string]any{"medal": medalOf(app.Int(won) == 1), "won": app.Int(won) == 1, "line": position == 10})
+	}
+	groups := []any{medals}
+	if app.Int(stat["difficulty_id"]) == 5 && len(medals) > 10 {
+		groups = []any{medals[:10], medals[10:]}
+	}
+	maxRound, tarotCount := app.Text(stat["max_round_id"]), app.Text(stat["tarot_finished_cnt"])
+	if maxRound == "" {
+		maxRound = "—"
+	}
+	if tarotCount == "" {
+		tarotCount = "—"
 	}
 	fight, _ := detail["fight_statisic"].(map[string]any)
 	start, _ := schedule["start_date_time"].(map[string]any)
 	return app.Image{Template: "stat-role-summary", Data: map[string]any{
+		"trophy": trophy, "crown": crown, "max_round": maxRound, "tarot_count": tarotCount, "tarot": app.Int(stat["difficulty_id"]) == 5,
+		"medal_groups": groups, "medal_count": medalCount,
 		"uid": result.Role.UID, "month": app.Text(start["month"]), "difficulty": roleDifficulties[app.Int(stat["difficulty_id"])], "medals": medals,
 		"time": app.Text(fight["total_use_time"]), "coins": app.Text(stat["coin_num"]), "bonus": app.Text(stat["avatar_bonus_num"]), "rent": app.Text(stat["rent_cnt"]),
 		"acts": acts,

@@ -2,7 +2,7 @@
 (resources/Atlas_alias Basic_Event, wuqi_tujian and yuanmo_tujian); the plugin
 reads only the JSON.
 
-Usage: python scripts/import-xiaoyao-aliases.py <参考项目/2026-10-24>
+Usage: python scripts/import-xiaoyao-aliases.py <参考项目/2026-11-11>
 Writes internal/assets/data/xiaoyao-aliases.json.
 """
 import json
@@ -28,9 +28,20 @@ def names(table):
     # each must be text.
     out = []
     for name, aliases in table.items():
-        if not isinstance(name, str) or not isinstance(aliases, list) or not all(isinstance(alias, str) for alias in aliases):
+        if not isinstance(name, str) or not isinstance(aliases, list):
             raise SystemExit(f"{name}: expected a name with a list of aliases")
-        out.append({"name": name, "aliases": aliases})
+        normalized = []
+        for alias in aliases:
+            # Three Overloaded Blessing aliases end with a YAML colon in the
+            # upstream table. A single null mapping retains that written alias.
+            if isinstance(alias, dict) and len(alias) == 1:
+                key, value = next(iter(alias.items()))
+                if isinstance(key, str) and value is None:
+                    alias = key
+            if not isinstance(alias, str):
+                raise SystemExit(f"{name}: expected a text alias")
+            normalized.append(alias)
+        out.append({"name": name, "aliases": normalized})
     return out
 
 

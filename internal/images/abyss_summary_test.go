@@ -45,7 +45,7 @@ func TestAbyssSummaryFollowsMiao(t *testing.T) {
 	// burst record keeps its box.
 	stats := image.Data["stats"].([]any)
 	strongest, defeat, burst := stats[0].(map[string]any), stats[1].(map[string]any), stats[3].(map[string]any)
-	if len(stats) != 4 || strongest["value"] != "1.3 W" || strongest["name"] != "胡桃" || strongest["shown"] != true || strongest["notes"] == nil {
+	if len(stats) != 4 || strongest["value"] != "1.3 W" || strongest["name"] != "胡桃" || strongest["shown"] != true || strongest["notes"] != nil {
 		t.Errorf("strongest = %v", strongest)
 	}
 	if defeat["title"] != "最多击破" || defeat["value"] != "25次" || defeat["shown"] != true || defeat["notes"] != nil {

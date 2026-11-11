@@ -31,7 +31,7 @@ func TestHardChallengeFollowsMiao(t *testing.T) {
 		return `{"has_data":true,"best":{"difficulty":` + strconv.Itoa(difficulty) + `,"second":` + strconv.Itoa(second) + `},"challenge":[{"name":"第一战","second":90,
 			"teams":[{"avatar_id":10000046,"name":"胡桃","level":90,"rarity":5,"rank":` + hutao + `},{"avatar_id":10000089,"name":"芙宁娜","level":90,"rarity":5,"rank":0}],
 			"best_avatar":[{"avatar_id":10000046,"dps":"123456"},{"avatar_id":10000089,"dps":"654321"}],
-			"monster":{"level":100,"icon":"http://insecure.example/m.png","desc":["","受到<color=#FFD780FF>火元素</color>伤害提高。"]}}]}`
+			"monster":{"level":100,"icon":"http://insecure.example/m.png","desc":["","受到<color=#FFD780FF>火元素</color>伤害提高。\\n持续生效。"]}}]}`
 	}
 	data := decode(t, `{"data":[{"schedule":{"start_time":"1788220800","end_time":"1790812800"},"single":`+mode(6, 300, "1")+`,"mp":`+mode(5, 100, "6")+`},
 		{"schedule":{"start_time":"1785600000","end_time":"1788200000"},"single":{"has_data":false},"mp":{"has_data":false}}]}`)
@@ -50,7 +50,11 @@ func TestHardChallengeFollowsMiao(t *testing.T) {
 	}}
 
 	// Without a mode the better record wins: single at difficulty 6.
+	application.Game.Data.Resources.Pools = []app.PoolInfo{{Version: "7.0", From: "2026-09-01 00:00:00", To: "2026-09-30 23:59:59"}}
 	image, ok := images.HardChallenge(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
+	if image.Data["version"] != "7.0" {
+		t.Fatalf("period version = %v", image.Data["version"])
+	}
 	if !ok || image.Data["difficulty"] != 6 || image.Data["difficulty_name"] != "绝境" || image.Data["second"] != "300" {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -73,7 +77,7 @@ func TestHardChallengeFollowsMiao(t *testing.T) {
 	}
 	traits := battle["monster"].(map[string]any)["traits"].([]any)
 	pieces := traits[0].([]any)
-	if len(traits) != 1 || pieces[1].(map[string]any)["color"] != "#FFD780FF" || pieces[1].(map[string]any)["text"] != "火元素" {
+	if len(traits) != 1 || pieces[1].(map[string]any)["color"] != "#FFD780FF" || pieces[1].(map[string]any)["text"] != "火元素" || pieces[2].(map[string]any)["text"] != "伤害提高。\n持续生效。" {
 		t.Errorf("traits = %v", traits)
 	}
 

@@ -52,16 +52,17 @@ func TestRoleSummaryFollowsMiao(t *testing.T) {
 	if first["title"] != "第 1 幕" || first["hp"] != 2400 || first["atk"] != 150 || first["em"] != 60 || len(first["gains"].([]any)) != 1 || first["time"] != "09-02 06:00:00" {
 		t.Errorf("first act = %v", first)
 	}
-	// Lent and trial characters show miao's label and their act level; Hu
-	// Tao keeps the player's own card with the lent level laid over it, as
-	// miao merges the two.
+	// The same character keeps the source and level of each act.
 	team := first["team"].([]any)
 	furina, lent, trial := team[0].(map[string]any), team[1].(map[string]any), team[2].(map[string]any)
 	if furina["cons"] != 2 || furina["type"] != "wide" || lent["cons"] != "助演" || lent["level"] != 80 || trial["cons"] != "试用" || trial["level"] != 70 || trial["type"] != "mini" {
 		t.Errorf("team = %v", team)
 	}
-	if tarot["title"] != "圣牌挑战 II" || tarot["team"].([]any)[0].(map[string]any)["cons"] != "助演" || tarot["enemy"] != "" {
+	if tarot["title"] != "圣牌挑战 II" || tarot["team"].([]any)[0].(map[string]any)["cons"] != 1 || tarot["team"].([]any)[0].(map[string]any)["level"] != 90 || tarot["enemy"] != "" {
 		t.Errorf("tarot = %v", tarot)
+	}
+	if lent["equipment_unknown"] != true || trial["equipment_unknown"] != true || lent["weapon"] != nil || tarot["team"].([]any)[0].(map[string]any)["equipment_unknown"] == true {
+		t.Errorf("cast equipment sources = %v / %v", team, tarot["team"])
 	}
 	// 上期 reads the second period, which has no detailed record yet.
 	context.Word = "上期剧诗"

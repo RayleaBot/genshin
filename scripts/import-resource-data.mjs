@@ -1,7 +1,7 @@
 // Converts miao-plugin's material, banner and birthday data. Only the
 // data-only modules are evaluated; no plugin code is loaded.
 //
-// Usage: node scripts/import-resource-data.mjs <参考项目/2026-10-24>
+// Usage: node scripts/import-resource-data.mjs <参考项目/2026-11-11>
 // Writes internal/assets/data/resources.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'

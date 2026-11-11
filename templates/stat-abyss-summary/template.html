@@ -70,14 +70,14 @@
 </body>
 </html>
 {{ define "card" }}
-<div class="avatar-card elem-{{ .elem }} avatar-{{ .name }} card-{{ .type }}">
+<div class="avatar-card elem-{{ .elem }} avatar-{{ .name }} card-{{ .type }}{{ if .popular }} is-popularity{{ end }}" style="--avatar-name-length:{{ .name_length }}">
   <div class="card">
     {{ if .known }}
     <div class="avatar-face item-icon star{{ .star }}">
       <div class="img mini"{{ with .face }} data-render-resource="{{ . }}"{{ end }}></div>
       <div class="img wide avatar-{{ .name }}"{{ with .gacha }} data-render-resource="{{ . }}"{{ end }}></div>
       <span class="cons cons-{{ .cons }} mini">{{ .cons }}</span>
-      <div class="avatar-level"><span>Lv</span>{{ .level }} {{ .abbr }}</div>
+      <div class="avatar-level"><span class="level-number"><span class="level-prefix">Lv</span>{{ .level }}</span><span class="avatar-label">{{ .abbr }}</span></div>
     </div>
     <div class="avatar-info">
       <div class="avatar-name wide">
@@ -106,7 +106,7 @@
           {{ end }}
         </div>
         <div class="item avatar-artis artis{{ len .artis }}">
-          <div class="artis item-icon">{{ range .artis }}<div class="img" data-render-resource="{{ . }}"></div>{{ end }}</div>
+          <div class="artis item-icon{{ if .artis }} star{{ .artis_star }}{{ end }}">{{ range .artis }}<div class="img" data-render-resource="{{ . }}"></div>{{ end }}</div>
           <div class="item-info wide"></div>
         </div>
       </div>
