@@ -266,18 +266,66 @@ function runChange(record, weapons, input) {
   const char = characterObject(record);
   const weapon = Weapon.get(input.weapon.id);
   if (input.weapon.id && !weapon) throw Error('weapon.missing');
-  const promote = input.promote ?? Attr.calcPromote(input.level, currentGame);
-  const weaponPromote = input.weapon.promote ?? (weapon ? Attr.calcPromote(input.weapon.level, currentGame) : 0);
   const profile = {
-    game: currentGame, char, id: char.id, elem: char.elem, level: input.level, promote, cons: input.rank, talent: input.talents, trees: input.trees,
-    weapon: { ...input.weapon, promote: weaponPromote, name: weapon?.name || '', affix: input.weapon.refinement },
+    game: currentGame, char, id: char.id, elem: char.elem, level: input.level, promote: input.promote, cons: input.rank, talent: input.talents, trees: input.trees,
+    weapon: { ...input.weapon, name: weapon?.name || '', affix: input.weapon.refinement },
     artis: artifactObject(input.equipment),
   };
+  if (input.observed) return profileNumbers(profile, weapon, input);
+  const promote = profile.promote ??= Attr.calcPromote(input.level, currentGame);
+  const weaponPromote = profile.weapon.promote ??= weapon ? Attr.calcPromote(input.weapon.level, currentGame) : 0;
   const attributes = {};
   for (const [key, value] of Object.entries(new Attr(profile).calc())) {
     if (Number.isFinite(value)) attributes[key] = value;
   }
   return { promote, weapon_promote: weaponPromote, attributes, weapon_attrs: weapon ? weapon.calcAttr(profile.weapon.level, weaponPromote) : null };
+}
+
+// ProfileDetail formats each column from the unrounded static total and base.
+function profileNumbers(profile, weapon, input) {
+  const charStages = legalPromotions(profile.level, false);
+  const weaponStages = weapon ? legalPromotions(profile.weapon.level, true) : [0];
+  if (charStages.length === 1) profile.promote ??= charStages[0];
+  if (weaponStages.length === 1) profile.weapon.promote ??= weaponStages[0];
+  if (profile.promote == null || profile.weapon.promote == null) {
+    try {
+      inferPromotions(profile, input.observed);
+    } catch {
+      // A partial panel can still identify the weapon's stats at its own level.
+      return { stats: {}, weapon: profileWeaponStats(weapon, profile.weapon) };
+    }
+  }
+  const attr = new Attr(profile);
+  const totals = attr.calc();
+  const bases = attr.getBase();
+  const stats = {};
+  for (const key of ['hp', 'atk', 'def', 'mastery', 'cpct', 'cdmg', 'recharge', 'dmg', 'phy']) {
+    const flat = ['hp', 'atk', 'def', 'mastery'].includes(key);
+    const shown = input.observed[key];
+    let total = totals[key];
+    let base = bases[key];
+    const shownBase = input.observed[key + 'Base'];
+    if (Number.isFinite(shownBase) && Math.abs(base - shownBase) > 1) base = shownBase;
+    // Keep source values outside its display rounding interval (e.g. an unmodelled bonus).
+    if (!input.complete || Number.isFinite(shown) && Math.abs(total - shown) > (flat ? 1 : 0.1) + 1e-8) total = shown;
+    if (!Number.isFinite(total) || !Number.isFinite(base)) continue;
+    const format = flat ? n => Format.comma(n, key === 'hp' ? 0 : 1) : n => Format.pct(n);
+    stats[key] = { value: format(total), base: format(base), added: format(total - base) };
+  }
+  if (stats.phy && (!stats.dmg || parseFloat(stats.phy.value) > parseFloat(stats.dmg.value))) stats.dmg = stats.phy;
+  return { stats, weapon: profileWeaponStats(weapon, profile.weapon) };
+}
+
+function profileWeaponStats(weapon, equipped) {
+  if (!weapon || equipped.promote == null) return [];
+  const attrs = weapon.calcAttr(equipped.level, equipped.promote);
+  const weaponStats = [];
+  if (Number.isFinite(attrs?.atkBase)) weaponStats.push({ key: 'atkBase', value: Format.comma(attrs.atkBase, 1) });
+  if (attrs?.attr?.key && Number.isFinite(attrs.attr.value)) {
+    const key = attrs.attr.key.replace(/Pct$/, '');
+    weaponStats.push({ key, value: key === 'mastery' ? Format.comma(attrs.attr.value, 1) : Format.pct(attrs.attr.value) });
+  }
+  return weaponStats;
 }
 
 function runBuild(record, weapons, input) {

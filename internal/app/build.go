@@ -175,6 +175,29 @@ func buildStatNumber(raw string) (float64, bool) {
 	value, err := strconv.ParseFloat(raw, 64)
 	return value, err == nil && !math.IsNaN(value) && !math.IsInf(value, 0) && math.Abs(value) <= 1e8
 }
+func observedAttributes(panel CharacterPanel) map[string]float64 {
+	observed := map[string]float64{}
+	if value, ok := elementDamageBonus(panel); ok {
+		observed["dmg"] = value
+	}
+	for _, stat := range panel.Stats {
+		key := miaoAttributeKeys[stat.ID]
+		if key == "" {
+			continue
+		}
+		if value, ok := buildStatNumber(stat.Value); ok {
+			observed[key] = value
+		}
+		switch key {
+		case "hp", "atk", "def":
+			if value, ok := buildStatNumber(stat.Base); ok {
+				observed[key+"Base"] = value
+			}
+		}
+	}
+	return observed
+}
+
 func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfile, error) {
 	if !panel.RankKnown || panel.Level < 1 || panel.Rank < 0 || panel.Rank > 6 || (panel.Weapon == nil && !panel.WeaponKnown) {
 		return BuildProfile{}, buildUnavailable("identity")
@@ -188,27 +211,9 @@ func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfil
 		zero := 0
 		w = &PanelEquipment{Promote: &zero, Refinement: 1}
 	}
-	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: []string{}, Attributes: map[string]float64{}, Equipment: []BuildGear{}, EnemyLevel: defaultEnemyLevel}
+	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: []string{}, Attributes: observedAttributes(panel), Equipment: []BuildGear{}, EnemyLevel: defaultEnemyLevel}
 	if w.ID != "" && (w.Level < 1 || w.Level > 90 || w.Refinement < 1 || w.Refinement > 5) {
 		return p, buildUnavailable("weapon")
-	}
-	keys := map[string]string{"2000": "hp", "2001": "atk", "2002": "def", "20": "cpct", "22": "cdmg", "23": "recharge", "28": "mastery", "26": "heal", "30": "phy"}
-	if value, ok := elementDamageBonus(panel); ok {
-		p.Attributes["dmg"] = value
-	}
-	for _, stat := range panel.Stats {
-		key := keys[stat.ID]
-		if key == "" {
-			continue
-		}
-		if value, ok := buildStatNumber(stat.Value); ok {
-			p.Attributes[key] = value
-		}
-		if slices.Contains([]string{"hp", "atk", "def", "speed"}, key) {
-			if value, ok := buildStatNumber(stat.Base); ok {
-				p.Attributes[key+"Base"] = value
-			}
-		}
 	}
 	for _, key := range []string{"hp", "atk", "def", "hpBase", "atkBase", "defBase", "cpct", "cdmg", "dmg"} {
 		if _, ok := p.Attributes[key]; !ok {
@@ -485,6 +490,7 @@ func (a *App) panelView(ctx context.Context, event *rayleabot.EventContext, pane
 	if a.panel != nil {
 		if a.Game.Calc != nil {
 			image.Record, _ = findReferenceCharacter(a.Game.Calc, panel)
+			image.Numbers = a.Game.profileNumbers(ctx, panel, image.Record)
 		}
 		// As miao, 原图 then answers with the picture the panel drew.
 		var ref string

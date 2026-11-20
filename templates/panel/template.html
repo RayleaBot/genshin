@@ -29,7 +29,7 @@
             <div class="value">{{ .value }}</div>
             <div class="value2">
               <span class="base{{ if .zero }} zero{{ end }}">{{ .base }}</span>
-              <span class="plus">+{{ .plus }}</span>
+              {{ if .plus }}<span class="plus">{{ if not .negative }}+{{ end }}{{ .plus }}</span>{{ end }}
             </div>
           </li>
           {{ end }}

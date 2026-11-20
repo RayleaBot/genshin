@@ -51,10 +51,11 @@ type ImageContext struct {
 // Record is the pinned calculation record (zero when the character has none);
 // Damage is nil when no reference damage could be calculated.
 type PanelImage struct {
-	Panel  CharacterPanel
-	UID    string
-	Record reference.Character
-	Damage *BuildResult
+	Numbers ProfileNumbers
+	Panel   CharacterPanel
+	UID     string
+	Record  reference.Character
+	Damage  *BuildResult
 	// Change is the 面板换装 word of a changed panel, which is not real data.
 	Change string
 	// Splash is the picture drawn: an uploaded 面板图 or miao's splash.

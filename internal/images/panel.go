@@ -141,11 +141,14 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 			id = elementDamageIDs[elem]
 		}
 		stat := stats[id]
+		if calculated, ok := image.Numbers.Stats[row.key]; ok {
+			stat = calculated
+		}
 		value, base, plus := statText(stat.Value), statText(stat.Base), statText(stat.Added)
 		if row.key == "dmg" && base == "" {
 			base = "0.0%"
 		}
-		item := map[string]any{"key": row.key, "title": row.title, "value": value, "base": base, "plus": plus, "zero": base == "0.0%"}
+		item := map[string]any{"key": row.key, "title": row.title, "value": value, "base": base, "plus": plus, "zero": base == "0.0%", "negative": strings.HasPrefix(plus, "-")}
 		if w := weight(row.key); w > 0 {
 			item["weight"] = strconv.FormatFloat(w, 'f', -1, 64)
 			item["gold"] = w >= 80
@@ -210,6 +213,11 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 		data["artifacts"] = pieces
 	}
 	if weapon := panel.Weapon; weapon != nil {
+		if len(image.Numbers.Weapon) > 0 {
+			display := *weapon
+			display.Main, display.Sub = image.Numbers.Weapon, nil
+			weapon = &display
+		}
 		data["weapon"] = weaponData(context, weapon, add)
 	}
 	if image.Damage != nil {
@@ -509,8 +517,7 @@ func weaponData(context app.ImageContext, weapon *app.PanelEquipment, add func(i
 	return result
 }
 
-// statText shows official numbers the way miao does: thousands separators on
-// whole numbers, percentages unchanged.
+// statText adds thousands separators while preserving the source precision.
 func statText(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" || strings.HasSuffix(value, "%") {
@@ -519,6 +526,9 @@ func statText(value string) string {
 	number, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", ""), 64)
 	if err != nil {
 		return value
+	}
+	if _, fraction, ok := strings.Cut(value, "."); ok && !strings.ContainsAny(value, "eE") {
+		return comma(math.Trunc(number)) + "." + fraction
 	}
 	return comma(number)
 }
